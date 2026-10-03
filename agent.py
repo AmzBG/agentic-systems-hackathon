@@ -33,12 +33,16 @@ from spec_parser import SPEC_KEYS, REVISABLE_KEYS, SpecError, error_targets, mer
 
 REQUIRED_FIELDS = ("source_url", "focus", "audience")
 # Reasoning models spend most completion tokens before visible text; caps leave room for it.
-# Worst case with unverified usage (14k + 7k) stays under the 24k soft cap.
-GENERATION_MAX_TOKENS = 14_000
+# Worst case with unverified usage (16k + 7k) stays under the 24k soft cap.
+# OpenRouter unified reasoning settings; "model" sends no reasoning field at all.
+REASONING_MODES = {"model": None, "low": {"effort": "low"}, "off": {"enabled": False}}
+DEFAULT_REASONING = "low"
+GENERATION_MAX_TOKENS = 16_000
 REPAIR_MAX_TOKENS = 7_000
 PLAN_MAX_TOKENS = 800
 MAX_REPAIRS = 2
 MAX_RETRIES_PER_CALL = 1
+MIN_RETRY_TOKENS = 2_000
 FETCH_SECONDS = 3.0
 FETCH_MAX_BYTES = 6 * 1024 * 1024
 EXTRACT_MAX_CHARS = 400_000
@@ -362,6 +366,13 @@ class Runner:
     def call(self, client: OpenRouterClient, stage: str, action: str,
              messages: list[dict[str, str]], max_tokens: int) -> str | None:
         for attempt in range(1 + MAX_RETRIES_PER_CALL):
+            if attempt:
+                # A failed attempt keeps its whole reservation charged; retry within what the hard cap leaves.
+                max_tokens = min(max_tokens, self.budget.completion_left())
+                if max_tokens < MIN_RETRY_TOKENS:
+                    self.emit(stage, action, "skip", details={"reason": "too few completion tokens left to retry",
+                                                              **self.budget.snapshot()})
+                    return None
             try:
                 text, usage = client.call_model(messages, max_tokens)
             except BudgetExceeded as exc:
@@ -597,6 +608,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", required=True, help="output directory")
     parser.add_argument("--model", required=True, help="OpenRouter model ID used for every call")
     parser.add_argument("--flow", choices=("single", "planned"), default="single")
+    parser.add_argument("--reasoning", choices=sorted(REASONING_MODES), default=DEFAULT_REASONING,
+                        help="OpenRouter reasoning control for every call")
     return parser
 
 
@@ -621,7 +634,8 @@ def run(argv: list[str] | None = None, *, environ: dict | None = None, client_fa
         return EXIT_FAILED
     runner = Runner(
         args, budget=budget, environ=environ,
-        client_factory=client_factory or (lambda model, key, b: OpenRouterClient(model, key, b)),
+        client_factory=client_factory or (lambda model, key, b: OpenRouterClient(
+            model, key, b, reasoning=REASONING_MODES[args.reasoning])),
         fetcher=fetcher or fetch_source,
         render=_resolve("runtime", "render") if render is _DEFAULT else render,
         run_checks=_resolve("checks", "run_checks") if run_checks is _DEFAULT else run_checks,

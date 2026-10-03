@@ -433,6 +433,15 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(budget.attempts, 1)
         self.assertNotIn(KEY, repr(client) + json.dumps(client.last_call))
 
+    def test_reasoning_control_sent_only_when_configured(self):
+        opener = FakeOpener(api_reply("x"))
+        client = OpenRouterClient("m", KEY, Budget(clock=FakeClock()), opener=opener, reasoning={"effort": "low"})
+        client.call_model([], 10)
+        self.assertEqual(json.loads(opener.requests[0][0].data)["reasoning"], {"effort": "low"})
+        self.assertEqual(agent.build_parser().parse_args(["--input", "a", "--output", "b", "--model", "m"]).reasoning,
+                         agent.DEFAULT_REASONING)
+        self.assertIsNone(agent.REASONING_MODES["model"])
+
     def test_missing_usage_is_unverified_and_fully_charged(self):
         client, _, budget = self.make(api_reply("x", usage=False))
         _, usage = client.call_model([], 700)
@@ -632,6 +641,8 @@ class FlowTests(unittest.TestCase):
         self.assertEqual(h.run(), 0)
         self.assertEqual([e["details"].get("request_number") for e in h.events if e["stage"] == "generate"
                           and e["action"] == "request"], [1, 2])
+        retry = [e for e in h.events if e["action"] == "request"][1]
+        self.assertEqual(retry["details"]["max_tokens"], 30_000 - agent.GENERATION_MAX_TOKENS)  # fits the hard cap
         h2 = Harness(http_error(401))
         self.assertEqual(h2.run(), 1)
         self.assertEqual(len(h2.opener.requests), 1)

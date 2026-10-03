@@ -84,6 +84,7 @@ class OpenRouterClient:
         url: str = OPENROUTER_URL,
         opener: Callable = urllib.request.urlopen,
         clock: Callable[[], float] = time.monotonic,
+        reasoning: dict | None = None,
     ) -> None:
         if not model_id or not api_key:
             raise ValueError("model_id and api_key are required")
@@ -94,6 +95,8 @@ class OpenRouterClient:
         self._url = url
         self._opener = opener
         self._clock = clock
+        # OpenRouter's unified reasoning control (not a provider-specific field); None sends nothing.
+        self.reasoning = reasoning
         self.last_call: dict = {}
 
     def __repr__(self) -> str:  # never expose the key
@@ -106,10 +109,13 @@ class OpenRouterClient:
         usage = empty_usage()
         started = self._clock()
         self.last_call = {"request_number": request_number, "model_id": self.model_id,
-                          "max_tokens": max_tokens, "timeout_seconds": round(timeout, 1)}
+                          "max_tokens": max_tokens, "timeout_seconds": round(timeout, 1),
+                          "reasoning": self.reasoning}
         try:
-            body = json.dumps({"model": self.model_id, "messages": messages,
-                               "max_tokens": max_tokens}).encode("utf-8")
+            payload_out = {"model": self.model_id, "messages": messages, "max_tokens": max_tokens}
+            if self.reasoning is not None:
+                payload_out["reasoning"] = self.reasoning
+            body = json.dumps(payload_out).encode("utf-8")
             request = urllib.request.Request(self._url, data=body, method="POST", headers={
                 "Authorization": f"Bearer {self._api_key}",
                 "Content-Type": "application/json",
