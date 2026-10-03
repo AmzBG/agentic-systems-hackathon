@@ -2,6 +2,8 @@
 
 Initially inspected `c44e81bc9efdaa2d94ab4fff9e3a3a833a00a701`, then synced `3f71ba46124cf77a22addccfffad41cb7da9d71b` during review. No paid calls. Reproduction: `.venv/Scripts/python.exe scripts/review_core_evidence.py`; core regression suite: `.venv/Scripts/python.exe -m unittest tests.test_core -q` → initially 65 pass in 6.903 s; after sync 67 pass in 6.972 s. This is offline inspection, not a new model run or browser review.
 
+Integrated suite at `3f71ba4`: 142 pass in 25.947 s. Later `fbb880d` model-profile/routing checkpoint was merged and the affected core suite rerun: 67 pass in 6.974 s. No live routing or model-quality result is inferred from those offline tests. Repository audit and diff whitespace checks pass. The prior clean-clone installation proof does not cover these new core revisions.
+
 ## Contract and inbox decisions
 
 U1-U3-007/008 are already DONE (`ba4c462`, `df66028`); no duplicated implementation/runs. U3-U1-001 is now DONE upstream (`8e72536`); specific fetch-failure reasons replace the opaque error, so it is not a new blocker. U1-U3-009: accept corrections 1–5 and 7, including optional revision version=1 and ignoring unrequested compute. Accept item 6's aggregate output cap, but its current input wording is still inconsistent: **all numeric input leaves**, including number/slider controls, must count, not just vector/matrix leaves. Reproduction below establishes the conflict. U1 must coordinate this wording across frozen docs; AI.md's older full-schema paragraph also still says three delimiter pairs, whereas the accepted correction says two.
