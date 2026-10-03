@@ -34,7 +34,10 @@ const NumericRuntime = (() => {
   }
   function get(obj,key,b) {
     key=keyValue(key);b.tick();
-    if(obj && own(obj,brand))fail('Functions have no accessible properties');
+    if(obj && own(obj,brand)){
+      if(key==='apply'||key==='call')fail('Function .apply/.call is unsupported; call the function directly. For a numeric array use Math.max(...values), Math.min(...values), or a bounded loop.');
+      fail('Functions have no accessible properties');
+    }
     if(Array.isArray(obj)) {
       if(key==='length')return obj.length;
       if(Number.isInteger(key) && key>=0 && key<obj.length)return obj[key];
@@ -78,6 +81,7 @@ const NumericRuntime = (() => {
     if(k==='fn')return callable((args,b)=>{if(args.length<n[1].length)fail('Missing function argument');const local=environment(e);n[1].forEach((p,i)=>local.declare(p,args[i]));const r=statement(n[2],local,b);if(r&&r.type!=='return')fail('Loop control escaped function');return r?r.value:null;});
     if(k==='call') {
       const fn=expression(n[1],e,b),args=[];
+      if(n[1][0]==='id'&&n[1][1]==='Number'&&(!fn||!own(fn,brand)))fail('Number(...) conversion is unsupported. Select inputs are strings: compare each option with === and return its numeric literal, or use a numeric control. Number.isFinite and Number.isInteger are supported.');
       for(const a of n[2]){if(a[0]==='spread'){const v=expression(a[1],e,b);if(!Array.isArray(v))fail('Spread requires array');args.push(...v);}else args.push(expression(a,e,b));if(args.length>128)fail('Argument limit exceeded');}
       return invoke(fn,args,b);
     }

@@ -285,6 +285,36 @@ def page_result(spec, actions="", inspection=None):
     return js_result(_DOM + "\ndocument.getElementById('runtime-data').textContent=" + json.dumps(payload) + ";\n" + script + "\n" + actions + "\nJSON.stringify(" + inspection + ");")
 
 
+class NumericCallDiagnosticTests(unittest.TestCase):
+    def run_compute(self, source, inputs):
+        interpreter = (Path(__file__).resolve().parents[1] / "templates/interpreter.js").read_text(encoding="utf-8")
+        tree = parse_compute(source)
+        return js_result(interpreter + "\nlet diagnostic; try { diagnostic = {value: NumericRuntime.run(" +
+                         json.dumps(tree) + "," + json.dumps(inputs) + ")}; } catch(error) { diagnostic = {error: error.message}; }\nJSON.stringify(diagnostic);")
+
+    def test_number_conversion_failure_explains_select_string_replacement(self):
+        result = self.run_compute("function compute(inputs) { return {value: Number(inputs.mode)}; }", {"mode": "2"})
+        self.assertIn("Number(...) conversion is unsupported", result["error"])
+        self.assertIn("compare each option with ===", result["error"])
+        replacement = self.run_compute("function compute(inputs) { return {value: inputs.mode === '2' ? 2 : 1}; }", {"mode": "2"})
+        self.assertEqual(replacement["value"], {"value": 2})
+
+    def test_function_apply_and_call_fail_with_supported_numeric_alternatives(self):
+        for source in ("Math.max.apply(null, inputs.values)", "Math.max.call(null, 1, 3, 2)"):
+            with self.subTest(source=source):
+                result = self.run_compute("function compute(inputs) { return {value: " + source + "}; }", {"values": [1, 3, 2]})
+                self.assertIn("Function .apply/.call is unsupported", result["error"])
+                self.assertIn("Math.max(...values)", result["error"])
+        replacement = self.run_compute("function compute(inputs) { return {value: Math.max(...inputs.values)}; }", {"values": [1, 3, 2]})
+        self.assertEqual(replacement["value"], {"value": 3})
+
+    def test_local_functions_and_numeric_predicates_remain_supported(self):
+        local = self.run_compute("function compute(inputs) { function increment(x) { return x + 1; } return {value: increment(inputs.value)}; }", {"value": 2})
+        self.assertEqual(local["value"], {"value": 3})
+        predicates = self.run_compute("function compute(inputs) { return {value: Number.isFinite(inputs.value) && Number.isInteger(inputs.value) ? 1 : 0}; }", {"value": 2})
+        self.assertEqual(predicates["value"], {"value": 1})
+
+
 class ContractTests(unittest.TestCase):
     def test_workbench_groups_controls_and_feedback_before_supporting_sections(self):
         page = render(entropy_spec())
