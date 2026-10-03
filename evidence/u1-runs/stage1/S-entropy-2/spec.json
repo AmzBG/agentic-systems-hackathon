@@ -1,0 +1,313 @@
+{
+ "controls": [
+  {
+   "id": "count",
+   "label": "Number of active outcomes n",
+   "help": "Sets how many outcomes share the weight. It changes the total weight W, the probability vector probs, the contribution vector contribs and the result entropy_bits.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 5,
+   "min": 2,
+   "max": 6,
+   "step": 1
+  },
+  {
+   "id": "focus_weight",
+   "label": "Weight of outcome 1, w_1",
+   "help": "Raises or lowers the weight of the first outcome. It changes W, p_1 and c_1 in probs and contribs, and therefore the result entropy_bits.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 1,
+   "min": 0,
+   "max": 8,
+   "step": 0.1
+  },
+  {
+   "id": "other_weight",
+   "label": "Weight of each remaining active outcome, w_2..w_n",
+   "help": "Sets the common weight of the active outcomes after the first. It changes W, the remaining entries of probs and contribs, and the result entropy_bits.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 1,
+   "min": 0,
+   "max": 8,
+   "step": 0.1
+  }
+ ],
+ "outputs": [
+  {
+   "id": "total_weight",
+   "label": "Total weight W",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "probs",
+   "label": "Probabilities p_i of outcomes 1 to 6",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "contribs",
+   "label": "Contributions c_i = −p_i log2 p_i, outcomes 1 to 6",
+   "units": "bits",
+   "role": "intermediate"
+  },
+  {
+   "id": "entropy_bits",
+   "label": "Entropy H",
+   "units": "bits",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "probs_bar",
+   "kind": "bar",
+   "title": "Probability of each outcome",
+   "output": "probs",
+   "x_label": "Outcome i",
+   "y_label": "Probability p_i (unitless)",
+   "labels": [
+    "Outcome 1",
+    "Outcome 2",
+    "Outcome 3",
+    "Outcome 4",
+    "Outcome 5",
+    "Outcome 6"
+   ]
+  },
+  {
+   "id": "contribs_bar",
+   "kind": "bar",
+   "title": "Entropy contribution of each outcome",
+   "output": "contribs",
+   "x_label": "Outcome i",
+   "y_label": "Contribution c_i (bits)",
+   "labels": [
+    "Outcome 1",
+    "Outcome 2",
+    "Outcome 3",
+    "Outcome 4",
+    "Outcome 5",
+    "Outcome 6"
+   ]
+  },
+  {
+   "id": "entropy_sweep",
+   "kind": "line",
+   "title": "Entropy H as the weight of outcome 1 sweeps from 0 to 8",
+   "output": "entropy_bits",
+   "x_label": "Weight of outcome 1, w_1 (unitless)",
+   "y_label": "Entropy H (bits)",
+   "sweep": {
+    "control": "focus_weight",
+    "min": 0,
+    "max": 8,
+    "points": 41
+   }
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Five equally likely outcomes",
+   "instruction": "Predict: what is H when five outcomes are equally likely, and how does that compare with two equally likely outcomes? Then apply the preset, which sets count, focus_weight and other_weight.",
+   "observe": "The probability bars probs show 0.25 for each of the five active outcomes, every active contribution bar in contribs reads 0.4644 bits, and the result Entropy H reads 2.3219 bits.",
+   "why": "With count 5 and both weights equal to 1, the total weight W is 5, so each p_i = 1/5. Each contribution is c_i = −(1/5) log2(1/5) = 0.2 × 2.3219 = 0.4644 bits, and adding the five equal contributions gives H = log2 5 = 2.3219 bits, more than the 1 bit of a fair coin because the draw is less predictable.",
+   "preset": {
+    "count": 5,
+    "focus_weight": 1,
+    "other_weight": 1
+   }
+  },
+  {
+   "title": "One outcome with zero probability",
+   "instruction": "Predict: what happens to the probability and the entropy contribution of outcome 1 when its weight is set to 0 while the other four outcomes keep weight 1? Then apply the preset, which sets count, focus_weight and other_weight.",
+   "observe": "The first bar of probs is 0 and the first bar of contribs is 0.0000 bits, the other four probabilities are 0.25 with contributions of 0.5000 bits each, and Entropy H reads exactly 2.0000 bits.",
+   "why": "With count 5, focus_weight 0 and other_weight 1, the total weight W is 4, so the four remaining outcomes each get p_i = 0.25 while p_1 = 0. The page sets c_1 = 0 for a zero probability instead of computing log2 0, so the surviving contributions are each 0.25 × 2 = 0.5 bits and they sum to H = log2 4 = 2 bits: removing an impossible outcome leaves four equally likely ones and one bit less uncertainty than five equally likely outcomes.",
+   "preset": {
+    "count": 5,
+    "focus_weight": 0,
+    "other_weight": 1
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "Fair coin gives exactly one bit",
+   "inputs": {
+    "count": 2,
+    "focus_weight": 1,
+    "other_weight": 1
+   },
+   "expected": {
+    "total_weight": 2,
+    "probs": [
+     0.5,
+     0.5,
+     0,
+     0,
+     0,
+     0
+    ],
+    "contribs": [
+     0.5,
+     0.5,
+     0,
+     0,
+     0,
+     0
+    ],
+    "entropy_bits": 1
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "Zero-weight outcome contributes nothing and four equal outcomes give two bits",
+   "inputs": {
+    "count": 5,
+    "focus_weight": 0,
+    "other_weight": 1
+   },
+   "expected": {
+    "total_weight": 4,
+    "probs": [
+     0,
+     0.25,
+     0.25,
+     0.25,
+     0.25,
+     0
+    ],
+    "contribs": [
+     0,
+     0.5,
+     0.5,
+     0.5,
+     0.5,
+     0
+    ],
+    "entropy_bits": 2
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "Five equally likely outcomes",
+   "inputs": {
+    "count": 5,
+    "focus_weight": 1,
+    "other_weight": 1
+   },
+   "expected": {
+    "total_weight": 5,
+    "probs": [
+     0.2,
+     0.2,
+     0.2,
+     0.2,
+     0.2,
+     0
+    ],
+    "contribs": [
+     0.46438561897747244,
+     0.46438561897747244,
+     0.46438561897747244,
+     0.46438561897747244,
+     0.46438561897747244,
+     0
+    ],
+    "entropy_bits": 2.321928094887362
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "Six equally likely outcomes give log2 6 bits",
+   "inputs": {
+    "count": 6,
+    "focus_weight": 1,
+    "other_weight": 1
+   },
+   "expected": {
+    "total_weight": 6,
+    "probs": [
+     0.16666666666666666,
+     0.16666666666666666,
+     0.16666666666666666,
+     0.16666666666666666,
+     0.16666666666666666,
+     0.16666666666666666
+    ],
+    "contribs": [
+     0.4308270834555757,
+     0.4308270834555757,
+     0.4308270834555757,
+     0.4308270834555757,
+     0.4308270834555757,
+     0.4308270834555757
+    ],
+    "entropy_bits": 2.584962500721156
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "All-zero weights fall back to three equally likely outcomes",
+   "inputs": {
+    "count": 3,
+    "focus_weight": 0,
+    "other_weight": 0
+   },
+   "expected": {
+    "total_weight": 0,
+    "probs": [
+     0.3333333333333333,
+     0.3333333333333333,
+     0.3333333333333333,
+     0,
+     0,
+     0
+    ],
+    "contribs": [
+     0.5283208335737187,
+     0.5283208335737187,
+     0.5283208335737187,
+     0,
+     0,
+     0
+    ],
+    "entropy_bits": 1.5849625007211563
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "Probabilities of the six outcomes sum to one",
+   "output": "probs",
+   "kind": "sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "Entropy stays between zero and log2 6 bits",
+   "output": "entropy_bits",
+   "kind": "range",
+   "min": 0,
+   "max": 2.584962500721156,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "Every reported value is finite",
+   "output": "contribs",
+   "kind": "finite",
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ]
+}

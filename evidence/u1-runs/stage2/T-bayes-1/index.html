@@ -1,0 +1,347 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-L3IPubdzV9YUNmJ8VSViinvMiPehfNX/FWx7xldeiBI='; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>Beta-Binomial Update for an Unknown Success Probability</title><style>:root{font-family:system-ui,-apple-system,sans-serif;color:#172c3d;background:#f3f6f8;font-size:17px;line-height:1.6}*{box-sizing:border-box}body{margin:0}main{max-width:1100px;margin:auto;padding:24px}header,section{background:white;border:1px solid #d8e1e7;border-radius:12px;padding:24px;margin-bottom:20px}h1{font-size:clamp(1.8rem,5vw,2.8rem);line-height:1.2}h2,h3{line-height:1.3}p,li{overflow-wrap:anywhere}.eyebrow{color:#416174;font-size:.85rem;letter-spacing:.08em}.badge{background:#e8f0f5;padding:3px 8px;border-radius:5px}button{background:#155777;color:white;border:0;border-radius:6px;padding:10px 16px;font:inherit;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}button:hover{background:#0d405a}input,select,textarea{font:inherit;max-width:100%;padding:7px;border:1px solid #758b99;border-radius:4px}input[type=number]{width:135px}input[type=range]{width:100%;padding:0}input[type=checkbox]{width:22px;height:22px}label{font-weight:600;display:block}fieldset{min-width:0;border:1px solid #d8e1e7;border-radius:8px;margin:16px 0;padding:16px}legend{font-weight:650}small{display:block;color:#425e70}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}.cell label{font-weight:400;font-size:.85rem}.scroll{overflow:auto}table{border-collapse:collapse;min-width:100%;font-variant-numeric:tabular-nums}th,td{text-align:left;border-bottom:1px solid #d8e1e7;padding:8px;white-space:normal}caption{text-align:left;font-weight:650;margin:8px 0}article{border-top:1px solid #d8e1e7;padding:12px 0}.output{padding:12px;background:#f3f7f9;margin:12px 0;border-left:4px solid #1a7188}.output pre{white-space:pre-wrap;overflow-wrap:anywhere}svg{width:100%;height:auto;display:block;min-width:300px}svg text{font-family:system-ui,sans-serif;font-size:13px;fill:#172c3d}.chart{overflow:auto;margin-top:22px}.error,.fail{color:#942723;font-weight:600}.pass{color:#176440}.skip{color:#735b20}:focus-visible{outline:3px solid #c27a00;outline-offset:3px}[aria-invalid=true]{border:2px solid #942723}#status,#result-status,#check-status{padding:10px;background:#edf3f6}ul{padding-left:24px}@media(max-width:600px){main{padding:10px}header,section{padding:16px}.grid{grid-template-columns:repeat(2,minmax(100px,1fr))}input[type=number]{width:100%}h2{font-size:1.3rem}}
+:root svg{min-width:600px}:root svg text{font-size:14px}
+.output{min-width:0}.output .chart{margin-top:12px}#status.caution{color:#735b20;background:#fff6df;border-left:4px solid #997000;font-weight:600}
+</style></head><body><main><header><p class="eyebrow">Offline scientific playground</p><h1>Beta-Binomial Update for an Unknown Success Probability</h1><p><strong>Audience:</strong> A second-year engineering undergraduate who knows fractions, averages, and elementary probability.</p><p><strong>Plan:</strong> Learners set a Beta prior (alpha, beta) and observed success and failure counts, then see how the posterior alpha and beta add the counts and how the posterior mean sits between the prior mean and the sample proportion.</p></header><section aria-labelledby="starting"><h2 id="starting">Starting point</h2><p><strong>Idea:</strong> Observing s successes and f failures updates a Beta(alpha, beta) prior to a Beta(alpha+s, beta+f) posterior, so the posterior mean is a precision-weighted blend of the prior mean and the sample proportion.</p><p><strong>Why it matters:</strong> It is the simplest fully conjugate Bayesian update and shows how prior beliefs and data combine in one arithmetic step.</p><p><strong>Explanation:</strong> From Prior alpha α and Prior beta β, the Prior mean is α/(α+β). Adding Observed successes s to α gives Posterior alpha α+s; adding Observed failures f to β gives Posterior beta β+f. The Posterior parameter pair collects α+s and β+f. Dividing α+s by the sum (α+s)+(β+f) gives the Posterior mean, which is a weighted average of the prior mean and the sample proportion s/(s+f).</p></section><section><h2>Symbols and units</h2><div class="scroll"><table><caption>Notation</caption><thead><tr><th>Symbol</th><th>Meaning</th><th>Units</th></tr></thead><tbody><tr><td>α</td><td>prior alpha, the pseudo-count of successes before data</td><td>unitless</td></tr><tr><td>β</td><td>prior beta, the pseudo-count of failures before data</td><td>unitless</td></tr><tr><td>s</td><td>observed number of successes</td><td>unitless</td></tr><tr><td>f</td><td>observed number of failures</td><td>unitless</td></tr><tr><td>α+s</td><td>posterior alpha, prior alpha plus successes</td><td>unitless</td></tr><tr><td>β+f</td><td>posterior beta, prior beta plus failures</td><td>unitless</td></tr><tr><td>m_prior</td><td>prior mean α/(α+β)</td><td>unitless</td></tr><tr><td>m_post</td><td>posterior mean (α+s)/(α+β+s+f)</td><td>unitless</td></tr></tbody></table></div></section><section aria-labelledby="calculate"><h2 id="calculate">Calculate</h2><p>Change an input and follow the intermediate values to the result. Values update when an edit is committed.</p><p id="status" role="status" aria-live="polite">Calculation pending; JavaScript is required for interactive results.</p><noscript>Degraded: JavaScript is disabled. Teaching content remains available; calculations and self-checks have not run.</noscript><div id="controls"></div><a href="#explorations">Try the two guided explorations</a></section><section aria-labelledby="results"><h2 id="results" tabindex="-1">Intermediate and result outputs</h2><p>Chart and table numbers are rounded for readability; calculations use full precision.</p><p id="result-status">No valid result yet.</p><div id="visuals"><div id="outputs"></div></div></section><section aria-labelledby="explorations"><h2 id="explorations">Guided explorations</h2><p>Make a prediction, apply the example, then compare it with the calculated result.</p><article><h3>Data dominates a weak prior</h3><p><strong>Predict:</strong> Predict: using alpha=1 and beta=1 (prior mean 0.5), will 8 successes and 2 failures pull the posterior mean above or below 0.75? Then apply the preset, which sets Prior alpha, Prior beta, Observed successes, and Observed failures.</p><button type="button" class="preset" data-preset="0">Explore: Data dominates a weak prior</button> <a href="#results">View updated results</a><details><summary>Compare your prediction</summary><p><strong>Observe:</strong> The Posterior alpha readout rises to 9, Posterior beta to 3, and the Posterior mean becomes 0.75, moving from the Prior mean of 0.5 toward the sample proportion 0.8.</p><p><strong>Explain:</strong> The update adds successes to alpha and failures to beta, so the data counts are as influential as the prior pseudo-counts; the posterior mean is a weighted average that here lands at 9/(9+3).</p></details></article><article><h3>A strong prior resists little data</h3><p><strong>Predict:</strong> Predict: using alpha=10 and beta=10 (prior mean 0.5), how far will 2 successes and 0 failures move the posterior mean? Then apply the preset, which sets Prior alpha, Prior beta, Observed successes, and Observed failures.</p><button type="button" class="preset" data-preset="1">Explore: A strong prior resists little data</button> <a href="#results">View updated results</a><details><summary>Compare your prediction</summary><p><strong>Observe:</strong> Posterior alpha becomes 12, Posterior beta becomes 10, and the Posterior mean is only about 0.545, barely above the Prior mean of 0.5.</p><p><strong>Explain:</strong> The prior pseudo-counts (20 total) outweigh the 2 observations, so the posterior mean is pulled toward 0.5 more than toward the sample proportion 1.</p></details></article></section><section><h2>Grounding</h2><ul><li><strong>An Essay towards solving a Problem in the Doctrine of Chances</strong> — Section II, Proposition 10 and Rule 1 <span class="badge" data-support="unverified">UNVERIFIED</span><p>Bayes&#x27;s essay motivates inference about an unknown event probability from observed successes and failures.</p></li><li><strong>An Essay towards solving a Problem in the Doctrine of Chances</strong> — The page&#x27;s illustrative construction <span class="badge" data-support="simplification">SIMPLIFICATION</span><p>The page uses the modern Beta-Binomial conjugate update, which the essay does not use; alpha and beta are treated as pseudo-counts.</p></li><li><strong>An Essay towards solving a Problem in the Doctrine of Chances</strong> — Preset values in this page <span class="badge" data-support="example">TOY EXAMPLE</span><p>Using alpha=1, beta=1, 8 successes and 2 failures gives posterior alpha 9, posterior beta 3, posterior mean 0.75.</p></li></ul><h3>Limitation</h3><p>The model assumes exchangeable Bernoulli trials having one fixed unknown success probability, and treats alpha and beta as pseudo-counts; it does not reproduce the numerical results of the linked essay, and the modern Beta-Binomial parameterization is a teaching simplification.</p></section><section><h2>Self-check</h2><p id="check-status" role="status">Not run.</p><p>These checks test the specified examples and identities; they do not verify every claim in the explanation.</p><details><summary>Inspect measured values, expectations and tolerances</summary><ul id="checks"></ul></details></section></main><script type="application/json" id="runtime-data">{"spec":{"controls":[{"id":"alpha","label":"Prior alpha","help":"Raises the Prior mean and shifts Posterior alpha; a larger \u03b1 pulls the Posterior mean toward 1.","units":"unitless","kind":"slider","default":1,"min":0.1,"max":10,"step":0.1},{"id":"beta","label":"Prior beta","help":"Lowers the Prior mean and shifts Posterior beta; a larger \u03b2 pulls the Posterior mean toward 0.","units":"unitless","kind":"slider","default":1,"min":0.1,"max":10,"step":0.1},{"id":"successes","label":"Observed successes","help":"Increases Posterior alpha and usually raises the Posterior mean; also changes the posterior parameter pair.","units":"unitless","kind":"slider","default":3,"min":0,"max":20,"step":1},{"id":"failures","label":"Observed failures","help":"Increases Posterior beta and usually lowers the Posterior mean; also changes the posterior parameter pair.","units":"unitless","kind":"slider","default":2,"min":0,"max":20,"step":1}],"outputs":[{"id":"prior_mean","label":"Prior mean","units":"unitless","role":"intermediate"},{"id":"post_alpha","label":"Posterior alpha","units":"unitless","role":"intermediate"},{"id":"post_beta","label":"Posterior beta","units":"unitless","role":"intermediate"},{"id":"param_pair","label":"Posterior parameter pair","units":"unitless","role":"intermediate"},{"id":"post_mean","label":"Posterior mean","units":"unitless","role":"result"}],"visuals":[{"id":"mean_vs_successes","kind":"line","title":"Posterior mean versus observed successes","output":"post_mean","x_label":"Observed successes s","y_label":"Posterior mean","sweep":{"control":"successes","min":0,"max":20,"points":21}},{"id":"param_bars","kind":"bar","title":"Prior and posterior parameters","output":"param_pair","x_label":"Parameter","y_label":"Value","labels":["Posterior alpha","Posterior beta"]}],"explorations":[{"title":"Data dominates a weak prior","instruction":"Predict: using alpha=1 and beta=1 (prior mean 0.5), will 8 successes and 2 failures pull the posterior mean above or below 0.75? Then apply the preset, which sets Prior alpha, Prior beta, Observed successes, and Observed failures.","observe":"The Posterior alpha readout rises to 9, Posterior beta to 3, and the Posterior mean becomes 0.75, moving from the Prior mean of 0.5 toward the sample proportion 0.8.","why":"The update adds successes to alpha and failures to beta, so the data counts are as influential as the prior pseudo-counts; the posterior mean is a weighted average that here lands at 9/(9+3).","preset":{"alpha":1,"beta":1,"successes":8,"failures":2}},{"title":"A strong prior resists little data","instruction":"Predict: using alpha=10 and beta=10 (prior mean 0.5), how far will 2 successes and 0 failures move the posterior mean? Then apply the preset, which sets Prior alpha, Prior beta, Observed successes, and Observed failures.","observe":"Posterior alpha becomes 12, Posterior beta becomes 10, and the Posterior mean is only about 0.545, barely above the Prior mean of 0.5.","why":"The prior pseudo-counts (20 total) outweigh the 2 observations, so the posterior mean is pulled toward 0.5 more than toward the sample proportion 1.","preset":{"alpha":10,"beta":10,"successes":2,"failures":0}}],"tests":[{"name":"Uniform prior, no data","inputs":{"alpha":1,"beta":1,"successes":0,"failures":0},"expected":{"prior_mean":0.5,"post_alpha":1,"post_beta":1,"param_pair":[1,1],"post_mean":0.5},"atol":1e-09,"rtol":0},{"name":"Exploration 1 preset","inputs":{"alpha":1,"beta":1,"successes":8,"failures":2},"expected":{"prior_mean":0.5,"post_alpha":9,"post_beta":3,"param_pair":[9,3],"post_mean":0.75},"atol":1e-09,"rtol":0},{"name":"Exploration 2 preset","inputs":{"alpha":10,"beta":10,"successes":2,"failures":0},"expected":{"prior_mean":0.5,"post_alpha":12,"post_beta":10,"param_pair":[12,10],"post_mean":0.5454545454545454},"atol":1e-09,"rtol":0}],"invariants":[{"name":"Prior mean stays in [0,1]","output":"prior_mean","kind":"range","min":0,"max":1,"atol":0,"rtol":0},{"name":"Posterior mean stays in [0,1]","output":"post_mean","kind":"range","min":0,"max":1,"atol":0,"rtol":0},{"name":"Posterior alpha finite","output":"post_alpha","kind":"finite","atol":0,"rtol":0},{"name":"Posterior parameter pair finite","output":"param_pair","kind":"finite","atol":0,"rtol":0}]},"ast":["fn",["inputs"],["block",[["decl",[["a",["get",["id","inputs"],["lit","alpha"]]]],"const"],["decl",[["b",["get",["id","inputs"],["lit","beta"]]]],"const"],["decl",[["s",["get",["id","inputs"],["lit","successes"]]]],"const"],["decl",[["f",["get",["id","inputs"],["lit","failures"]]]],"const"],["decl",[["priorMean",["bin","/",["id","a"],["bin","+",["id","a"],["id","b"]]]]],"const"],["decl",[["postAlpha",["bin","+",["id","a"],["id","s"]]]],"const"],["decl",[["postBeta",["bin","+",["id","b"],["id","f"]]]],"const"],["decl",[["postMean",["bin","/",["id","postAlpha"],["bin","+",["id","postAlpha"],["id","postBeta"]]]]],"const"],["decl",[["paramPair",["array",[["id","postAlpha"],["id","postBeta"]]]]],"const"],["return",["object",[["prior_mean",["id","priorMean"]],["post_alpha",["id","postAlpha"]],["post_beta",["id","postBeta"]],["param_pair",["id","paramPair"]],["post_mean",["id","postMean"]]]]]]]],"error":""}</script><script>"use strict";
+/* Supplied source never reaches the host JS engine. All values live in this
+   interpreter; host objects/functions cannot be obtained through properties. */
+const NumericRuntime = (() => {
+  const brand = Symbol('interpreter callable');
+  const forbidden = new Set(['__proto__','prototype','constructor','caller','callee','arguments']);
+  const mathNames = ['abs','sqrt','exp','log','log2','log10','pow','min','max','floor','ceil','round','trunc','sign','sin','cos','tan','tanh','expm1','log1p'];
+  const own = (o,k) => Object.prototype.hasOwnProperty.call(o,k);
+  const fail = message => { throw new Error(message); };
+  const number = v => typeof v === 'number' && Number.isFinite(v) ? v : fail('Expected a finite number');
+  function budget(limit=100000) {
+    return {left:limit, allocated:0, depth:0,
+      tick(n=1){this.left-=n;if(this.left<0)fail('Computation instruction limit exceeded');},
+      alloc(n){this.allocated+=n;if(this.allocated>16384)fail('Computation allocation limit exceeded');}};
+  }
+  function boundedArray(a,b) {
+    if(a.length>128)fail('Intermediate array length limit is 128');
+    b.alloc(a.length+1);return a;
+  }
+  const callable = run => ({[brand]:run});
+  function invoke(fn,args,b) {
+    b.tick();if(!fn || !own(fn,brand))fail('Only local or approved numeric functions may be called');
+    if(++b.depth>32)fail('Computation call depth exceeded');
+    try{return fn[brand](args,b);}finally{b.depth--;}
+  }
+  function environment(parent=null) {
+    return {vars:Object.create(null),constants:new Set(),parent,
+      get(k){if(own(this.vars,k))return this.vars[k];if(this.parent)return this.parent.get(k);fail('Unknown local: '+k);},
+      set(k,v){if(own(this.vars,k)){if(this.constants.has(k))fail('Cannot reassign const: '+k);this.vars[k]=v;return v;}if(this.parent)return this.parent.set(k,v);fail('Unknown assignment: '+k);},
+      declare(k,v,constant=false){if(own(this.vars,k))fail('Duplicate local: '+k);this.vars[k]=v;if(constant)this.constants.add(k);}};
+  }
+  function keyValue(key) {
+    if(typeof key!=='string' && !(typeof key==='number' && Number.isInteger(key)))fail('Invalid property key');
+    if(forbidden.has(String(key)))fail('Unsafe property access');return key;
+  }
+  function get(obj,key,b) {
+    key=keyValue(key);b.tick();
+    if(obj && own(obj,brand))fail('Functions have no accessible properties');
+    if(Array.isArray(obj)) {
+      if(key==='length')return obj.length;
+      if(Number.isInteger(key) && key>=0 && key<obj.length)return obj[key];
+      const methods={
+        map(args,b){if(args.length!==1)fail('map requires one callback');return boundedArray(obj.map((v,i)=>{b.tick();return invoke(args[0],[v,i],b);}),b);},
+        forEach(args,b){if(args.length!==1)fail('forEach requires one callback');obj.forEach((v,i)=>{b.tick();invoke(args[0],[v,i],b);});return null;},
+        reduce(args,b){if(args.length<1||args.length>2)fail('Invalid reduce arguments');if(!obj.length&&args.length===1)fail('Empty reduce without initial value');let acc=args.length===2?args[1]:obj[0];for(let i=args.length===2?0:1;i<obj.length;i++){b.tick();acc=invoke(args[0],[acc,obj[i],i],b);}return acc;},
+        slice(args,b){if(args.length>2)fail('Invalid slice arguments');args.forEach(number);return boundedArray(obj.slice(...args),b);},
+        fill(args,b){if(args.length!==1)fail('fill requires one value');b.tick(obj.length);obj.fill(args[0]);return obj;},
+        push(args,b){if(obj.length+args.length>128)fail('Intermediate array length limit is 128');b.alloc(args.length);return obj.push(...args);},
+        concat(args,b){const n=obj.length+args.reduce((s,x)=>s+(Array.isArray(x)?x.length:1),0);if(n>128)fail('Intermediate array length limit is 128');return boundedArray(obj.concat(...args),b);}
+      };
+      if(own(methods,key))return callable(methods[key]);
+      fail('Unsupported array property: '+String(key));
+    }
+    if(obj && typeof obj==='object' && Object.getPrototypeOf(obj)===null && own(obj,key))return obj[key];
+    fail('Missing or unsupported property: '+String(key));
+  }
+  function set(obj,key,value,b) {
+    key=keyValue(key);b.tick();
+    if(Array.isArray(obj) && Number.isInteger(key) && key>=0 && key<obj.length){obj[key]=value;return value;}
+    if(obj && typeof obj==='object' && Object.getPrototypeOf(obj)===null && own(obj,key)){obj[key]=value;return value;}
+    fail('Assignment may only replace an existing local value');
+  }
+  function binary(op,a,c) {
+    if(op==='==='||op==='!==')return op==='==='?a===c:a!==c;
+    a=number(a);c=number(c);
+    switch(op){case '+':return number(a+c);case '-':return number(a-c);case '*':return number(a*c);
+      case '/':return number(a/c);case '%':return number(a%c);case '**':return number(a**c);
+      case '<':return a<c;case '>':return a>c;case '<=':return a<=c;case '>=':return a>=c;}
+    fail('Unsupported operator');
+  }
+  function truth(v){if(typeof v==='boolean')return v;if(typeof v==='number')return number(v)!==0;if(v===null)return false;fail('Conditions must be numeric or boolean');}
+  function expression(n,e,b) {
+    b.tick();const k=n[0];
+    if(k==='lit')return n[1];
+    if(k==='id')return e.get(n[1]);
+    if(k==='array')return boundedArray(n[1].map(v=>expression(v,e,b)),b);
+    if(k==='object'){b.alloc(n[1].length+1);const o=Object.create(null);for(const [key,v] of n[1])o[key]=expression(v,e,b);return o;}
+    if(k==='get')return get(expression(n[1],e,b),expression(n[2],e,b),b);
+    if(k==='fn')return callable((args,b)=>{if(args.length<n[1].length)fail('Missing function argument');const local=environment(e);n[1].forEach((p,i)=>local.declare(p,args[i]));const r=statement(n[2],local,b);if(r&&r.type!=='return')fail('Loop control escaped function');return r?r.value:null;});
+    if(k==='call') {
+      const fn=expression(n[1],e,b),args=[];
+      for(const a of n[2]){if(a[0]==='spread'){const v=expression(a[1],e,b);if(!Array.isArray(v))fail('Spread requires array');args.push(...v);}else args.push(expression(a,e,b));if(args.length>128)fail('Argument limit exceeded');}
+      return invoke(fn,args,b);
+    }
+    if(k==='un'){const v=expression(n[2],e,b);if(n[1]==='!')return !truth(v);return n[1]==='-'?-number(v):number(v);}
+    if(k==='cond')return expression(truth(expression(n[1],e,b))?n[2]:n[3],e,b);
+    if(k==='bin') {
+      const a=expression(n[2],e,b);
+      if(n[1]==='&&')return truth(a)?expression(n[3],e,b):a;
+      if(n[1]==='||')return truth(a)?a:expression(n[3],e,b);
+      return binary(n[1],a,expression(n[3],e,b));
+    }
+    if(k==='assign'||k==='update') {
+      const target=n[2];let read,write;
+      if(target[0]==='id'){read=()=>e.get(target[1]);write=v=>e.set(target[1],v);}
+      else{const obj=expression(target[1],e,b),key=expression(target[2],e,b);read=()=>get(obj,key,b);write=v=>set(obj,key,v,b);}
+      if(k==='update'){const old=number(read());write(number(old+(n[1]==='++'?1:-1)));return old;}
+      const old=n[1]==='='?null:read(),value=expression(n[3],e,b);return write(n[1]==='='?value:binary(n[1][0],old,value));
+    }
+    fail('Unsupported AST expression');
+  }
+  function statement(n,e,b) {
+    b.tick();const k=n[0];
+    if(k==='block'){const local=environment(e);for(const s of n[1]){const r=statement(s,local,b);if(r)return r;}return null;}
+    if(k==='decl'){for(const [name,v] of n[1])e.declare(name,expression(v,e,b),n[2]==='const');return null;}
+    if(k==='expr'){expression(n[1],e,b);return null;}
+    if(k==='return')return {type:'return',value:expression(n[1],e,b)};
+    if(k==='throw'){
+      const value=expression(n[1],e,b);
+      // Never coerce a compound value: shared/cyclic arrays can expand without
+      // bound inside native String(), outside the interpreter's work budget.
+      const message=value===null?'null':typeof value==='string'?value.slice(0,1024):
+        typeof value==='number'||typeof value==='boolean'?String(value):'non-scalar error value';
+      fail('Compute reported: '+message);
+    }
+    if(k==='if')return statement(truth(expression(n[1],e,b))?n[2]:n[3],e,b);
+    if(k==='break'||k==='continue')return {type:k};
+    if(k==='for') {
+      let local=environment(e);statement(n[1],local,b);let loops=0;
+      while(truth(expression(n[2],local,b))){
+        if(++loops>256)fail('Loop iteration limit exceeded');const r=statement(n[4],local,b);
+        if(r&&r.type==='return')return r;if(r&&r.type==='break')break;
+        // Lexical loop bindings are fresh for each iteration. Closures keep
+        // the completed iteration's bindings, before the next increment.
+        const next=environment(e),keys=Object.keys(local.vars);b.alloc(keys.length);
+        for(const key of keys)next.declare(key,local.vars[key],local.constants.has(key));
+        local=next;expression(n[3],local,b);
+      }return null;
+    }
+    if(k==='each') {
+      const seq=expression(n[2],e,b);if(!Array.isArray(seq)||seq.length>128)fail('for-of requires a bounded array');
+      for(const value of seq){b.tick();const local=environment(e);local.declare(n[1],value,n[4]==='const');const r=statement(n[3],local,b);if(r&&r.type==='return')return r;if(r&&r.type==='break')break;}return null;
+    }
+    fail('Unsupported AST statement');
+  }
+  function copy(v,b,seen=new Set(),depth=0) {
+    b.tick();if(depth>16)fail('Value nesting limit exceeded');
+    if(v===null||['number','boolean','string'].includes(typeof v))return v;
+    if(!v||typeof v!=='object'||own(v,brand)||seen.has(v))fail('Invalid or cyclic computation value');seen.add(v);
+    let result;
+    if(Array.isArray(v))result=boundedArray(v.map(x=>copy(x,b,seen,depth+1)),b);
+    else {const keys=Object.keys(v);if(keys.length>128)fail('Object size limit exceeded');b.alloc(keys.length+1);result=Object.create(null);for(const k of keys){keyValue(k);result[k]=copy(v[k],b,seen,depth+1);}}
+    seen.delete(v);return result;
+  }
+  function run(ast,inputs,shared=null) {
+    const b=budget();
+    if(shared){const tick=b.tick.bind(b);b.tick=function(n=1){tick(n);shared.tick(n);};}
+    const root=environment(),math=Object.create(null),num=Object.create(null);
+    for(const name of mathNames)math[name]=callable(args=>{if(args.length>128)fail('Math argument limit exceeded');args.forEach(number);return number(Math[name](...args));});
+    math.PI=Math.PI;math.E=Math.E;
+    num.isFinite=callable(args=>typeof args[0]==='number'&&Number.isFinite(args[0]));
+    num.isInteger=callable(args=>typeof args[0]==='number'&&Number.isInteger(args[0]));
+    const arr=callable((args,b)=>{if(args.length!==1)fail('Array requires one length');const n=number(args[0]);if(!Number.isInteger(n)||n<0||n>128)fail('Array length limit exceeded');return boundedArray(Array(n).fill(null),b);});
+    root.declare('Math',math);root.declare('Number',num);root.declare('Array',arr);
+    return copy(invoke(expression(ast,root,b),[copy(inputs,b)],b),b);
+  }
+  return Object.freeze({run,budget});
+})();
+
+(() => {
+  const data=JSON.parse(document.getElementById('runtime-data').textContent);
+  const spec=data.spec, own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+  const el=id=>document.getElementById(id);
+  const create=(tag,text,parent)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(parent)parent.append(n);return n;};
+  const fail=m=>{throw new Error(m);};
+  const clone=v=>JSON.parse(JSON.stringify(v));
+  const finite=v=>typeof v==='number'&&Number.isFinite(v);
+  const format=n=>finite(n)?Number(n.toPrecision(7)).toString():String(n);
+  const displayValue=v=>Array.isArray(v)?'['+v.map(displayValue).join(', ')+']':format(v);
+  const tickNumber=n=>finite(n)?Number(n.toPrecision(3)).toString():String(n);
+  const unit=u=>u||'units not specified';
+  const shortLabel=label=>label.length>10?label.slice(0,9)+'…':label;
+  const leavesOf=v=>Array.isArray(v)?v.reduce((xs,x)=>xs.concat(leavesOf(x)),[]):[v];
+  function shape(v,depth=0) {
+    if(finite(v))return {dims:[],leaves:1};
+    if(!Array.isArray(v)||v.length<1||v.length>8||depth>=8)fail('Numeric values must be finite and dimensions must be 1–8');
+    const children=v.map(x=>shape(x,depth+1)),dims=children[0].dims;
+    if(children.some(x=>JSON.stringify(x.dims)!==JSON.stringify(dims)))fail('Numeric arrays must be rectangular');
+    const leaves=children.reduce((s,x)=>s+x.leaves,0);if(leaves>128)fail('Numeric leaf limit is 128');
+    return {dims:[v.length,...dims],leaves};
+  }
+  function validate(values,clamp=false) {
+    const keys=spec.controls.map(c=>c.id);if(Object.keys(values).length!==keys.length||Object.keys(values).some(k=>!keys.includes(k)))fail('Unknown or missing control');
+    const result=Object.create(null);let leaves=0;
+    for(const c of spec.controls) {
+      let value=values[c.id];
+      if(c.kind==='toggle'){if(typeof value!=='boolean')fail(c.label+': expected a boolean');}
+      else if(c.kind==='select'){if(typeof value!=='string'||!c.options.some(o=>o.value===value))fail(c.label+': unavailable option');}
+      else {
+        const s=shape(value);if(JSON.stringify(s.dims)!==JSON.stringify(c.shape||[]))fail(c.label+': wrong shape');leaves+=s.leaves;
+        const bounded=v=>{if(Array.isArray(v))return v.map(bounded);if(clamp)return Math.min(c.max,Math.max(c.min,v));if(v<c.min||v>c.max)fail(c.label+': out of bounds');return v;};value=bounded(value);
+      }
+      result[c.id]=clone(value);
+    }
+    if(leaves>128)fail('Total input numeric leaf limit is 128');return result;
+  }
+  function merge(patch) {
+    if(!patch||Array.isArray(patch)||typeof patch!=='object')fail('Preset must be an input dictionary');
+    const defaults=Object.create(null);for(const c of spec.controls)defaults[c.id]=clone(c.default);
+    for(const key of Object.keys(patch)){if(!own(defaults,key))fail('Unknown preset control');defaults[key]=clone(patch[key]);}
+    return validate(defaults);
+  }
+  function outputs(value) {
+    if(!value||typeof value!=='object'||Array.isArray(value))fail('Compute must return an output dictionary');
+    const keys=spec.outputs.map(o=>o.id);if(Object.keys(value).length!==keys.length||Object.keys(value).some(k=>!keys.includes(k)))fail('Compute returned missing or extra output keys');
+    let leaves=0;for(const o of spec.outputs){if(!own(value,o.id))fail('Missing output: '+o.id);leaves+=shape(value[o.id]).leaves;}
+    if(leaves>128)fail('Total output numeric leaf limit is 128');return value;
+  }
+  const compute=(inputs,b)=>outputs(NumericRuntime.run(data.ast,inputs,b));
+  let state,last=null;const widgets=new Map();
+  function status(message,error=false){el('status').textContent=message;el('status').className=error?'error':'';}
+  function sync(){for(const c of spec.controls){const ws=widgets.get(c.id);if(!ws)continue;const value=state[c.id];for(const w of ws){const v=w.path.reduce((x,i)=>x[i],value);if(c.kind==='toggle')w.node.checked=v;else w.node.value=String(v);w.node.removeAttribute('aria-invalid');}const read=el('read-'+c.id);if(read)read.textContent=format(value)+' '+c.units;}}
+  function edit(c,w) {
+    try {
+      let value;if(c.kind==='toggle')value=w.node.checked;else if(c.kind==='select')value=w.node.value;
+      else {if(w.node.value.trim()===''||w.node.validity.badInput)fail(c.label+': enter a finite number');value=Number(w.node.value);if(!finite(value))fail(c.label+': enter a finite number');}
+      const proposed=clone(state);if(!w.path.length)proposed[c.id]=value;else{let target=proposed[c.id];for(const i of w.path.slice(0,-1))target=target[i];target[w.path[w.path.length-1]]=value;}
+      state=validate(proposed,true);sync();recalculate();
+    }catch(error){sync();w.node.setAttribute('aria-invalid','true');status('Invalid edit; last valid inputs retained. '+error.message,true);}
+  }
+  function controls() {
+    for(const c of spec.controls) {
+      const field=create('fieldset',undefined,el('controls'));create('legend',c.label+' ('+unit(c.units)+')',field);
+      const help=create('small',c.help,field);help.id='help-'+c.id;const ws=[];widgets.set(c.id,ws);
+      const add=(path,type,parent,label)=>{
+        const box=create('div',undefined,parent),id='input-'+c.id+'-'+(path.join('-')||'scalar');
+        const lab=create('label',label,box);lab.htmlFor=id;
+        const node=create(type==='select'?'select':'input',undefined,box);node.id=id;node.setAttribute('aria-describedby',help.id);
+        if(type==='select')for(const o of c.options){const option=create('option',o.label,node);option.value=o.value;}
+        else{node.type=type;if(type==='number'||type==='range'){node.min=String(c.min);node.max=String(c.max);node.step=String(c.step);}}
+        const w={node,path};ws.push(w);node.addEventListener(type==='range'?'input':'change',()=>edit(c,w));return node;
+      };
+      if(c.kind==='vector'||c.kind==='matrix') {
+        const scroll=create('div',undefined,field);scroll.className='scroll';const grid=create('div',undefined,scroll);grid.className='grid';
+        if(c.kind==='matrix'){grid.style.gridTemplateColumns='repeat('+c.shape[1]+', minmax(110px,1fr))';grid.style.minWidth=(110*c.shape[1])+'px';}
+        for(let row=0;row<c.shape[0];row++)for(let col=0;col<(c.kind==='matrix'?c.shape[1]:1);col++){
+          const path=c.kind==='matrix'?[row,col]:[row];add(path,'number',grid,c.kind==='matrix'?'Row '+(row+1)+', column '+(col+1):'Element '+(row+1));}
+      }else{add([],c.kind==='toggle'?'checkbox':c.kind==='select'?'select':c.kind==='slider'?'range':'number',field,c.label);if(c.kind==='slider'){const read=create('output','',field);read.id='read-'+c.id;read.htmlFor=ws[0].node.id;}}
+    }
+  }
+  function renderOutputs(result) {
+    el('outputs').replaceChildren();
+    const containers=new Map();
+    for(const o of spec.outputs){const box=create('div',undefined,el('outputs'));box.className='output';containers.set(o.id,box);create('h3',o.label+' — '+o.role+' ('+unit(o.units)+')',box);create('pre',displayValue(result[o.id]),box);}
+    return containers;
+  }
+  const ns='http://www.w3.org/2000/svg';
+  function svgNode(tag,attrs,parent,text){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(text!==undefined)n.textContent=text;if(parent)parent.append(n);return n;}
+  function chart(v,parent){const svg=svgNode('svg',{viewBox:'0 0 640 360',role:'img','aria-label':v.title},parent);svgNode('title',{},svg,v.title);return svg;}
+  function axis(svg,v,xmin,xmax,ymin,ymax,xUnits,yUnits,categories=false) {
+    svgNode('path',{d:'M 88 30 V 284 H 608',fill:'none',stroke:'#425e70'},svg);
+    for(let i=0;i<=4;i++){const y=284-i*60;svgNode('line',{x1:88,x2:608,y1:y,y2:y,stroke:'#dae3e9'},svg);svgNode('text',{x:80,y:y+4,'text-anchor':'end'},svg,tickNumber(ymin+(ymax-ymin)*i/4));}
+    if(!categories)for(let i=0;i<=4;i++)svgNode('text',{x:88+i*130,y:306,'text-anchor':'middle'},svg,tickNumber(xmin+(xmax-xmin)*i/4));
+    svgNode('text',{x:348,y:340,'text-anchor':'middle'},svg,v.x_label+(xUnits?' ('+xUnits+')':''));
+    svgNode('text',{transform:'translate(18 160) rotate(-90)','text-anchor':'middle'},svg,v.y_label+' ('+unit(yUnits)+')');
+  }
+  function domain(values,zero=false){let min=Math.min(...values),max=Math.max(...values);if(zero){min=Math.min(0,min);max=Math.max(0,max);}if(min===max){const d=Math.max(1,Math.abs(min)*.1);min-=d;max+=d;}if(!finite(max-min))fail('Chart numeric range is too large');return [min,max];}
+  function numericTable(value,title,parent,labels,axes={}) {
+    const div=create('div',undefined,parent);div.className='scroll';const table=create('table',undefined,div);create('caption',title,table);
+    const rows=Array.isArray(value)?(Array.isArray(value[0])?value:value.map(x=>[x])):[[value]];
+    if(rows.some(r=>r.some(Array.isArray))){create('pre',displayValue(value),parent);return;}
+    const matrix=Array.isArray(value)&&Array.isArray(value[0]);
+    const rowAxis=axes.columns?'Sample':matrix?(axes.y||'Row'):(axes.x||'Index');
+    const head=create('tr',undefined,create('thead',undefined,table));create('th',rowAxis,head).scope='col';
+    for(let i=0;i<rows[0].length;i++){const label=axes.columns?axes.columns[i]:matrix?(axes.x||'Column')+' '+((labels&&labels[i])||(i+1)):(axes.value||'Value');const th=create('th',label,head);th.scope='col';}
+    const body=create('tbody',undefined,table);rows.forEach((r,i)=>{const tr=create('tr',undefined,body);const th=create('th',(labels&&labels[i])||rowAxis+' '+(i+1),tr);th.scope='row';r.forEach(x=>create('td',format(x),tr));});
+  }
+  function renderVisual(v,result,inputs,b,parent) {
+    const output=spec.outputs.find(o=>o.id===v.output),value=result[v.output],s=shape(value);
+    const tableAxes={x:v.x_label,y:v.y_label,value:output.label+' ('+unit(output.units)+')'};
+    create('h3',v.title,parent);
+    if(v.kind==='values'){numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels,tableAxes);return;}
+    if(v.kind==='heatmap') {
+      if(s.dims.length!==2)fail('Heatmap requires a matrix');
+      create('p',v.x_label+' × '+v.y_label+'; '+output.label+(output.units?' ('+output.units+')':''),parent);
+      const svg=chart(v,parent),flat=leavesOf(value),[lo,hi]=domain(flat),rows=value.length,cols=value[0].length;
+      for(let r=0;r<rows;r++){const label=(v.labels&&v.labels[r])||String(r+1);const tick=svgNode('text',{x:80,y:55+r*220/rows,'text-anchor':'end'},svg,shortLabel(label));svgNode('title',{},tick,label);for(let c=0;c<cols;c++){
+        const t=(value[r][c]-lo)/(hi-lo),x=90+c*510/cols,y=32+r*220/rows;
+        const cell=svgNode('rect',{x,y,width:510/cols-2,height:220/rows-2,fill:'hsl(195 45% '+(94-t*36)+'%)'},svg);svgNode('title',{},cell,'Row '+(r+1)+', column '+(c+1)+': '+format(value[r][c])+' '+unit(output.units));
+        if(cols<=4)svgNode('text',{x:x+255/cols,y:y+110/rows+5,'text-anchor':'middle'},svg,tickNumber(value[r][c]));}}
+      for(let c=0;c<cols;c++){const label=(v.labels&&v.labels[c])||String(c+1);const tick=svgNode('text',{x:90+(c+.5)*510/cols,y:276,'text-anchor':'middle'},svg,shortLabel(label));svgNode('title',{},tick,label);}
+      svgNode('text',{x:350,y:310,'text-anchor':'middle'},svg,v.x_label);svgNode('text',{x:350,y:340,'text-anchor':'middle'},svg,'Scale: '+format(lo)+' to '+format(hi)+' '+unit(output.units));
+      svgNode('text',{transform:'translate(18 150) rotate(-90)','text-anchor':'middle'},svg,v.y_label);numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels,tableAxes);return;
+    }
+    if(v.kind==='bar') {
+      if(s.dims.length!==1)fail('Bar chart requires a vector');
+      const svg=chart(v,parent),[lo,hi]=domain(value,true);axis(svg,v,1,value.length,lo,hi,'',output.units,true);
+      const y=x=>284-(x-lo)/(hi-lo)*240,zero=y(0),width=510/value.length;
+      value.forEach((x,i)=>{svgNode('rect',{x:92+i*width,y:Math.min(zero,y(x)),width:Math.max(1,width-8),height:Math.abs(y(x)-zero),fill:'#207a96'},svg);svgNode('text',{x:92+(i+.5)*width,y:Math.max(38,Math.min(280,y(x)+(x<0?18:-7))),'text-anchor':'middle'},svg,format(x));const label=(v.labels&&v.labels[i])||String(i+1);const tick=svgNode('text',{x:92+(i+.5)*width,y:306,'text-anchor':'middle'},svg,label.length>10?label.slice(0,9)+'…':label);svgNode('title',{},tick,label);});
+      numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels,tableAxes);return;
+    }
+    if(v.kind==='line') {
+      if(s.dims.length!==0)fail('Line chart requires a scalar output');
+      const sw=v.sweep,control=spec.controls.find(c=>c.id===sw.control),points=[];
+      for(let i=0;i<sw.points;i++){const x=i===sw.points-1?sw.max:sw.min+(sw.max-sw.min)*i/(sw.points-1),next=clone(inputs);next[sw.control]=x;const value=compute(validate(next),b)[v.output];if(!finite(value))fail('Sweep output must be scalar');points.push([x,value]);}
+      const svg=chart(v,parent),[lo,hi]=domain(points.map(p=>p[1]));axis(svg,v,sw.min,sw.max,lo,hi,control.units,output.units);
+      svgNode('polyline',{points:points.map(([x,y])=>(88+(x-sw.min)/(sw.max-sw.min)*520)+','+(284-(y-lo)/(hi-lo)*240)).join(' '),fill:'none',stroke:'#207a96','stroke-width':3},svg);
+      numericTable(points,'Sweep: '+v.x_label+' ('+unit(control.units)+'), '+output.label+' ('+unit(output.units)+')',parent,undefined,{columns:[v.x_label+' ('+unit(control.units)+')',output.label+' ('+unit(output.units)+')']});return;
+    }
+    fail('Unsupported visual');
+  }
+  function compare(a,e,t) {
+    if(Array.isArray(e))return Array.isArray(a)&&a.length===e.length&&e.every((v,i)=>compare(a[i],v,t));
+    return finite(a)&&finite(e)&&Math.abs(a-e)<=t.atol+t.rtol*Math.abs(e);
+  }
+  function invariant(t,result) {
+    const value=result[t.output],s=shape(value),leaves=leavesOf(value);
+    if(t.kind==='finite')return leaves.every(finite);
+    if(t.kind==='range')return leaves.every(x=>x>=t.min-(t.atol+t.rtol*Math.abs(t.min))&&x<=t.max+(t.atol+t.rtol*Math.abs(t.max)));
+    if(t.kind==='sum'){if(s.dims.length!==1)fail('Sum invariant requires vector');return compare(value.reduce((a,c)=>a+c,0),t.expected,t);}
+    if(t.kind==='row_sum'){if(s.dims.length!==2)fail('Row sum invariant requires matrix');return value.every(row=>compare(row.reduce((a,c)=>a+c,0),t.expected,t));}
+    if(t.kind==='nondecreasing'){if(s.dims.length!==1)fail('Nondecreasing invariant requires vector');return value.every((x,i)=>i===0||x+t.atol+t.rtol*Math.abs(value[i-1])>=value[i-1]);}
+    fail('Unknown invariant');
+  }
+  function selfChecks(result,b) {
+    const list=el('checks');list.replaceChildren();let passed=0,failed=0,skipped=0;
+    const check=(name,fn)=>{let kind,detail;try{const result=fn(),ok=typeof result==='boolean'?result:result.ok;kind=ok?'pass':'fail';detail=ok?'pass':'fail: expectation not met';if(typeof result==='object')detail+='; '+result.detail;if(ok)passed++;else failed++;}catch(error){kind='fail';detail='fail: '+error.message;failed++;}const li=create('li',name+' — '+detail,list);li.className=kind;};
+    for(const t of spec.tests)check(t.name,()=>{const actual=compute(merge(t.inputs),b),measured=Object.create(null);for(const key of Object.keys(t.expected))measured[key]=actual[key];return {ok:Object.keys(t.expected).every(k=>compare(actual[k],t.expected[k],t)),detail:'Measured '+JSON.stringify(measured)+'; expected '+JSON.stringify(t.expected)+'; atol '+t.atol+', rtol '+t.rtol};});
+    const cases=[['Current',result]];
+    for(const e of spec.explorations){try{cases.push([e.title,compute(merge(e.preset),b)]);}catch(error){check(e.title+' preset',()=>{throw error;});}}
+    for(const [name,actual] of cases)for(const t of spec.invariants)check(name+': '+t.name,()=>{const value=actual[t.output];let measured=value,expected=t.kind;if(t.kind==='sum'){measured=value.reduce((a,c)=>a+c,0);expected=t.expected;}if(t.kind==='row_sum'){if(shape(value).dims.length!==2)fail('Row sum invariant requires matrix');measured=value.map(row=>row.reduce((a,c)=>a+c,0));expected='each row '+t.expected;}if(t.kind==='range')expected='['+t.min+', '+t.max+']';const output=spec.outputs.find(o=>o.id===t.output);return {ok:invariant(t,actual),detail:'Measured '+JSON.stringify(measured)+' ('+unit(output.units)+'); expected '+expected+'; atol '+t.atol+', rtol '+t.rtol};});
+    el('check-status').textContent=passed+' passed; '+failed+' failed; '+skipped+' skipped.';
+    el('check-status').className=failed?'fail':'pass';
+    return failed;
+  }
+  function recalculate() {
+    const b=NumericRuntime.budget(2000000);let result,containers;
+    try{result=compute(state,NumericRuntime.budget());last=result;containers=renderOutputs(result);el('result-status').textContent='Current valid result.';}
+    catch(error){status('Calculation failed. '+error.message,true);el('result-status').textContent=last?'Last valid result retained — stale for current inputs.':'No valid result available.';el('check-status').textContent='Degraded: current calculation failed; checks not run.';el('check-status').className='skip';el('checks').replaceChildren();return;}
+    el('visuals').replaceChildren(el('outputs'));let visualFailures=0;
+    for(const v of spec.visuals){const box=create('div',undefined,containers.get(v.output));box.className='chart';try{renderVisual(v,result,state,b,box);}catch(error){visualFailures++;box.replaceChildren();create('h3',v.title,box);create('p','Visual unavailable: '+error.message,box).className='error';}}
+    status(visualFailures?'Calculation valid; '+visualFailures+' visual(s) unavailable.':'Inputs and calculation valid.',visualFailures>0);
+    try{const failed=selfChecks(result,b);if(failed){status('Calculation completed; '+failed+' scientific check(s) failed.'+(visualFailures?' '+visualFailures+' visual(s) unavailable.':''));el('status').className='caution';}}
+    catch(error){el('check-status').textContent='Degraded: '+error.message;el('check-status').className='skip';status('Calculation completed; scientific checks unavailable.'+(visualFailures?' '+visualFailures+' visual(s) unavailable.':''));el('status').className='caution';}
+  }
+  if(data.error||!data.ast){status('Degraded: '+(data.error||'Compute unavailable'),true);el('check-status').textContent='Skipped: compute was not admitted.';document.querySelectorAll('.preset').forEach(button=>button.disabled=true);return;}
+  try {
+    state=merge({});controls();sync();
+    document.querySelectorAll('.preset').forEach(button=>button.addEventListener('click',()=>{try{const next=merge(spec.explorations[Number(button.dataset.preset)].preset);state=next;sync();recalculate();}catch(error){status('Invalid preset; last valid inputs retained. '+error.message,true);}}));
+    recalculate();
+  }catch(error){status('Degraded: '+error.message,true);el('check-status').textContent='Skipped: initialization failed.';}
+})();
+
+</script></body></html>

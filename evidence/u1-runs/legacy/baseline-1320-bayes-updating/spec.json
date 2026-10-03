@@ -1,0 +1,271 @@
+{
+ "controls": [
+  {
+   "id": "alpha",
+   "label": "Prior alpha",
+   "help": "Raises the prior mean and the posterior alpha; larger prior alpha pulls the posterior mean upward and lowers the data weight.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 2,
+   "min": 0.5,
+   "max": 10,
+   "step": 0.5
+  },
+  {
+   "id": "beta",
+   "label": "Prior beta",
+   "help": "Lowers the prior mean and raises the posterior beta; larger prior beta pulls the posterior mean downward and lowers the data weight.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 2,
+   "min": 0.5,
+   "max": 10,
+   "step": 0.5
+  },
+  {
+   "id": "successes",
+   "label": "Observed successes s",
+   "help": "Adds to the posterior alpha, raises the data weight and the posterior mean, and drives the shift and the swept line.",
+   "units": "count",
+   "kind": "slider",
+   "default": 3,
+   "min": 0,
+   "max": 20,
+   "step": 1
+  },
+  {
+   "id": "failures",
+   "label": "Observed failures f",
+   "help": "Adds to the posterior beta, raises the data weight, and lowers the posterior mean, the shift and the swept line.",
+   "units": "count",
+   "kind": "slider",
+   "default": 1,
+   "min": 0,
+   "max": 20,
+   "step": 1
+  }
+ ],
+ "outputs": [
+  {
+   "id": "prior_mean",
+   "label": "Prior mean",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "posterior_alpha",
+   "label": "Posterior alpha",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "posterior_beta",
+   "label": "Posterior beta",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "data_weight",
+   "label": "Data weight",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "param_bars",
+   "label": "Prior and posterior parameters",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "mean_bars",
+   "label": "Prior mean and posterior mean",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "posterior_mean",
+   "label": "Posterior mean",
+   "units": "unitless",
+   "role": "result"
+  },
+  {
+   "id": "shift",
+   "label": "Shift from prior to posterior mean",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "v_params",
+   "kind": "bar",
+   "title": "Prior pseudo-counts versus posterior pseudo-counts",
+   "output": "param_bars",
+   "x_label": "Parameter",
+   "y_label": "Pseudo-count",
+   "labels": [
+    "Prior alpha",
+    "Posterior alpha",
+    "Prior beta",
+    "Posterior beta"
+   ]
+  },
+  {
+   "id": "v_means",
+   "kind": "bar",
+   "title": "Prior mean and posterior mean",
+   "output": "mean_bars",
+   "x_label": "Quantity",
+   "y_label": "Probability",
+   "labels": [
+    "Prior mean",
+    "Posterior mean"
+   ]
+  },
+  {
+   "id": "v_sweep",
+   "kind": "line",
+   "title": "Posterior mean as observed successes increase (failures and prior fixed)",
+   "output": "posterior_mean",
+   "x_label": "Observed successes s",
+   "y_label": "Posterior mean",
+   "sweep": {
+    "control": "successes",
+    "min": 0,
+    "max": 20,
+    "points": 21
+   }
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Many observations: the data take over",
+   "instruction": "Predict: with 18 successes and 6 failures, will the posterior mean readout sit near the observed proportion 0.75 or near the prior mean 0.5? Then apply the preset, which sets prior alpha to 2, prior beta to 2, observed successes s to 18 and observed failures f to 6.",
+   "observe": "The posterior alpha readout becomes 20 and the posterior beta readout becomes 8, so the prior and posterior parameter bars are far apart. The data weight readout is 0.8571, and the posterior mean readout moves from 0.5 to 0.7143, giving a shift of 0.2143; the swept line also flattens near 0.71 as successes rise.",
+   "why": "The two observations of prior alpha and prior beta are only 4 pseudo-counts, while 24 observations are added to the posterior parameters, so the data weight (s plus f) divided by the total count is 24/28. Because the posterior mean is posterior alpha divided by the total, it lands close to the observed proportion rather than at the prior mean.",
+   "preset": {
+    "alpha": 2,
+    "beta": 2,
+    "successes": 18,
+    "failures": 6
+   }
+  },
+  {
+   "title": "One observation, strong prior: the prior barely moves",
+   "instruction": "Predict: with a prior mean of 0.8 and a single success, how far will the posterior mean readout move? Then apply the preset, which sets prior alpha to 8, prior beta to 2, observed successes s to 1 and observed failures f to 0.",
+   "observe": "The posterior alpha readout becomes 9 while the posterior beta readout stays at 2, so the parameter bars for prior and posterior almost coincide. The data weight readout is only 0.0769, the posterior mean readout creeps from 0.8 to 0.8182, and the shift readout is just 0.0182.",
+   "why": "The prior contributes 10 pseudo-counts and the single observation contributes 1, so the data weight is 1/13 and the posterior mean, posterior alpha divided by the total count 11, is pulled only slightly above the prior mean. The conjugate update can only move the posterior mean by as much as the data share allows.",
+   "preset": {
+    "alpha": 8,
+    "beta": 2,
+    "successes": 1,
+    "failures": 0
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "no observations leaves the posterior equal to the prior",
+   "inputs": {
+    "alpha": 3,
+    "beta": 5,
+    "successes": 0,
+    "failures": 0
+   },
+   "expected": {
+    "prior_mean": 0.375,
+    "posterior_alpha": 3,
+    "posterior_beta": 5,
+    "data_weight": 0,
+    "posterior_mean": 0.375,
+    "shift": 0
+   },
+   "atol": 1e-12,
+   "rtol": 1e-12
+  },
+  {
+   "name": "uniform prior with balanced counts gives one half",
+   "inputs": {
+    "alpha": 1,
+    "beta": 1,
+    "successes": 4,
+    "failures": 4
+   },
+   "expected": {
+    "prior_mean": 0.5,
+    "posterior_alpha": 5,
+    "posterior_beta": 5,
+    "data_weight": 0.8,
+    "posterior_mean": 0.5,
+    "shift": 0
+   },
+   "atol": 1e-12,
+   "rtol": 1e-12
+  },
+  {
+   "name": "data-heavy preset of exploration one",
+   "inputs": {
+    "alpha": 2,
+    "beta": 2,
+    "successes": 18,
+    "failures": 6
+   },
+   "expected": {
+    "posterior_alpha": 20,
+    "posterior_beta": 8,
+    "data_weight": 0.8571,
+    "posterior_mean": 0.7143,
+    "shift": 0.2143
+   },
+   "atol": 0.0001,
+   "rtol": 0.0001
+  },
+  {
+   "name": "prior-heavy preset of exploration two",
+   "inputs": {
+    "alpha": 8,
+    "beta": 2,
+    "successes": 1,
+    "failures": 0
+   },
+   "expected": {
+    "posterior_alpha": 9,
+    "posterior_beta": 2,
+    "data_weight": 0.0769,
+    "posterior_mean": 0.8182,
+    "shift": 0.0182
+   },
+   "atol": 0.0001,
+   "rtol": 0.0001
+  }
+ ],
+ "invariants": [
+  {
+   "name": "posterior mean is a probability",
+   "output": "posterior_mean",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-12,
+   "rtol": 0
+  },
+  {
+   "name": "prior mean is a probability",
+   "output": "prior_mean",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-12,
+   "rtol": 0
+  },
+  {
+   "name": "data weight is a share between zero and one",
+   "output": "data_weight",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-12,
+   "rtol": 0
+  }
+ ]
+}

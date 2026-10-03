@@ -1,0 +1,202 @@
+{
+ "controls": [
+  {
+   "id": "n0",
+   "label": "Initial amount N0",
+   "help": "Scales the remaining amount N(t); it leaves the remaining fraction N(t)/N0 and the half-life T-half unchanged.",
+   "units": "amount units",
+   "kind": "slider",
+   "default": 100,
+   "min": 1,
+   "max": 1000,
+   "step": 1
+  },
+  {
+   "id": "lambda",
+   "label": "Decay constant lambda",
+   "help": "Sets the decay constant in 1/y; it changes the remaining fraction and the remaining amount and sets the half-life T-half = ln(2)/lambda. The lower bound stays above zero so the half-life is always finite.",
+   "units": "1/y",
+   "kind": "slider",
+   "default": 0.0079,
+   "min": 0.001,
+   "max": 1,
+   "step": 0.0001
+  },
+  {
+   "id": "t",
+   "label": "Time t",
+   "help": "Sets the elapsed time in y; it changes the remaining fraction and the remaining amount, and it is the swept variable in both line visuals.",
+   "units": "y",
+   "kind": "slider",
+   "default": 50,
+   "min": 0,
+   "max": 200,
+   "step": 0.5
+  }
+ ],
+ "outputs": [
+  {
+   "id": "half_life",
+   "label": "Half-life T-half = ln(2)/lambda",
+   "units": "y",
+   "role": "intermediate"
+  },
+  {
+   "id": "remaining_fraction",
+   "label": "Remaining fraction N(t)/N0",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "remaining_amount",
+   "label": "Remaining amount N(t)",
+   "units": "amount units",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "curve_fraction",
+   "kind": "line",
+   "title": "Remaining fraction against time, recomputed across the time slider",
+   "output": "remaining_fraction",
+   "x_label": "Time t (y)",
+   "y_label": "Remaining fraction N(t)/N0 (unitless)",
+   "sweep": {
+    "control": "t",
+    "min": 0,
+    "max": 200,
+    "points": 41
+   }
+  },
+  {
+   "id": "curve_amount",
+   "kind": "line",
+   "title": "Remaining amount against time, recomputed across the time slider",
+   "output": "remaining_amount",
+   "x_label": "Time t (y)",
+   "y_label": "Remaining amount N(t) (amount units)",
+   "sweep": {
+    "control": "t",
+    "min": 0,
+    "max": 200,
+    "points": 41
+   }
+  }
+ ],
+ "explorations": [
+  {
+   "title": "A tenfold decay constant",
+   "instruction": "Predict: if the decay constant rises from 0.0079 1/y to 0.1 1/y near 50 y, what happens to the remaining fraction and to the half-life? Then apply the preset, which sets lambda and t, keeping N0 at 100 amount units.",
+   "observe": "The half-life readout falls from about 87.7 y to about 6.93 y, the remaining fraction drops to about 0.00674, and the remaining amount is about 0.674 amount units at t = 50 y. Both curves bend down much faster.",
+   "why": "The half-life is ln(2)/lambda, so a larger lambda shortens it directly; the remaining fraction exp(-lambda t) then falls faster at the same time t, and the remaining amount is that fraction multiplied by N0.",
+   "preset": {
+    "n0": 100,
+    "lambda": 0.1,
+    "t": 50
+   }
+  },
+  {
+   "title": "Ten times the sample, same shape",
+   "instruction": "Predict: if the initial amount rises tenfold while lambda stays 0.1 1/y and t stays 50 y, what happens to the remaining fraction and to the remaining amount? Then apply the preset, which sets N0 only, leaving lambda and t at the previous exploration's values.",
+   "observe": "The remaining fraction readout stays at about 0.00674 and the half-life stays at about 6.93 y, while the remaining amount readout rises to about 6.74 amount units, ten times its previous value. The two fraction and amount curves keep the same shape and differ only by a constant factor of ten.",
+   "why": "The remaining fraction exp(-lambda t) contains no N0 term, so it cannot change; the remaining amount N0 exp(-lambda t) is directly proportional to N0, so raising N0 by ten raises the amount by ten.",
+   "preset": {
+    "n0": 1000,
+    "lambda": 0.1,
+    "t": 50
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "at time zero the fraction is one and the amount equals N0",
+   "inputs": {
+    "n0": 100,
+    "lambda": 0.5,
+    "t": 0
+   },
+   "expected": {
+    "half_life": 1.3862943611198906,
+    "remaining_fraction": 1,
+    "remaining_amount": 100
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "at one half-life the fraction is one half",
+   "inputs": {
+    "n0": 100,
+    "lambda": 0.6931471805599453,
+    "t": 1
+   },
+   "expected": {
+    "half_life": 1,
+    "remaining_fraction": 0.5,
+    "remaining_amount": 50
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "exploration one preset values",
+   "inputs": {
+    "n0": 100,
+    "lambda": 0.1,
+    "t": 50
+   },
+   "expected": {
+    "half_life": 6.931471805599453,
+    "remaining_fraction": 0.006737946999085467,
+    "remaining_amount": 0.6737946999085467
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "exploration two preset scales the amount only",
+   "inputs": {
+    "n0": 1000,
+    "lambda": 0.1,
+    "t": 50
+   },
+   "expected": {
+    "half_life": 6.931471805599453,
+    "remaining_fraction": 0.006737946999085467,
+    "remaining_amount": 6.737946999085467
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "remaining fraction stays between zero and one",
+   "output": "remaining_fraction",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-12,
+   "rtol": 0
+  },
+  {
+   "name": "remaining amount never exceeds the initial amount",
+   "output": "remaining_amount",
+   "kind": "range",
+   "min": 0,
+   "max": 1000,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "half-life stays finite and positive",
+   "output": "half_life",
+   "kind": "range",
+   "min": 0.693,
+   "max": 700,
+   "atol": 0.01,
+   "rtol": 0
+  }
+ ]
+}

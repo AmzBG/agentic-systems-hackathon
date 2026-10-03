@@ -1,0 +1,238 @@
+{
+ "controls": [
+  {
+   "id": "n0",
+   "label": "Initial amount N0",
+   "help": "Sets the starting amount in mol; it scales the remaining amount N(t), while the remaining fraction f is unchanged because it divides N0 out.",
+   "units": "mol",
+   "kind": "slider",
+   "default": 4,
+   "min": 1,
+   "max": 10,
+   "step": 0.1
+  },
+  {
+   "id": "lam",
+   "label": "Decay constant lambda",
+   "help": "Sets the decay rate in 1/y; it scales the exponent lambda t and its exponential exp(-lambda t), and it fixes the half-life ln(2)/lambda.",
+   "units": "1/y",
+   "kind": "slider",
+   "default": 0.7,
+   "min": 0.01,
+   "max": 2,
+   "step": 0.01
+  },
+  {
+   "id": "t",
+   "label": "Time t",
+   "help": "Sets the evaluation time in years; it changes lambda t, exp(-lambda t), N(t) and f, and it moves t relative to the half-life ln(2)/lambda.",
+   "units": "y",
+   "kind": "slider",
+   "default": 1,
+   "min": 0,
+   "max": 20,
+   "step": 0.01
+  }
+ ],
+ "outputs": [
+  {
+   "id": "lt",
+   "label": "Exponent lambda t",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "decay_factor",
+   "label": "Decay factor exp(-lambda t)",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "remaining",
+   "label": "Remaining amount N(t)",
+   "units": "mol",
+   "role": "result"
+  },
+  {
+   "id": "frac",
+   "label": "Remaining fraction f",
+   "units": "unitless",
+   "role": "result"
+  },
+  {
+   "id": "half_life",
+   "label": "Half-life ln(2)/lambda",
+   "units": "y",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "amount_curve",
+   "kind": "line",
+   "title": "Remaining amount against time",
+   "output": "remaining",
+   "x_label": "time t (y)",
+   "y_label": "N(t) (mol)",
+   "sweep": {
+    "control": "t",
+    "min": 0,
+    "max": 20,
+    "points": 41
+   }
+  },
+  {
+   "id": "factor_curve",
+   "kind": "line",
+   "title": "Decay factor against time",
+   "output": "decay_factor",
+   "x_label": "time t (y)",
+   "y_label": "exp(-lambda t) (unitless)",
+   "sweep": {
+    "control": "t",
+    "min": 0,
+    "max": 20,
+    "points": 41
+   }
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Doubling the decay constant",
+   "instruction": "Predict: if lambda doubles while t stays at 1 y, what happens to the remaining fraction and to the half-life readout? Then apply the preset, which sets the decay constant lambda.",
+   "observe": "The exponent lambda t doubles from 0.70 to 1.40 and the decay factor exp(-lambda t) falls from 0.497 to 0.247, so the remaining amount for N0 = 4 mol drops from 1.986 mol to 0.987 mol while the half-life readout halves from 0.990 y to 0.495 y.",
+   "why": "At fixed t the exponent lambda t is proportional to lambda, so doubling lambda doubles it; exp(-lambda t) is then squared, 0.497 times 0.497 giving about 0.247, which halves the remaining amount, and the half-life ln(2)/lambda is inversely proportional to lambda so it halves as well.",
+   "preset": {
+    "lam": 1.4
+   }
+  },
+  {
+   "title": "Landing on the half-life",
+   "instruction": "Predict: what fraction of the initial amount remains when the time t equals the half-life ln(2)/lambda? Then apply the preset, which sets the initial amount N0, the decay constant lambda and the time t.",
+   "observe": "With lambda = 0.70 1/y the half-life readout is 0.990 y; at t = 0.99 y, very close to that half-life, the exponent lambda t is 0.693 and the remaining fraction f reads 0.500 with N(t) = 1.000 mol for N0 = 2 mol.",
+   "why": "Choosing t = ln(2)/lambda makes lambda t equal ln 2, so the decay factor exp(-lambda t) is one half and the remaining amount is N0/2; the plotted half-life marker therefore sits where the curve has fallen to half its starting value.",
+   "preset": {
+    "n0": 2,
+    "lam": 0.7,
+    "t": 0.99
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "Zero time leaves the sample untouched",
+   "inputs": {
+    "n0": 4,
+    "lam": 0.7,
+    "t": 0
+   },
+   "expected": {
+    "lt": 0,
+    "decay_factor": 1,
+    "remaining": 4,
+    "frac": 1,
+    "half_life": 0.990210258
+   },
+   "atol": 1e-06,
+   "rtol": 1e-09
+  },
+  {
+   "name": "Doubled decay constant halves the half-life and squares the decay factor",
+   "inputs": {
+    "n0": 4,
+    "lam": 1.4,
+    "t": 1
+   },
+   "expected": {
+    "lt": 1.4,
+    "decay_factor": 0.247,
+    "remaining": 0.987,
+    "frac": 0.247,
+    "half_life": 0.495
+   },
+   "atol": 0.001,
+   "rtol": 1e-09
+  },
+  {
+   "name": "Time at the half-life leaves half the amount",
+   "inputs": {
+    "n0": 2,
+    "lam": 0.7,
+    "t": 0.99
+   },
+   "expected": {
+    "lt": 0.693,
+    "decay_factor": 0.5,
+    "remaining": 1.0,
+    "frac": 0.5,
+    "half_life": 0.99
+   },
+   "atol": 0.001,
+   "rtol": 1e-09
+  },
+  {
+   "name": "Large rate over a long time",
+   "inputs": {
+    "n0": 10,
+    "lam": 2,
+    "t": 5
+   },
+   "expected": {
+    "lt": 10,
+    "decay_factor": 4.5399929762484854e-05,
+    "remaining": 0.00045399929762484856,
+    "frac": 4.5399929762484854e-05,
+    "half_life": 0.34657359027997264
+   },
+   "atol": 1e-12,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "Decay factor lies between zero and one",
+   "output": "decay_factor",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "Remaining fraction lies between zero and one",
+   "output": "frac",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "Remaining amount never exceeds the initial amount",
+   "output": "remaining",
+   "kind": "range",
+   "min": 0,
+   "max": 10,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "Exponent lambda t is nonnegative and bounded by the control limits",
+   "output": "lt",
+   "kind": "range",
+   "min": 0,
+   "max": 40,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "Half-life stays within the range set by the decay constant bounds",
+   "output": "half_life",
+   "kind": "range",
+   "min": 0.3465,
+   "max": 69.32,
+   "atol": 1e-06,
+   "rtol": 0
+  }
+ ]
+}

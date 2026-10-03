@@ -1,0 +1,361 @@
+{
+ "controls": [
+  {
+   "id": "n_outcomes",
+   "label": "Number of active outcomes",
+   "help": "Sets how many weight slots are active and changes Sum of active weights, Normalized probabilities, Per-outcome contributions, Maximum entropy for n, and Total entropy H.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 2,
+   "min": 2,
+   "max": 6,
+   "step": 1
+  },
+  {
+   "id": "w1",
+   "label": "Weight for outcome 1",
+   "help": "Changes Sum of active weights, Normalized probabilities, Per-outcome contributions, and Total entropy H.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "step": 0.05
+  },
+  {
+   "id": "w2",
+   "label": "Weight for outcome 2",
+   "help": "Changes Sum of active weights, Normalized probabilities, Per-outcome contributions, and Total entropy H.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 1,
+   "min": 0,
+   "max": 1,
+   "step": 0.05
+  },
+  {
+   "id": "w3",
+   "label": "Weight for outcome 3",
+   "help": "Changes Sum of active weights, Normalized probabilities, Per-outcome contributions, and Total entropy H.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 0,
+   "min": 0,
+   "max": 1,
+   "step": 0.05
+  },
+  {
+   "id": "w4",
+   "label": "Weight for outcome 4",
+   "help": "Changes Sum of active weights, Normalized probabilities, Per-outcome contributions, and Total entropy H.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 0,
+   "min": 0,
+   "max": 1,
+   "step": 0.05
+  },
+  {
+   "id": "w5",
+   "label": "Weight for outcome 5",
+   "help": "Changes Sum of active weights, Normalized probabilities, Per-outcome contributions, and Total entropy H.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 0,
+   "min": 0,
+   "max": 1,
+   "step": 0.05
+  },
+  {
+   "id": "w6",
+   "label": "Weight for outcome 6",
+   "help": "Changes Sum of active weights, Normalized probabilities, Per-outcome contributions, and Total entropy H.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 0,
+   "min": 0,
+   "max": 1,
+   "step": 0.05
+  }
+ ],
+ "outputs": [
+  {
+   "id": "sum_weights",
+   "label": "Sum of active weights",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "probabilities",
+   "label": "Normalized probabilities",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "contributions",
+   "label": "Per-outcome contributions",
+   "units": "bits",
+   "role": "intermediate"
+  },
+  {
+   "id": "max_entropy",
+   "label": "Maximum entropy for n",
+   "units": "bits",
+   "role": "intermediate"
+  },
+  {
+   "id": "entropy",
+   "label": "Total entropy H",
+   "units": "bits",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "contributions_bar",
+   "kind": "bar",
+   "title": "Contribution of each outcome in bits",
+   "output": "contributions",
+   "x_label": "Outcome index",
+   "y_label": "Contribution c_i (bits)",
+   "labels": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+   ]
+  },
+  {
+   "id": "probability_bar",
+   "kind": "bar",
+   "title": "Normalized probability of each outcome",
+   "output": "probabilities",
+   "x_label": "Outcome index",
+   "y_label": "Probability p_i (unitless)",
+   "labels": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+   ]
+  },
+  {
+   "id": "entropy_sweep",
+   "kind": "line",
+   "title": "Total entropy as weight w1 varies",
+   "output": "entropy",
+   "x_label": "Weight w1 (unitless)",
+   "y_label": "Total entropy H (bits)",
+   "sweep": {
+    "control": "w1",
+    "min": 0,
+    "max": 1,
+    "points": 21
+   }
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Certainty gives zero entropy",
+   "instruction": "Predict: if one outcome has all the weight and the other active outcome has zero weight, what happens to Total entropy H? Then apply the preset, which sets Number of active outcomes, Weight for outcome 1, and Weight for outcome 2.",
+   "observe": "Normalized probabilities become 1 and 0, Per-outcome contributions are both 0 bits, and Total entropy H is 0 bits.",
+   "why": "A sure outcome has no uncertainty, so every term c_i = -p_i log2 p_i is zero; the zero-probability term is defined as 0 rather than undefined.",
+   "preset": {
+    "n_outcomes": 2,
+    "w1": 1,
+    "w2": 0,
+    "w3": 0,
+    "w4": 0,
+    "w5": 0,
+    "w6": 0
+   }
+  },
+  {
+   "title": "Equal outcomes maximize entropy",
+   "instruction": "Predict: when four outcomes are equally likely, how does Total entropy H compare with Maximum entropy for n? Then apply the preset, which sets Number of active outcomes and the first four weights.",
+   "observe": "Normalized probabilities are 0.25 each, each Per-outcome contribution is 0.5 bits, and Total entropy H is 2 bits, equal to Maximum entropy for n.",
+   "why": "Equal probabilities give the largest possible sum of -p_i log2 p_i for a fixed number of outcomes; at n = 4, log2 4 = 2 bits.",
+   "preset": {
+    "n_outcomes": 4,
+    "w1": 1,
+    "w2": 1,
+    "w3": 1,
+    "w4": 1,
+    "w5": 0,
+    "w6": 0
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "two equal outcomes give one bit",
+   "inputs": {
+    "n_outcomes": 2,
+    "w1": 1,
+    "w2": 1,
+    "w3": 0,
+    "w4": 0,
+    "w5": 0,
+    "w6": 0
+   },
+   "expected": {
+    "sum_weights": 2,
+    "probabilities": [
+     0.5,
+     0.5,
+     0,
+     0,
+     0,
+     0
+    ],
+    "contributions": [
+     0.5,
+     0.5,
+     0,
+     0,
+     0,
+     0
+    ],
+    "max_entropy": 1,
+    "entropy": 1
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "certain outcome gives zero bits",
+   "inputs": {
+    "n_outcomes": 2,
+    "w1": 1,
+    "w2": 0,
+    "w3": 0,
+    "w4": 0,
+    "w5": 0,
+    "w6": 0
+   },
+   "expected": {
+    "sum_weights": 1,
+    "probabilities": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "contributions": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "max_entropy": 1,
+    "entropy": 0
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "four equal outcomes give two bits",
+   "inputs": {
+    "n_outcomes": 4,
+    "w1": 1,
+    "w2": 1,
+    "w3": 1,
+    "w4": 1,
+    "w5": 0,
+    "w6": 0
+   },
+   "expected": {
+    "sum_weights": 4,
+    "probabilities": [
+     0.25,
+     0.25,
+     0.25,
+     0.25,
+     0,
+     0
+    ],
+    "contributions": [
+     0.5,
+     0.5,
+     0.5,
+     0.5,
+     0,
+     0
+    ],
+    "max_entropy": 2,
+    "entropy": 2
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "all-zero weights fall back to uniform",
+   "inputs": {
+    "n_outcomes": 3,
+    "w1": 0,
+    "w2": 0,
+    "w3": 0,
+    "w4": 0,
+    "w5": 0,
+    "w6": 0
+   },
+   "expected": {
+    "sum_weights": 0,
+    "probabilities": [
+     0.3333333333333333,
+     0.3333333333333333,
+     0.3333333333333333,
+     0,
+     0,
+     0
+    ],
+    "contributions": [
+     0.5283208335737187,
+     0.5283208335737187,
+     0.5283208335737187,
+     0,
+     0,
+     0
+    ],
+    "max_entropy": 1.584962500721156,
+    "entropy": 1.584962500721156
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "probabilities sum to one",
+   "output": "probabilities",
+   "kind": "sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "entropy stays within nonnegative bound",
+   "output": "entropy",
+   "kind": "range",
+   "min": 0,
+   "max": 3,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "contributions remain finite",
+   "output": "contributions",
+   "kind": "finite",
+   "atol": 1e-09,
+   "rtol": 0
+  }
+ ]
+}

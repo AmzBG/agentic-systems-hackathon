@@ -1,0 +1,372 @@
+{
+ "controls": [
+  {
+   "id": "n",
+   "label": "Number of outcomes n",
+   "help": "Sets how many weights are active, which changes every probability, every self-information, every contribution and entropy_bits.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 4,
+   "min": 1,
+   "max": 6,
+   "step": 1
+  },
+  {
+   "id": "log_weights",
+   "label": "Raw weights w_i (outcomes 1 to 6)",
+   "help": "Scale of each outcome's weight; after normalization they set each probability, hence each contribution and entropy_bits.",
+   "units": "unitless",
+   "kind": "vector",
+   "shape": [
+    6
+   ],
+   "default": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "min": 0,
+   "max": 100,
+   "step": 0.1
+  },
+  {
+   "id": "include_fourth",
+   "label": "Keep outcome 4 active when n is below 4",
+   "help": "If on and n is less than 4, w_4 still counts, raising total and adding one more term to entropy_bits.",
+   "units": "unitless",
+   "kind": "toggle",
+   "default": false
+  }
+ ],
+ "outputs": [
+  {
+   "id": "probabilities",
+   "label": "Probabilities p_i",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "self_information",
+   "label": "Self-information log2(1/p_i)",
+   "units": "bits",
+   "role": "intermediate"
+  },
+  {
+   "id": "contributions",
+   "label": "Entropy contributions p_i log2(1/p_i)",
+   "units": "bits",
+   "role": "intermediate"
+  },
+  {
+   "id": "entropy_bits",
+   "label": "Entropy H",
+   "units": "bits",
+   "role": "result"
+  },
+  {
+   "id": "normalized_entropy",
+   "label": "Entropy relative to equally likely maximum H/log2(n)",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "contribution_bars",
+   "kind": "bar",
+   "title": "Contribution of each outcome to the total entropy",
+   "output": "contributions",
+   "x_label": "Outcome index",
+   "y_label": "Contribution p_i log2(1/p_i) in bits",
+   "labels": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+   ]
+  },
+  {
+   "id": "entropy_sweep",
+   "kind": "line",
+   "title": "Total entropy H versus the number of outcomes n for the current weights",
+   "output": "entropy_bits",
+   "x_label": "Number of outcomes n",
+   "y_label": "Entropy H in bits",
+   "sweep": {
+    "control": "n",
+    "min": 1,
+    "max": 6,
+    "points": 6
+   }
+  },
+  {
+   "id": "probability_readout",
+   "kind": "values",
+   "title": "Probabilities p_i and total",
+   "output": "probabilities",
+   "x_label": "Outcome index",
+   "y_label": "Probability p_i",
+   "labels": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+   ]
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Certainty versus equal outcomes",
+   "instruction": "Predict: with four outcomes, will making one weight large and the rest zero lower or raise entropy_bits compared with four equal weights? Then apply the preset, which sets n and log_weights.",
+   "observe": "probabilities becomes [1,0,0,0] and contributions becomes [0,0,0,0], so entropy_bits reads 0 and normalized_entropy reads 0. Resetting the weights to [1,1,1,1,1,1] gives probabilities [0.25,0.25,0.25,0.25], each contribution 0.5 bits, and entropy_bits equal to 2.",
+   "why": "When one probability is 1, its surprise log2(1/1) is 0 and the other outcomes carry probability 0, so every contribution is 0 and the choice is fully resolved; with four equal probabilities each carries 0.25 times 2 bits, which sums to the log2 4 = 2 bit maximum.",
+   "preset": {
+    "n": 4,
+    "log_weights": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "include_fourth": false
+   }
+  },
+  {
+   "title": "Adding a seventh half of the mass",
+   "instruction": "Predict: if outcome 4's weight becomes 3 while outcomes 1 to 3 keep weight 1 and n is 3, what happens to total and to each probability? Then apply the preset, which sets n, log_weights and include_fourth.",
+   "observe": "total rises from 3 to 6, probabilities changes from [0.333,0.333,0.333,0,0,0] to [0.167,0.167,0.167,0.5,0,0], the self-information of outcome 4 appears as 1 bit, its contribution is 0.5 bits, and entropy_bits falls from about 1.585 bits to about 1.792 bits after the extra term is added.",
+   "why": "The include_fourth toggle lets w_4 enter the partition even when n is 3, so it dilutes the other three probabilities by half while adding its own p log2(1/p) term of 0.5 bits; the extra spread of the distribution raises the total, showing that entropy counts all outcomes with nonzero weight rather than only the first n.",
+   "preset": {
+    "n": 2,
+    "log_weights": [
+     3,
+     1,
+     1,
+     3,
+     1,
+     1
+    ],
+    "include_fourth": true
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "single outcome is certain",
+   "inputs": {
+    "n": 1,
+    "log_weights": [
+     5,
+     3,
+     1,
+     1,
+     0,
+     2
+    ],
+    "include_fourth": false
+   },
+   "expected": {
+    "probabilities": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "self_information": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "contributions": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "entropy_bits": 0,
+    "normalized_entropy": 0
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "four equally likely outcomes give two bits",
+   "inputs": {
+    "n": 4,
+    "log_weights": [
+     1,
+     1,
+     1,
+     1,
+     7,
+     7
+    ],
+    "include_fourth": false
+   },
+   "expected": {
+    "probabilities": [
+     0.25,
+     0.25,
+     0.25,
+     0.25,
+     0,
+     0
+    ],
+    "self_information": [
+     2,
+     2,
+     2,
+     2,
+     0,
+     0
+    ],
+    "contributions": [
+     0.5,
+     0.5,
+     0.5,
+     0.5,
+     0,
+     0
+    ],
+    "entropy_bits": 2,
+    "normalized_entropy": 1
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "all weights zero gives no uncertainty",
+   "inputs": {
+    "n": 4,
+    "log_weights": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "include_fourth": false
+   },
+   "expected": {
+    "probabilities": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "self_information": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "contributions": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "entropy_bits": 0,
+    "normalized_entropy": 0
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "include_fourth mixes five outcomes when n is 2",
+   "inputs": {
+    "n": 2,
+    "log_weights": [
+     3,
+     1,
+     1,
+     3,
+     1,
+     1
+    ],
+    "include_fourth": true
+   },
+   "expected": {
+    "probabilities": [
+     0.375,
+     0.125,
+     0,
+     0.375,
+     0,
+     0
+    ],
+    "self_information": [
+     1.4150374992788437,
+     3,
+     0,
+     1.4150374992788437,
+     0,
+     0
+    ],
+    "contributions": [
+     0.5306510622295664,
+     0.375,
+     0,
+     0.5306510622295664,
+     0,
+     0
+    ],
+    "entropy_bits": 1.4363021244591327,
+    "normalized_entropy": 1.4363021244591327
+   },
+   "atol": 1e-06,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "probabilities are a distribution",
+   "output": "probabilities",
+   "kind": "sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "entropy is nonnegative and within log2 6",
+   "output": "entropy_bits",
+   "kind": "range",
+   "min": 0,
+   "max": 2.584962500721156,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "normalized entropy lies in the unit interval",
+   "output": "normalized_entropy",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ]
+}

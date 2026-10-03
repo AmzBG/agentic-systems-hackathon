@@ -1,0 +1,272 @@
+{
+ "controls": [
+  {
+   "id": "n_outcomes",
+   "label": "Number of active outcomes n",
+   "help": "Sets how many outcomes share the probability mass; changes sum_weights, normalized probabilities, contributions and total entropy H.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 4,
+   "min": 1,
+   "max": 8,
+   "step": 1
+  },
+  {
+   "id": "raw_weights",
+   "label": "Raw weights w_i for outcomes 1 to 8",
+   "help": "Nonnegative weights; only the first n_outcomes entries are active. Changes sum_weights, normalized probabilities, contributions and total entropy H.",
+   "units": "unitless",
+   "kind": "vector",
+   "shape": [
+    8
+   ],
+   "default": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "min": 0,
+   "max": 10,
+   "step": 0.1
+  }
+ ],
+ "outputs": [
+  {
+   "id": "sum_weights",
+   "label": "Sum of active weights S",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "probs",
+   "label": "Normalized probabilities p_i",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "contributions",
+   "label": "Entropy contributions c_i",
+   "units": "bits",
+   "role": "intermediate"
+  },
+  {
+   "id": "entropy",
+   "label": "Total entropy H",
+   "units": "bits",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "prob_bar",
+   "kind": "bar",
+   "title": "Normalized probabilities p_i",
+   "output": "probs",
+   "x_label": "Outcome index i",
+   "y_label": "Probability",
+   "labels": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8"
+   ]
+  },
+  {
+   "id": "contrib_bar",
+   "kind": "bar",
+   "title": "Entropy contributions c_i",
+   "output": "contributions",
+   "x_label": "Outcome index i",
+   "y_label": "Contribution to H (bits)",
+   "labels": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8"
+   ]
+  },
+  {
+   "id": "entropy_line",
+   "kind": "line",
+   "title": "Entropy H versus number of active outcomes n",
+   "output": "entropy",
+   "x_label": "Number of active outcomes n",
+   "y_label": "Entropy H (bits)",
+   "sweep": {
+    "control": "n_outcomes",
+    "min": 1,
+    "max": 8,
+    "points": 8
+   }
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Equally likely outcomes",
+   "instruction": "Predict: if four outcomes are equally likely, what is H in bits? Then apply the preset, which sets n_outcomes and raw_weights.",
+   "observe": "probs shows 0.25 for outcomes 1 through 4 and 0 elsewhere. contributions shows 0.5 bits for each active outcome. entropy H reads 2 bits.",
+   "why": "Normalizing equal weights gives p_i = 1/4. Each contribution is -0.25 log2 0.25 = 0.5 bits, so four equal contributions sum to H = log2 4 = 2 bits. Equal probabilities maximize entropy for a fixed number of outcomes.",
+   "preset": {
+    "n_outcomes": 4,
+    "raw_weights": [
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ]
+   }
+  },
+  {
+   "title": "Certain outcome and zero probabilities",
+   "instruction": "Predict: if outcome 1 has all the weight and outcomes 2 through 4 have zero weight, what is H? Then apply the preset, which sets n_outcomes and raw_weights.",
+   "observe": "probs shows 1 for outcome 1 and 0 for outcomes 2 through 4. contributions shows 0 bits for every outcome. entropy H reads 0 bits.",
+   "why": "Only outcome 1 can occur, so there is no uncertainty. A zero probability p_i = 0 makes c_i = 0 because the term -p_i log2 p_i is taken as 0, avoiding an undefined logarithm.",
+   "preset": {
+    "n_outcomes": 4,
+    "raw_weights": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "uniform_four_bits",
+   "inputs": {
+    "n_outcomes": 4,
+    "raw_weights": [
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "expected": {
+    "entropy": 2,
+    "sum_weights": 4
+   },
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "certain_outcome_zero_entropy",
+   "inputs": {
+    "n_outcomes": 4,
+    "raw_weights": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "expected": {
+    "entropy": 0,
+    "sum_weights": 1
+   },
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "skewed_three_outcomes",
+   "inputs": {
+    "n_outcomes": 3,
+    "raw_weights": [
+     1,
+     1,
+     2,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "expected": {
+    "entropy": 1.5,
+    "sum_weights": 4
+   },
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "zero_weight_ignored",
+   "inputs": {
+    "n_outcomes": 3,
+    "raw_weights": [
+     0,
+     1,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "expected": {
+    "entropy": 1,
+    "sum_weights": 2
+   },
+   "atol": 1e-09,
+   "rtol": 0
+  }
+ ],
+ "invariants": [
+  {
+   "name": "entropy_finite",
+   "output": "entropy",
+   "kind": "finite",
+   "atol": 1e-12,
+   "rtol": 0
+  },
+  {
+   "name": "entropy_between_0_and_3_bits",
+   "output": "entropy",
+   "kind": "range",
+   "min": 0,
+   "max": 3,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "probabilities_sum_to_one",
+   "output": "probs",
+   "kind": "sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 0
+  }
+ ]
+}

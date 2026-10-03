@@ -1,0 +1,497 @@
+{
+ "controls": [
+  {
+   "id": "q",
+   "label": "Query matrix Q",
+   "help": "Each entry changes the raw scores S, the scaled scores S_scaled, the weights A, the row sums and the output O.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     1,
+     1
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.5,
+   "shape": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "k",
+   "label": "Key matrix K",
+   "help": "Each entry changes the raw scores S, the scaled scores S_scaled, the weights A, the row sums and the output O.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.5,
+   "shape": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "v",
+   "label": "Value matrix V",
+   "help": "Each entry changes only the output O, because V is combined after the weights A are fixed.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.5,
+   "shape": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "scale",
+   "label": "Scale scores by 1/sqrt(d_k)",
+   "help": "Turning scaling off removes the division from S_scaled, which changes the weights A, the row sums and the output O.",
+   "units": "unitless",
+   "kind": "toggle",
+   "default": true
+  }
+ ],
+ "outputs": [
+  {
+   "id": "raw_scores",
+   "label": "Raw scores S = Q K transpose",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "scaled_scores",
+   "label": "Scaled scores S_scaled",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "weights",
+   "label": "Attention weights A = softmax(S_scaled)",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "row_sums",
+   "label": "Weight row sums",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "output",
+   "label": "Attention output O = A V",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "raw_heat",
+   "kind": "heatmap",
+   "title": "Raw scores S",
+   "output": "raw_scores",
+   "x_label": "Key position j",
+   "y_label": "Query position i",
+   "labels": [
+    "key 1",
+    "key 2"
+   ]
+  },
+  {
+   "id": "scaled_heat",
+   "kind": "heatmap",
+   "title": "Scaled scores S_scaled",
+   "output": "scaled_scores",
+   "x_label": "Key position j",
+   "y_label": "Query position i",
+   "labels": [
+    "key 1",
+    "key 2"
+   ]
+  },
+  {
+   "id": "weights_heat",
+   "kind": "heatmap",
+   "title": "Attention weights A",
+   "output": "weights",
+   "x_label": "Key position j",
+   "y_label": "Query position i",
+   "labels": [
+    "key 1",
+    "key 2"
+   ]
+  },
+  {
+   "id": "rowsum_bar",
+   "kind": "bar",
+   "title": "Weight row sums",
+   "output": "row_sums",
+   "x_label": "Query position i",
+   "y_label": "Row sum",
+   "labels": [
+    "query 1",
+    "query 2"
+   ]
+  },
+  {
+   "id": "out_heat",
+   "kind": "heatmap",
+   "title": "Output O",
+   "output": "output",
+   "x_label": "Output dimension",
+   "y_label": "Query position i",
+   "labels": [
+    "dim 1",
+    "dim 2"
+   ]
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Scaling sharpens or softens the weights",
+   "instruction": "Predict: does removing the 1/sqrt(d_k) divisor sharpen the attention weights? Then apply the preset, which sets the scale toggle off and replaces Q and K.",
+   "observe": "The weights A become sharper: the larger entry of each row grows and the smaller shrinks, so the output O moves closer to the value row selected by the dominant score. The row sums stay at 1.",
+   "why": "Removing the divisor makes the scaled scores S_scaled larger in magnitude, so the softmax in A saturates toward a one-hot pattern, and the weighted average O follows that shift.",
+   "preset": {
+    "scale": false,
+    "q": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      2
+     ]
+    ],
+    "k": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ]
+   }
+  },
+  {
+   "title": "One dominant score gives a near one-hot weight row",
+   "instruction": "Predict: what happens to A and O when one query-key dot product dwarfs the other? Then apply the preset, which sets Q and K and turns scaling off.",
+   "observe": "Each row of A is close to one-hot, so the row sums remain 1 and the output O is nearly the value row of the attended key.",
+   "why": "A very large score dominates the softmax, so almost all weight lands on one key and the output O is carried by the matching value row.",
+   "preset": {
+    "scale": false,
+    "q": [
+     [
+      5,
+      0
+     ],
+     [
+      0,
+      5
+     ]
+    ],
+    "k": [
+     [
+      5,
+      0
+     ],
+     [
+      0,
+      5
+     ]
+    ]
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "equal scores give uniform weights and row sums one",
+   "inputs": {
+    "q": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scale": true
+   },
+   "expected": {
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "row_sums": [
+     1,
+     1
+    ],
+    "output": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ]
+   },
+   "atol": 1e-06,
+   "rtol": 0
+  },
+  {
+   "name": "scaling divides raw scores by sqrt of key dimension",
+   "inputs": {
+    "q": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scale": true
+   },
+   "expected": {
+    "raw_scores": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scaled_scores": [
+     [
+      0.7071067811865476,
+      0
+     ],
+     [
+      0,
+      0.7071067811865476
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "exploration one preset keeps row sums one",
+   "inputs": {
+    "scale": false,
+    "q": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      2
+     ]
+    ],
+    "k": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "expected": {
+    "row_sums": [
+     1,
+     1
+    ],
+    "weights": [
+     [
+      0.9820137900379085,
+      0.01798620996209156
+     ],
+     [
+      0.11920292202211755,
+      0.8807970779778823
+     ]
+    ]
+   },
+   "atol": 1e-06,
+   "rtol": 0
+  },
+  {
+   "name": "exploration two preset row sums one",
+   "inputs": {
+    "scale": false,
+    "q": [
+     [
+      5,
+      0
+     ],
+     [
+      0,
+      5
+     ]
+    ],
+    "k": [
+     [
+      5,
+      0
+     ],
+     [
+      0,
+      5
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "expected": {
+    "row_sums": [
+     1,
+     1
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 0
+  }
+ ],
+ "invariants": [
+  {
+   "name": "weights_rows_sum_to_one",
+   "output": "weights",
+   "kind": "row_sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "row_sums_near_one",
+   "output": "row_sums",
+   "kind": "range",
+   "min": 0.999,
+   "max": 1.001,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "weights_in_unit_interval",
+   "output": "weights",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "output_is_finite",
+   "output": "output",
+   "kind": "finite",
+   "atol": 1e-09,
+   "rtol": 0
+  }
+ ]
+}

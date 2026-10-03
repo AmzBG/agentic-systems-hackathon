@@ -1,0 +1,282 @@
+{
+ "controls": [
+  {
+   "id": "obs_x",
+   "label": "Feature values x_i",
+   "help": "Changes the two feature values, which change the predicted labels y_hat_i, then the residuals r_i, the squared residuals r_i^2, and the result SSE.",
+   "units": "unitless",
+   "kind": "vector",
+   "shape": [
+    2
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.1,
+   "default": [
+    0,
+    2
+   ]
+  },
+  {
+   "id": "obs_y",
+   "label": "Observed labels y_i",
+   "help": "Changes the two observed labels, which change the residuals r_i, the squared residuals r_i^2, and the result SSE, without changing the predicted labels y_hat_i.",
+   "units": "unitless",
+   "kind": "vector",
+   "shape": [
+    2
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.1,
+   "default": [
+    1,
+    4
+   ]
+  },
+  {
+   "id": "slope",
+   "label": "Slope b",
+   "help": "Changes the predicted labels y_hat_i, then the residuals r_i, the squared residuals r_i^2, and the result SSE.",
+   "units": "unitless",
+   "kind": "slider",
+   "min": -5,
+   "max": 5,
+   "step": 0.1,
+   "default": 1
+  },
+  {
+   "id": "intercept",
+   "label": "Intercept a",
+   "help": "Shifts the predicted labels y_hat_i, then changes the residuals r_i, the squared residuals r_i^2, and the result SSE.",
+   "units": "unitless",
+   "kind": "slider",
+   "min": -5,
+   "max": 5,
+   "step": 0.1,
+   "default": 1
+  }
+ ],
+ "outputs": [
+  {
+   "id": "yhat",
+   "label": "Predicted labels y_hat_i",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "residuals",
+   "label": "Residuals r_i",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "squared_residuals",
+   "label": "Squared residuals r_i^2",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "sse",
+   "label": "Sum of squared errors SSE",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "squared_bar",
+   "kind": "bar",
+   "title": "Squared residual for each observation",
+   "output": "squared_residuals",
+   "x_label": "Observation index i",
+   "y_label": "Squared residual r_i^2 (unitless)",
+   "labels": [
+    "1",
+    "2"
+   ]
+  },
+  {
+   "id": "sse_curve",
+   "kind": "line",
+   "title": "Sum of squared errors as the slope changes",
+   "output": "sse",
+   "x_label": "Slope b (unitless)",
+   "y_label": "Sum of squared errors SSE (unitless)",
+   "sweep": {
+    "control": "slope",
+    "min": -5,
+    "max": 5,
+    "points": 21
+   }
+  },
+  {
+   "id": "pred_values",
+   "kind": "values",
+   "title": "Predicted labels from the current line",
+   "output": "yhat",
+   "x_label": "Observation index i",
+   "y_label": "Predicted label y_hat_i (unitless)",
+   "labels": [
+    "1",
+    "2"
+   ]
+  }
+ ],
+ "explorations": [
+  {
+   "title": "A line through both points",
+   "instruction": "Predict: how do the residuals and SSE change when the line passes exactly through both observations? Then apply the preset, which sets obs_x, obs_y, slope, and intercept.",
+   "observe": "The predicted labels y_hat_i become [1, 3], the residuals r_i become [0, 0], the squared residuals r_i^2 become [0, 0], and the result SSE drops to 0.",
+   "why": "Because a = 1 and b = 1 make a + b x_i equal y_i at both feature values, each residual y_i - y_hat_i is 0, so each squared residual is 0 and their total SSE is 0.",
+   "preset": {
+    "obs_x": [
+     0,
+     2
+    ],
+    "obs_y": [
+     1,
+     3
+    ],
+    "slope": 1,
+    "intercept": 1
+   }
+  },
+  {
+   "title": "A flat line through the same points",
+   "instruction": "Predict: with the same observations, how large is SSE when the slope is 0 instead of 1? Then apply the preset, which sets obs_x, obs_y, slope, and intercept.",
+   "observe": "The predicted labels y_hat_i become [1, 1], the residuals r_i become [0, 2], the squared residuals r_i^2 become [0, 4], and the result SSE rises to 4.",
+   "why": "A slope of 0 makes the prediction constant at a = 1, so the second observation is missed by 2 units; squaring that residual contributes 4 to SSE while the first observation still contributes 0.",
+   "preset": {
+    "obs_x": [
+     0,
+     2
+    ],
+    "obs_y": [
+     1,
+     3
+    ],
+    "slope": 0,
+    "intercept": 1
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "line through both points gives zero SSE",
+   "inputs": {
+    "obs_x": [
+     0,
+     2
+    ],
+    "obs_y": [
+     1,
+     3
+    ],
+    "slope": 1,
+    "intercept": 1
+   },
+   "expected": {
+    "yhat": [
+     1,
+     3
+    ],
+    "residuals": [
+     0,
+     0
+    ],
+    "squared_residuals": [
+     0,
+     0
+    ],
+    "sse": 0
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "flat line misses one point by two units",
+   "inputs": {
+    "obs_x": [
+     0,
+     2
+    ],
+    "obs_y": [
+     1,
+     3
+    ],
+    "slope": 0,
+    "intercept": 1
+   },
+   "expected": {
+    "yhat": [
+     1,
+     1
+    ],
+    "residuals": [
+     0,
+     2
+    ],
+    "squared_residuals": [
+     0,
+     4
+    ],
+    "sse": 4
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "slope two intercept zero on shifted points",
+   "inputs": {
+    "obs_x": [
+     1,
+     2
+    ],
+    "obs_y": [
+     3,
+     4
+    ],
+    "slope": 2,
+    "intercept": 0
+   },
+   "expected": {
+    "yhat": [
+     2,
+     4
+    ],
+    "residuals": [
+     1,
+     0
+    ],
+    "squared_residuals": [
+     1,
+     0
+    ],
+    "sse": 1
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "SSE is never negative",
+   "output": "sse",
+   "kind": "range",
+   "min": 0,
+   "max": 2500,
+   "atol": 0,
+   "rtol": 0
+  },
+  {
+   "name": "squared residuals are never negative",
+   "output": "squared_residuals",
+   "kind": "range",
+   "min": 0,
+   "max": 1225,
+   "atol": 0,
+   "rtol": 0
+  }
+ ]
+}

@@ -1,0 +1,370 @@
+{
+ "controls": [
+  {
+   "id": "q",
+   "label": "Query matrix Q",
+   "help": "Edits both query rows; changes dot-product scores and every downstream weight and output.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.5,
+   "shape": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "k",
+   "label": "Key matrix K",
+   "help": "Edits both key rows; changes dot-product scores and every downstream weight and output.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.5,
+   "shape": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "v",
+   "label": "Value matrix V",
+   "help": "Edits both value rows; changes the weighted output while the attention weights stay fixed.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     1,
+     2
+    ],
+    [
+     3,
+     4
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.5,
+   "shape": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "scaling",
+   "label": "Apply 1/sqrt(d_k) scaling",
+   "help": "Divides dot-product scores by sqrt(d_k); changes the score heatmap, the weight sharpness, and how strongly the output mixes value rows.",
+   "units": "unitless",
+   "kind": "toggle",
+   "default": true
+  }
+ ],
+ "outputs": [
+  {
+   "id": "scores",
+   "label": "Scaled dot-product scores",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "weights",
+   "label": "Attention weights after softmax",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "row_sums",
+   "label": "Row sums of attention weights",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "output",
+   "label": "Weighted output matrix",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "scores_heat",
+   "kind": "heatmap",
+   "title": "Query-key scores",
+   "output": "scores",
+   "x_label": "Key index",
+   "y_label": "Query index"
+  },
+  {
+   "id": "weights_heat",
+   "kind": "heatmap",
+   "title": "Attention weights",
+   "output": "weights",
+   "x_label": "Key index",
+   "y_label": "Query index"
+  },
+  {
+   "id": "row_sums_bar",
+   "kind": "bar",
+   "title": "Each weight row sums to one",
+   "output": "row_sums",
+   "x_label": "Query row",
+   "y_label": "Sum of weights",
+   "labels": [
+    "row 1",
+    "row 2"
+   ]
+  },
+  {
+   "id": "output_heat",
+   "kind": "heatmap",
+   "title": "Weighted output",
+   "output": "output",
+   "x_label": "Value dimension",
+   "y_label": "Query row"
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Equal similarity gives uniform weights",
+   "instruction": "Predict: when both queries have identical dot products against both keys, what weights appear? Then apply the preset, which sets the query and key matrices and turns scaling on.",
+   "observe": "The score heatmap is flat, the weight heatmap shows 0.5 in every cell, the row-sum bars read 1.0, and the output rows equal the average of the two value rows.",
+   "why": "Equal scores keep both exponentials identical, so softmax splits probability evenly; the row-sum intermediate confirms normalization.",
+   "preset": {
+    "q": [
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      0
+     ]
+    ],
+    "v": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "scaling": true
+   }
+  },
+  {
+   "title": "Large dot products sharpen without scaling",
+   "instruction": "Predict: when one query-key dot product is much larger than the other, how does turning scaling off change the weight split? Then apply the preset, which sets a dominant score and turns scaling off.",
+   "observe": "The first score row shows a large value and a zero; the weights become nearly 1 and 0; row sums still read 1.0; the first output row approaches the first value row of 5 and 0.",
+   "why": "Scaling divides scores by sqrt(d_k). Turning it off leaves larger scores, so softmax saturates and assigns almost all weight to the dominant key.",
+   "preset": {
+    "q": [
+     [
+      3,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k": [
+     [
+      3,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      5,
+      0
+     ],
+     [
+      0,
+      5
+     ]
+    ],
+    "scaling": false
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "zero scores give uniform weights and average value rows",
+   "inputs": {
+    "q": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "scaling": true
+   },
+   "expected": {
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "row_sums": [
+     1,
+     1
+    ],
+    "output": [
+     [
+      2,
+      3
+     ],
+     [
+      2,
+      3
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "identical value rows pass through unchanged",
+   "inputs": {
+    "q": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      5,
+      5
+     ],
+     [
+      5,
+      5
+     ]
+    ],
+    "scaling": true
+   },
+   "expected": {
+    "output": [
+     [
+      5,
+      5
+     ],
+     [
+      5,
+      5
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 0
+  }
+ ],
+ "invariants": [
+  {
+   "name": "attention weight rows sum to one",
+   "output": "weights",
+   "kind": "row_sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "attention weights stay in the unit interval",
+   "output": "weights",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "output values stay finite",
+   "output": "output",
+   "kind": "finite",
+   "atol": 1e-09,
+   "rtol": 0
+  }
+ ]
+}

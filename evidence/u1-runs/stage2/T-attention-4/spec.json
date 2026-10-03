@@ -1,0 +1,493 @@
+{
+ "controls": [
+  {
+   "id": "q",
+   "label": "Query matrix Q",
+   "help": "Editing Q changes the raw query-key dot products in the Similarity scores S, which changes the Attention weights A, the Peak weight of query 1 and the Attention output O.",
+   "units": "unitless",
+   "kind": "matrix",
+   "shape": [
+    2,
+    2
+   ],
+   "min": -4,
+   "max": 4,
+   "step": 0.5,
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "k",
+   "label": "Key matrix K",
+   "help": "Editing K changes the raw query-key dot products in the Similarity scores S, which changes the Attention weights A, the Row sums of A check and the Attention output O.",
+   "units": "unitless",
+   "kind": "matrix",
+   "shape": [
+    2,
+    2
+   ],
+   "min": -4,
+   "max": 4,
+   "step": 0.5,
+   "default": [
+    [
+     1,
+     1
+    ],
+    [
+     0,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "v",
+   "label": "Value matrix V",
+   "help": "Editing V leaves the Similarity scores S and Attention weights A unchanged but directly changes the Attention output O because O is a weighted average of the rows of V.",
+   "units": "unitless",
+   "kind": "matrix",
+   "shape": [
+    2,
+    2
+   ],
+   "min": -4,
+   "max": 4,
+   "step": 0.5,
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "dk",
+   "label": "Key dimension d_k",
+   "help": "Increasing d_k enlarges the divisor sqrt(d_k) when scaling is on, so the Similarity scores S shrink, the Attention weights A flatten, the Peak weight of query 1 falls and O moves toward a simple average of the value vectors. When scaling is off, d_k has no effect.",
+   "units": "unitless",
+   "kind": "slider",
+   "min": 1,
+   "max": 8,
+   "step": 1,
+   "default": 2
+  },
+  {
+   "id": "scale_on",
+   "label": "Apply 1/sqrt(d_k) scaling",
+   "help": "Turning scaling off removes the divisor, so the Similarity scores S equal the raw dot products, the Attention weights A become sharper and the Peak weight of query 1 rises.",
+   "units": "unitless",
+   "kind": "toggle",
+   "default": true
+  }
+ ],
+ "outputs": [
+  {
+   "id": "scores",
+   "label": "Similarity scores S",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "weights",
+   "label": "Attention weights A",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "rowsums",
+   "label": "Row sums of A",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "top_weight",
+   "label": "Peak weight of query 1",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "output",
+   "label": "Attention output O",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "scores_heat",
+   "kind": "heatmap",
+   "title": "Similarity scores S before softmax",
+   "output": "scores",
+   "x_label": "key index j",
+   "y_label": "query index i",
+   "labels": [
+    "key 1",
+    "key 2"
+   ]
+  },
+  {
+   "id": "weights_heat",
+   "kind": "heatmap",
+   "title": "Attention weights A after row-wise softmax",
+   "output": "weights",
+   "x_label": "key index j",
+   "y_label": "query index i",
+   "labels": [
+    "key 1",
+    "key 2"
+   ]
+  },
+  {
+   "id": "rowsum_bars",
+   "kind": "bar",
+   "title": "Row sums of A, each row should sum to one",
+   "output": "rowsums",
+   "x_label": "query row",
+   "y_label": "sum of attention weights",
+   "labels": [
+    "query 1",
+    "query 2"
+   ]
+  },
+  {
+   "id": "peak_line",
+   "kind": "line",
+   "title": "Peak weight of query 1 as d_k changes",
+   "output": "top_weight",
+   "x_label": "key dimension d_k",
+   "y_label": "peak weight of query 1",
+   "sweep": {
+    "control": "dk",
+    "min": 1,
+    "max": 8,
+    "points": 8
+   }
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Equal keys give uniform attention",
+   "instruction": "Predict: will the two attention weights in each row stay equal, and what fraction will each be? Then apply the preset, which sets the key matrix K so both keys are identical.",
+   "observe": "Both rows of the Attention weights A become 0.5 and 0.5, the Row sums of A read 1 and 1, and the Peak weight of query 1 reads 0.5. The Attention output O becomes the average of the two value vectors.",
+   "why": "Identical keys make both query-key dot products equal, so the Similarity scores S are equal within each row and the row-wise softmax assigns exactly half the weight to each key.",
+   "preset": {
+    "q": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "dk": 2,
+    "scale_on": true
+   }
+  },
+  {
+   "title": "Dominant score without scaling",
+   "instruction": "Predict: with scaling off and one large dot product, how close to one can the larger attention weight get? Then apply the preset, which sets scaling off and a dominant score in the first query row.",
+   "observe": "The first row of the Attention weights A becomes about 0.9975 and 0.0025, the Peak weight of query 1 reads about 0.9975, the Row sums of A still read 1 and 1, and the Attention output O is almost equal to the first value vector.",
+   "why": "Without the 1/sqrt(d_k) divisor the raw first-row scores are 6 and 0, so the softmax saturates and puts almost all weight on the first key; the Row sums of A remain 1 because softmax always normalizes each row.",
+   "preset": {
+    "q": [
+     [
+      3,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "dk": 2,
+    "scale_on": false
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "identical keys give uniform weights",
+   "inputs": {
+    "q": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "dk": 2,
+    "scale_on": true
+   },
+   "expected": {
+    "scores": [
+     [
+      0.7071067811865475,
+      0.7071067811865475
+     ],
+     [
+      0.7071067811865475,
+      0.7071067811865475
+     ]
+    ],
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "rowsums": [
+     1,
+     1
+    ],
+    "top_weight": 0.5,
+    "output": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "dominant score without scaling saturates first row",
+   "inputs": {
+    "q": [
+     [
+      3,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "dk": 2,
+    "scale_on": false
+   },
+   "expected": {
+    "scores": [
+     [
+      6,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "weights": [
+     [
+      0.9975273768433653,
+      0.0024726231566346564
+     ],
+     [
+      0.2689414213699951,
+      0.7310585786300049
+     ]
+    ],
+    "rowsums": [
+     1,
+     1
+    ],
+    "top_weight": 0.9975273768433653,
+    "output": [
+     [
+      0.9975273768433653,
+      0.0024726231566346564
+     ],
+     [
+      0.2689414213699951,
+      0.7310585786300049
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "scaling by one over sqrt of four halves first-row score",
+   "inputs": {
+    "q": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "dk": 4,
+    "scale_on": true
+   },
+   "expected": {
+    "scores": [
+     [
+      0.5,
+      0
+     ],
+     [
+      0,
+      0.5
+     ]
+    ],
+    "top_weight": 0.6224593312018546
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "each attention row sums to one",
+   "output": "rowsums",
+   "kind": "sum",
+   "expected": 2,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "attention weights stay between zero and one",
+   "output": "weights",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "peak weight is finite",
+   "output": "top_weight",
+   "kind": "finite",
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ]
+}

@@ -1,0 +1,562 @@
+{
+ "controls": [
+  {
+   "id": "q_mat",
+   "label": "Query matrix Q",
+   "help": "Editing Q changes the similarity scores S, and through them the attention weights A, the largest weight m and the output O.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "min": -4,
+   "max": 4,
+   "step": 0.5,
+   "shape": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "k_mat",
+   "label": "Key matrix K",
+   "help": "Editing K changes the similarity scores S, then the weights A, the largest weight m, the row sums r_i and the output O.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     1,
+     1
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "min": -4,
+   "max": 4,
+   "step": 0.5,
+   "shape": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "v_mat",
+   "label": "Value matrix V",
+   "help": "Editing V leaves the scores S, weights A and row sums r_i unchanged and only moves the output O, since O mixes the value rows.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     1,
+     2
+    ],
+    [
+     3,
+     4
+    ]
+   ],
+   "min": -4,
+   "max": 4,
+   "step": 0.5,
+   "shape": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "scale_on",
+   "label": "Scaling by 1/sqrt(d_k)",
+   "help": "Turning scaling on divides every score in S by sqrt(d_k)=1.414 before the softmax, which lowers the largest weight m and flattens A while the row sums r_i stay at 1.",
+   "units": "unitless",
+   "kind": "toggle",
+   "default": true
+  },
+  {
+   "id": "k2_gain",
+   "label": "Second key row gain g",
+   "help": "Multiplying the second key row by g raises the second score of every query in S, pushes the weights A toward the second key, raises the largest weight m, and moves the output O toward the second value row.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 1,
+   "min": 0,
+   "max": 3,
+   "step": 0.25
+  }
+ ],
+ "outputs": [
+  {
+   "id": "scores",
+   "label": "Similarity scores S",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "weights",
+   "label": "Attention weights A",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "max_weight",
+   "label": "Largest attention weight m",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "row_sums",
+   "label": "Row sums r_i of A",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "output",
+   "label": "Output matrix O = A V",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "scores_heat",
+   "kind": "heatmap",
+   "title": "Similarity scores before softmax",
+   "output": "scores",
+   "x_label": "key index j",
+   "y_label": "query index i"
+  },
+  {
+   "id": "weights_heat",
+   "kind": "heatmap",
+   "title": "Attention weights after per-row softmax",
+   "output": "weights",
+   "x_label": "key index j",
+   "y_label": "query index i"
+  },
+  {
+   "id": "max_weight_line",
+   "kind": "line",
+   "title": "Largest attention weight against the second key row gain",
+   "output": "max_weight",
+   "x_label": "second key row gain g",
+   "y_label": "largest weight m",
+   "sweep": {
+    "control": "k2_gain",
+    "min": 0,
+    "max": 3,
+    "points": 21
+   }
+  },
+  {
+   "id": "row_sums_bar",
+   "kind": "bar",
+   "title": "Each weight row sums to one",
+   "output": "row_sums",
+   "x_label": "query row i",
+   "y_label": "sum of attention weights",
+   "labels": [
+    "query row 1",
+    "query row 2"
+   ]
+  },
+  {
+   "id": "output_values",
+   "kind": "values",
+   "title": "Output rows as weighted averages of the value rows",
+   "output": "output",
+   "x_label": "value dimension",
+   "y_label": "query row"
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Identical keys give uniform weights",
+   "instruction": "Predict: when both key rows are the same and the gain is 1, what are the attention weights, and does the scaling toggle change them? Then apply the preset, which sets the query matrix Q, the key matrix K, the value matrix V, the second key row gain g and the scaling toggle.",
+   "observe": "The similarity scores S read 0.7071 in all four cells, which is 1/sqrt(2). The weights A read 0.5 in all four cells, the largest weight m is 0.5, both row sums r_i read 1, and each output row is [2, 3], the equal mixture of the value rows [1, 2] and [3, 4].",
+   "why": "Identical key rows give identical scores inside each row of S, so the softmax numerators are equal and the weights split 50/50 no matter what divisor is used; subtracting the row maximum shifts both scores equally. Averaging the value rows at weight 0.5 per key produces the output row [2, 3].",
+   "preset": {
+    "q_mat": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k_mat": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "v_mat": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "k2_gain": 1,
+    "scale_on": true
+   }
+  },
+  {
+   "title": "A dominant key when scaling is off",
+   "instruction": "Predict: what happens to the weights A and to the largest weight m when the second key row is multiplied by 3 and the scaling toggle is off? Then apply the preset, which sets the query matrix Q, the key matrix K, the value matrix V, the second key row gain g and the scaling toggle.",
+   "observe": "The scores S read 1 beside 3 in each row. The weights A become about 0.119 and 0.881, the largest weight m is about 0.8808, the row sums r_i stay at 1, and each output row moves to about [2.762, 3.762], close to the second value row.",
+   "why": "When scaling is off, the raw dot products 1 and 3 enter the softmax directly and a score gap of 2 creates a sharply peaked distribution. Dividing the same scores by sqrt(d_k)=1.414 first shrinks the gap to about 1.414 and raises the first weight to about 0.196, which lowers m and makes the output row a less lopsided mixture.",
+   "preset": {
+    "q_mat": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k_mat": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "v_mat": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "k2_gain": 3,
+    "scale_on": false
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "equal keys give weights of one half and a scaled score of 1/sqrt(2)",
+   "inputs": {
+    "q_mat": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k_mat": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "v_mat": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "k2_gain": 1,
+    "scale_on": true
+   },
+   "expected": {
+    "scores": [
+     [
+      0.7071067811865476,
+      0.7071067811865476
+     ],
+     [
+      0.7071067811865476,
+      0.7071067811865476
+     ]
+    ],
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "max_weight": 0.5,
+    "row_sums": [
+     1,
+     1
+    ],
+    "output": [
+     [
+      2,
+      3
+     ],
+     [
+      2,
+      3
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "dominant key with scaling off leaves raw scores 1 and 3",
+   "inputs": {
+    "q_mat": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k_mat": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "v_mat": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "k2_gain": 3,
+    "scale_on": false
+   },
+   "expected": {
+    "scores": [
+     [
+      1,
+      3
+     ],
+     [
+      1,
+      3
+     ]
+    ],
+    "weights": [
+     [
+      0.11920292202211755,
+      0.8807970779778823
+     ],
+     [
+      0.11920292202211755,
+      0.8807970779778823
+     ]
+    ],
+    "max_weight": 0.8807970779778823,
+    "row_sums": [
+     1,
+     1
+    ],
+    "output": [
+     [
+      2.761594155955765,
+      3.761594155955765
+     ],
+     [
+      2.761594155955765,
+      3.761594155955765
+     ]
+    ]
+   },
+   "atol": 1e-08,
+   "rtol": 1e-08
+  },
+  {
+   "name": "same dominant key with scaling on lowers the largest weight",
+   "inputs": {
+    "q_mat": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k_mat": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "v_mat": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "k2_gain": 3,
+    "scale_on": true
+   },
+   "expected": {
+    "scores": [
+     [
+      0.7071067811865475,
+      2.1213203435596424
+     ],
+     [
+      0.7071067811865475,
+      2.1213203435596424
+     ]
+    ],
+    "weights": [
+     [
+      0.19557032,
+      0.80442968
+     ],
+     [
+      0.19557032,
+      0.80442968
+     ]
+    ],
+    "max_weight": 0.80442968
+   },
+   "atol": 1e-06,
+   "rtol": 1e-06
+  },
+  {
+   "name": "scaling divides every score by the square root of the key dimension",
+   "inputs": {
+    "q_mat": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k_mat": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "v_mat": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "k2_gain": 1,
+    "scale_on": true
+   },
+   "expected": {
+    "scores": [
+     [
+      0.7071067811865475,
+      2.1213203435596424
+     ],
+     [
+      1.414213562373095,
+      2.82842712474619
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "every attention weight row sums to one",
+   "output": "weights",
+   "kind": "row_sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "the two row sums together equal two",
+   "output": "row_sums",
+   "kind": "sum",
+   "expected": 2,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "largest attention weight stays between one half and one",
+   "output": "max_weight",
+   "kind": "range",
+   "min": 0.5,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "output entries stay finite",
+   "output": "output",
+   "kind": "finite",
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ]
+}

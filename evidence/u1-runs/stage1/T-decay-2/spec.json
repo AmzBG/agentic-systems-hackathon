@@ -1,0 +1,221 @@
+{
+ "controls": [
+  {
+   "id": "n0",
+   "label": "Initial amount N0",
+   "help": "Sets the initial amount N0 that multiplies the remaining fraction f, scaling the remaining amount N(t) while leaving the exponent lambda*t, the fraction and the half-life unchanged.",
+   "units": "mol",
+   "kind": "slider",
+   "default": 10,
+   "min": 1,
+   "max": 100,
+   "step": 0.5
+  },
+  {
+   "id": "lambda",
+   "label": "Decay constant lambda",
+   "help": "Sets lambda; a larger lambda raises the exponent lambda*t, lowers the remaining fraction f and the remaining amount N(t), and lowers the half-life ln 2 / lambda.",
+   "units": "1/y",
+   "kind": "slider",
+   "default": 0.05,
+   "min": 0.01,
+   "max": 1,
+   "step": 0.01
+  },
+  {
+   "id": "t",
+   "label": "Elapsed time t",
+   "help": "Sets the elapsed time t; a larger t raises the exponent lambda*t, lowers the remaining fraction f and the remaining amount N(t), and leaves the half-life unchanged.",
+   "units": "y",
+   "kind": "slider",
+   "default": 20,
+   "min": 0,
+   "max": 100,
+   "step": 1
+  }
+ ],
+ "outputs": [
+  {
+   "id": "exponent",
+   "label": "Exponent lambda*t",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "fraction",
+   "label": "Remaining fraction f = exp(-lambda*t)",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "amount",
+   "label": "Remaining amount N(t)",
+   "units": "mol",
+   "role": "result"
+  },
+  {
+   "id": "half_life",
+   "label": "Half-life ln 2 / lambda",
+   "units": "y",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "fraction_curve",
+   "kind": "line",
+   "title": "Remaining fraction against time",
+   "output": "fraction",
+   "x_label": "Elapsed time t (y)",
+   "y_label": "Remaining fraction f (unitless)",
+   "sweep": {
+    "control": "t",
+    "min": 0,
+    "max": 100,
+    "points": 41
+   }
+  },
+  {
+   "id": "amount_curve",
+   "kind": "line",
+   "title": "Remaining amount against time",
+   "output": "amount",
+   "x_label": "Elapsed time t (y)",
+   "y_label": "Remaining amount N(t) (mol)",
+   "sweep": {
+    "control": "t",
+    "min": 0,
+    "max": 100,
+    "points": 41
+   }
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Doubling the decay constant",
+   "instruction": "Predict: if lambda doubles while N0 and t stay fixed, what happens to the remaining fraction, the remaining amount and the half-life? Then apply the preset, which sets lambda to 0.1 1/y.",
+   "observe": "The exponent readout rises from 1 to 2, the remaining fraction falls from 0.3679 to 0.1353, the remaining amount falls from 3.679 mol to 1.353 mol, and the half-life falls from 13.86 y to 6.931 y.",
+   "why": "Doubling lambda doubles the exponent lambda*t at the same t, so the exponential exp(-lambda*t) is squared and the fraction drops from 0.3679 to its square 0.1353; the amount inherits the same factor, and the half-life ln 2 / lambda is halved because it carries lambda in its denominator.",
+   "preset": {
+    "n0": 10,
+    "lambda": 0.1,
+    "t": 20
+   }
+  },
+  {
+   "title": "Slow versus fast decay at the same time",
+   "instruction": "Predict: at fixed N0 = 10 mol and t = 20 y, how do a slow decay constant and the default decay constant differ in remaining fraction, remaining amount and half-life? Then apply the preset, which sets lambda to 0.01 1/y.",
+   "observe": "The exponent readout falls from 1 to 0.2, the remaining fraction rises from 0.3679 to 0.8187, the remaining amount rises from 3.679 mol to 8.187 mol, and the half-life rises from 13.86 y to 69.31 y.",
+   "why": "A smaller lambda multiplies the same elapsed time into a smaller exponent lambda*t, so exp(-lambda*t) stays closer to 1 and much more of the sample remains; the longer half-life ln 2 / lambda shows that the same curve is stretched over a much longer time.",
+   "preset": {
+    "n0": 10,
+    "lambda": 0.01,
+    "t": 20
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "default point",
+   "inputs": {
+    "n0": 10,
+    "lambda": 0.05,
+    "t": 20
+   },
+   "expected": {
+    "exponent": 1,
+    "fraction": 0.3678794412,
+    "amount": 3.678794412,
+    "half_life": 13.86294361
+   },
+   "atol": 1e-06,
+   "rtol": 1e-09
+  },
+  {
+   "name": "start of decay",
+   "inputs": {
+    "n0": 7,
+    "lambda": 0.2,
+    "t": 0
+   },
+   "expected": {
+    "exponent": 0,
+    "fraction": 1,
+    "amount": 7,
+    "half_life": 3.465735903
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "doubled decay constant preset",
+   "inputs": {
+    "n0": 10,
+    "lambda": 0.1,
+    "t": 20
+   },
+   "expected": {
+    "exponent": 2,
+    "fraction": 0.1353352832,
+    "amount": 1.353352832,
+    "half_life": 6.931471806
+   },
+   "atol": 1e-06,
+   "rtol": 1e-09
+  },
+  {
+   "name": "slow decay preset",
+   "inputs": {
+    "n0": 10,
+    "lambda": 0.01,
+    "t": 20
+   },
+   "expected": {
+    "exponent": 0.2,
+    "fraction": 0.8187307531,
+    "amount": 8.187307531,
+    "half_life": 69.31471806
+   },
+   "atol": 1e-06,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "fraction stays within zero and one",
+   "output": "fraction",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "amount stays nonnegative and no larger than the largest allowed N0",
+   "output": "amount",
+   "kind": "range",
+   "min": 0,
+   "max": 100,
+   "atol": 1e-06,
+   "rtol": 0
+  },
+  {
+   "name": "exponent stays between zero and lambda max times t max",
+   "output": "exponent",
+   "kind": "range",
+   "min": 0,
+   "max": 100,
+   "atol": 1e-09,
+   "rtol": 0
+  },
+  {
+   "name": "half-life stays between ln 2 over the largest and smallest allowed lambda",
+   "output": "half_life",
+   "kind": "range",
+   "min": 0.6931471806,
+   "max": 69.31471806,
+   "atol": 1e-06,
+   "rtol": 1e-06
+  }
+ ]
+}
