@@ -16,6 +16,7 @@ from run_all import summarize_repeats  # noqa: E402
 from check_entropy_oracle import _near_active_vector  # noqa: E402
 from validate_output import validate_output  # noqa: E402
 from check_practice_oracles import verify_page  # noqa: E402
+from check_attention_oracle import expected_attention, verify_attention_page  # noqa: E402
 
 
 def _event(stage: str, *, result: str = "pass", details: dict | None = None) -> dict:
@@ -25,6 +26,16 @@ def _event(stage: str, *, result: str = "pass", details: dict | None = None) -> 
 
 
 class EvidenceScriptTests(unittest.TestCase):
+    def test_independent_attention_uniform_and_scaled_identity(self) -> None:
+        inputs = {'q': [[0, 0], [0, 0]], 'k': [[1, 0], [0, 1]],
+                  'v': [[2, 0], [0, 4]], 'dk': 2, 'scale_on': True}
+        self.assertEqual(expected_attention(inputs)['output'], [[1, 2], [1, 2]])
+        identity = {**inputs, 'q': [[1, 0], [0, 1]]}
+        self.assertAlmostEqual(expected_attention(identity)['weights'][0][0], 0.6697615493266569)
+        report = verify_attention_page(ROOT / 'evidence/u1-runs/stage2/T-attention-4/index.html')
+        self.assertTrue(report['ok'], report)
+        self.assertEqual(len(report['trials']), 6)
+
     def test_page_oracle_rejects_wrong_independent_expectation(self) -> None:
         from runtime import render
         spec = json.loads((ROOT / 'practice/specs/entropy.json').read_text(encoding='utf-8'))
