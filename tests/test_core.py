@@ -839,17 +839,29 @@ class EvidenceDrivenTests(unittest.TestCase):
         self.assertEqual(h.final()["stage"], "final")
 
     def test_outgoing_json_for_supplied_model_and_reasoning_modes(self):
-        model = "some-lab/odd.model-ID_9:beta"
-        for mode, expected in (("low", {"effort": "low"}), ("off", {"enabled": False}), ("model", None)):
+        odd = "some-lab/odd.model-ID_9:beta"
+        flash = "deepseek/deepseek-v4.1-flash"
+        required = {"require_parameters": True}
+        cases = (  # (model, --reasoning, expected reasoning field, expected provider field, extra args)
+            (odd, "low", {"effort": "low"}, required, []),
+            (odd, "off", {"enabled": False}, required, []),
+            (odd, "model", None, None, []),
+            (odd, "auto", None, None, []),  # unrecognised model: generic path, no model-specific fields
+            (flash, "auto", {"effort": "low"}, required, []),  # recognised: explicit low, enforced
+            (flash, "high", {"effort": "high"}, required, []),
+            (flash, "auto", {"effort": "low"}, {**required, "sort": "throughput"}, ["--provider-sort", "throughput"]),
+        )
+        for model, mode, expected, provider, extra in cases:
             opener = FakeOpener(api_reply(wire()))
 
             class Capturing(OpenRouterClient):
                 def __init__(self, *args, **kwargs):
                     super().__init__(*args, opener=opener, **kwargs)
             h = Harness()
-            with self.subTest(mode), mock.patch.object(agent, "OpenRouterClient", Capturing):
+            with self.subTest(model=model, mode=mode, extra=extra), \
+                    mock.patch.object(agent, "OpenRouterClient", Capturing):
                 code = agent.run(["--input", str(h.case_path), "--output", str(h.out), "--model", model,
-                                  "--reasoning", mode], environ={"OPENROUTER_API_KEY": KEY},
+                                  "--reasoning", mode, *extra], environ={"OPENROUTER_API_KEY": KEY},
                                  fetcher=lambda u, f: {"status": "failed"}, render=h.render,
                                  run_checks=lambda s, p: ok_report(), write_trace=h.trace)
                 self.assertEqual(code, 0)
@@ -858,7 +870,8 @@ class EvidenceDrivenTests(unittest.TestCase):
                 self.assertEqual(body["model"], model)
                 self.assertEqual(body["max_tokens"], agent.GENERATION_MAX_TOKENS)
                 self.assertEqual(body.get("reasoning"), expected)
-                self.assertEqual(set(body) - {"reasoning"}, {"model", "messages", "max_tokens"})
+                self.assertEqual(body.get("provider"), provider)
+                self.assertEqual(set(body) - {"reasoning", "provider"}, {"model", "messages", "max_tokens"})
                 self.assertLessEqual(timeout, 240)
                 self.assertEqual(request.full_url, "https://openrouter.ai/api/v1/chat/completions")
                 call = [e for e in h.events if e["action"] == "request"][0]
