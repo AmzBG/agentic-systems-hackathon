@@ -310,6 +310,32 @@ def _probes(spec: dict) -> list[tuple[str, dict, str | None, dict | None]]:
         result.append((f"exploration_{index}", {**defaults, **item["preset"]}, None, None))
     for index, item in enumerate(spec["tests"], 1):
         result.append((f"test_{index}", {**defaults, **item["inputs"]}, None, item))
+    # One-at-a-time mutations miss singularities that require two controls at
+    # their boundaries (for example, a shorter active prefix and zero weights).
+    # Four fixed assignments cover same/opposite boundaries without a Cartesian
+    # explosion. They do not count as evidence of an individual control's effect.
+    boundaries = []
+    for control in spec["controls"]:
+        kind = control["kind"]
+        if kind == "toggle":
+            pair = (False, True)
+        elif kind == "select":
+            pair = (control["options"][0]["value"], control["options"][-1]["value"])
+        elif kind == "vector":
+            pair = tuple([value] * control["shape"][0] for value in (control["min"], control["max"]))
+        elif kind == "matrix":
+            rows, columns = control["shape"]
+            pair = tuple([[value] * columns for _ in range(rows)] for value in (control["min"], control["max"]))
+        else:
+            pair = (control["min"], control["max"])
+        boundaries.append((control["id"], pair))
+    if len(result) + 4 <= 80:
+        for pattern in range(4):
+            inputs = {
+                name: pair[pattern if pattern < 2 else (index + pattern) % 2]
+                for index, (name, pair) in enumerate(boundaries)
+            }
+            result.append((f"combined_boundary_{pattern}", inputs, None, None))
     for control in spec["controls"]:
         kind, name = control["kind"], control["id"]
         if kind in {"slider", "number"}:

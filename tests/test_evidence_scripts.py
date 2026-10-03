@@ -26,18 +26,33 @@ def _event(stage: str, *, result: str = "pass", details: dict | None = None) -> 
 
 
 class EvidenceScriptTests(unittest.TestCase):
-    def test_attention_fixture_exploration_isolates_scaling(self) -> None:
+    def test_rerender_preserves_retained_ast_and_teaching(self) -> None:
+        from rerender_retained import recover, rerender
+        from check_entropy_oracle import _runtime_payload
+        original = (ROOT / 'evidence/u1-runs/screen-27f581a/SCR-1/index.html').read_text(encoding='utf-8')
+        updated = rerender(original)
+        self.assertEqual(_runtime_payload(updated), _runtime_payload(original))
+        self.assertEqual(recover(updated), recover(original))
+        self.assertIn('<details open>', updated)
+        self.assertNotIn('Scientific learning workbench', updated)
+
+    def test_attention_fixture_exploration_isolates_equal_score_normalization(self) -> None:
         from runtime import merge_inputs, render
         spec = json.loads((ROOT / 'practice/specs/attention.json').read_text(encoding='utf-8'))
         preset = spec['explorations'][0]['preset']
-        self.assertEqual(preset, {'scale': False})
+        self.assertEqual(preset, {'queries': [[0, 0], [0, 0]]})
         defaults = {c['id']: c['default'] for c in spec['controls']}
         trial = merge_inputs(spec['controls'], preset)
-        for key in ('queries', 'keys', 'values'):
+        for key in ('keys', 'values', 'scale'):
             self.assertEqual(trial[key], defaults[key])
         with tempfile.TemporaryDirectory() as temp:
             page = Path(temp) / 'index.html'
             page.write_text(render(spec), encoding='utf-8')
+            equal = verify_page(page, preset, {
+                'score_matrix': [[0, 0], [0, 0]],
+                'attention_weights': [[.5, .5], [.5, .5]],
+                'attended_values': [[.5, .5], [.5, .5]]})
+            self.assertTrue(equal['ok'], equal)
             for scaled in (True, False):
                 diagonal = 1 / math.sqrt(2) if scaled else 1
                 weight = math.exp(diagonal) / (math.exp(diagonal) + 1)

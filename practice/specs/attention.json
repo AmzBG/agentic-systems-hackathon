@@ -35,11 +35,11 @@
   ],
   "explorations": [
     {
-      "title": "Isolate score scaling",
-      "instruction": "Predict whether removing the 1/sqrt(2) factor makes each query's weights more concentrated. Apply the preset: Q, K, and V stay at the identity example; only scaling is disabled. Compare with the scaled default.",
-      "observe": "Each diagonal score changes from 1/sqrt(2) to 1; off-diagonal scores stay zero. Each diagonal weight rises from about 0.670 to 0.731, while the other weight falls from about 0.330 to 0.269. Both rows still sum to one. With V equal to the identity, the output equals the weights.",
-      "why": "For these fixed dot products, removing scaling increases each row's score gap. Softmax then assigns more weight to its larger score without changing normalization or the value vectors.",
-      "preset": {"scale": false}
+      "title": "Isolate equal-score normalization",
+      "instruction": "Predict how each query splits its weights when its scores are equal. Apply the preset: only Q becomes zero; K, V and scaling keep their identity-example defaults. Compare scores, weights and weighted values.",
+      "observe": "All scores become zero. Each row of the weights is [0.5, 0.5] and each output row is [0.5, 0.5], the average of the unchanged identity value rows. Each weight row still sums to one.",
+      "why": "Softmax turns equal scores into equal weights within each query row. Holding the value rows fixed isolates this normalization: both outputs become the same weighted average.",
+      "preset": {"queries": [[0, 0], [0, 0]]}
     },
     {
       "title": "Make one key dominate",

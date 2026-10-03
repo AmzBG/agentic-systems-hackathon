@@ -5,7 +5,7 @@ import json
 import unittest
 from pathlib import Path
 
-from checks import run_checks
+from checks import _probes, run_checks
 
 
 class ContractTests(unittest.TestCase):
@@ -15,6 +15,36 @@ class ContractTests(unittest.TestCase):
         self.assertFalse(report["ok"])
         self.assertTrue(report["degraded"])
         self.assertTrue(report["failures"])
+
+    def test_combined_boundaries_preserve_legal_control_types_and_probe_limit(self) -> None:
+        controls = [
+            {"id": "x", "kind": "number", "default": 2, "min": 1, "max": 4},
+            {"id": "flag", "kind": "toggle", "default": False},
+            {"id": "mode", "kind": "select", "default": "a",
+             "options": [{"value": "a"}, {"value": "b"}]},
+            {"id": "weights", "kind": "vector", "default": [0.5, 0.5],
+             "shape": [2], "min": 0, "max": 1},
+            {"id": "matrix", "kind": "matrix", "default": [[0] * 8 for _ in range(8)],
+             "shape": [8, 8], "min": -1, "max": 1},
+        ]
+        spec = {"controls": controls, "explorations": [], "tests": [], "visuals": []}
+        probes = _probes(spec)
+        self.assertLessEqual(len(probes), 80)
+        combined = {name: (inputs, changed, test) for name, inputs, changed, test in probes
+                    if name.startswith("combined_boundary_")}
+        self.assertEqual(len(combined), 4)
+        low, changed, test = combined["combined_boundary_0"]
+        self.assertEqual(low, {"x": 1, "flag": False, "mode": "a", "weights": [0, 0],
+                               "matrix": [[-1] * 8 for _ in range(8)]})
+        self.assertIsNone(changed)  # A joint change cannot prove individual influence.
+        self.assertIsNone(test)
+        high = combined["combined_boundary_1"][0]
+        self.assertEqual(high, {"x": 4, "flag": True, "mode": "b", "weights": [1, 1],
+                                "matrix": [[1] * 8 for _ in range(8)]})
+        self.assertEqual(combined["combined_boundary_2"][0]["x"], 1)
+        self.assertTrue(combined["combined_boundary_2"][0]["flag"])
+        self.assertEqual(combined["combined_boundary_3"][0]["x"], 4)
+        self.assertFalse(combined["combined_boundary_3"][0]["flag"])
 
 
 class NumericalTests(unittest.TestCase):
@@ -48,6 +78,22 @@ class NumericalTests(unittest.TestCase):
             and "atol=1e-09" in failure
             for failure in report["failures"]
         ))
+
+    def test_combined_boundary_failure_targets_compute(self) -> None:
+        spec = copy.deepcopy(self.spec)
+        spec["compute_js"] = spec["compute_js"].replace(
+            "const entropy_bits = contributions.reduce((sum, value) => sum + value, 0);",
+            "const base_entropy_bits = contributions.reduce((sum, value) => sum + value, 0); "
+            "const entropy_bits = inputs.count === 1 && inputs.weights[0] === 0 "
+            "? -1 : base_entropy_bits;",
+        )
+        report = run_checks(spec, self.html)
+        numerical = next(c for c in report["checks"] if c["id"] == "numerical_execution")
+        self.assertEqual(numerical["status"], "fail", report)
+        self.assertEqual(numerical["target"], "compute_js")
+        self.assertIn("combined_boundary_0: invariant entropy is nonnegative failed", numerical["detail"])
+        self.assertFalse(report["ok"])
+        self.assertFalse(report["degraded"])
 
     def test_grounding_needs_a_paper_citation(self) -> None:
         spec = copy.deepcopy(self.spec)

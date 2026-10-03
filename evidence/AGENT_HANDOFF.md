@@ -1,5 +1,15 @@
 # Resume here — User 3
 
+Latest pickup: read SCREENING_RELEASE_REVIEW.md and screening_independent.json
+first. Six completed SCR runs independently reviewed: keep single/auto→low;
+all compute references pass but Attention/off fails model tests/brief and LS/off
+has false exploration prose. No new paid call by U3. New combined-boundary checker
+regression detects a real two-control gap; fixture equal-Q experiment meets the
+assignment. Current integration includes core056a858 and rendererfbe113c, after
+generating27f581a. 195 tests PASS on3.11.9. U3-U1-008 and U3-U2-004 route residual
+prose and PRIVATE/404 release gate; exact candidate verification follows committed
+owned changes. Legacy paragraphs below are historical, not current freeze proof.
+
 Latest teaching-fix override (16:33 Beirut): user paused the broad screening/release review to fix the prior fixture failures. U2 renderer7b27144 already opens notation and fixes invariant-backed0–1/mixed-sign heatmaps; U3 added the explicit Entropy equation pipeline and a scaling-only first Attention exploration, retaining scientific checks. See reviews/TEACHING_FIXES.md for renderer/fixture provenance and hashes, 170-test Python3.11 PASS, actual Chromium preset/signed-color/mobile results and honest offline limits. No paid calls, generation/default change or final release certification. SCR-1..6 remain U1-only; current U1 inbox records27f581a screening, and main includes SCR-1..3. Older freeze/availability text below is historical: reread current AI.md/owner inboxes rather than assuming93f7521 remains current.
 
 Latest intake override: U2 actual Chromium evidence is now tracked at evidence/browser_qa_20261003 (e7fefcc/8fd5c6b); original artifact hashes verified and bounded PASS/UNVERIFIED observations ingested into reviews/entropy.md and reviews/attention.md. It is not current-workbench/full-network-disabled certification; U2 explicitly says final runtime freezePENDING. U1 freeze93f7521 supersedes f0ce993; supplied earlier f0ce993 Attention independently rechecked7 trials/validatorPASS, no paid duplicate. User now permits technical continuation through Jiany-S despite private access, but public access is still a release gate. Supplied release ZIP contains reference inputs/answers, NOT completed agent results: development-only practice/release_test_pack, intake evidence/release_test_pack.md;31 reference probes agree. Do not auto-run its paid three-case harness. Finish final-pass freeze/candidate verification before any new model test use; report provisional nonpaid checks honestly. User2 freeze request is owner-routed; production files remain untouched.

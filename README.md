@@ -17,6 +17,9 @@ Built for the EECE503P / EECE798S agentic-systems hackathon.
 
 Python 3.11 is required.
 
+If the Windows `py -3.11` launcher is unavailable, use the absolute path to your
+Python 3.11 executable for the venv command; verify `python --version` after activation.
+
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -51,7 +54,7 @@ Outputs:
 
 ```text
 case.json -> bounded source fetch -> one OpenRouter generation (spec JSON + compute function)
-  -> parse and validate -> render offline page -> checks -> up to 2 targeted repairs -> best page + trace
+  -> parse and validate -> render offline page -> checks -> up to 3 bounded repairs -> best page + trace
 ```
 
 | File | Role |
@@ -68,8 +71,11 @@ Each page shows the idea and why it matters, defined symbols, at least two contr
 result, a visual, exactly two guided explorations, a limitation, and grounding labelled `FROM PAPER`, `TOY EXAMPLE`,
 `SIMPLIFICATION` or `UNVERIFIED`. Generation and checking contain no paper-specific code.
 
-For `deepseek/deepseek-v4.1-flash` the defaults are single-call flow, low reasoning and throughput provider routing
-(OpenRouter's unified `reasoning` and `provider` fields), chosen on measured runs in `evidence/u1-runs/README.md` and
+For `deepseek/deepseek-v4.1-flash`, `--reasoning auto` resolves through the model profile
+to low reasoning and throughput provider routing. Single is the submission flow;
+planned is development/evidence only. After a truncated response, automatic-mode
+recovery may disable reasoning; explicit CLI reasoning choices remain authoritative.
+These use OpenRouter's unified `reasoning` and `provider` fields; measured runs are in `evidence/u1-runs/README.md` and
 `evidence/paired_entropy/README.md`. Other model IDs use the generic path with no model-specific fields.
 
 ## Example
@@ -77,7 +83,12 @@ For `deepseek/deepseek-v4.1-flash` the defaults are single-call flow, low reason
 `examples/entropy/` holds a public example pair: [`case.json`](examples/entropy/case.json) and its real generated
 [`index.html`](examples/entropy/index.html) and [`trace.jsonl`](examples/entropy/trace.jsonl) (1 request, no repairs,
 all six checks passed, 17,917 tokens). `examples/attention/case.json` is the second public input; its final generated
-page is in `evidence/u1-runs/final-93f7521/attention/`.
+latest retained page is in `evidence/u1-runs/screen-27f581a/SCR-1/`.
+The six-run low/off comparison, failures and provenance are in
+[`evidence/SCREENING_RELEASE_REVIEW.md`](evidence/SCREENING_RELEASE_REVIEW.md).
+The Entropy showcase and trace remain unchanged historical generation; its exact
+provenance is in `examples/entropy/provenance.json`. Current-renderer QA uses
+separate re-rendered copies, never a relabelled generation trace.
 
 ## Validation
 
