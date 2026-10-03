@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from run_all import summarize_repeats  # noqa: E402
 from check_entropy_oracle import _near_active_vector  # noqa: E402
 from validate_output import validate_output  # noqa: E402
+from check_practice_oracles import verify_page  # noqa: E402
 
 
 def _event(stage: str, *, result: str = "pass", details: dict | None = None) -> dict:
@@ -24,6 +25,18 @@ def _event(stage: str, *, result: str = "pass", details: dict | None = None) -> 
 
 
 class EvidenceScriptTests(unittest.TestCase):
+    def test_page_oracle_rejects_wrong_independent_expectation(self) -> None:
+        from runtime import render
+        spec = json.loads((ROOT / 'practice/specs/entropy.json').read_text(encoding='utf-8'))
+        with tempfile.TemporaryDirectory() as temp:
+            page = Path(temp) / 'index.html'
+            page.write_text(render(spec), encoding='utf-8')
+            # Test the comparison machinery, not a model-provided expected value.
+            payload = __import__('check_entropy_oracle')._runtime_payload(page.read_text(encoding='utf-8'))
+            output_id = payload['spec']['outputs'][0]['id']
+            self.assertFalse(verify_page(page, {}, {output_id: 999999})['ok'])
+            self.assertFalse(verify_page(page, {}, {})['ok'])
+
     def test_decay_oracle_uses_independent_finite_rate_math(self) -> None:
         cases = json.loads((ROOT / "practice" / "oracles" / "core_identities.json").read_text(
             encoding="utf-8"))["cases"]
