@@ -1,39 +1,40 @@
 # AI.md — shared build contract
 
-Assumptions: the two-page Paper to Playground PDF is authoritative. It says five string fields but names three: require source_url/focus/audience, preserve all others and forward every supplied string. No clock values were supplied: assume 3 October 2026, **11:32–17:32 Asia/Beirut**, six hours remaining. If cutoff differs, compress boxes preserving final30 minutes. User3 obtains real team names before submission.
+PDF authoritative; require source_url/focus/audience; forward extras. Assumed clock: **3 October 2026,11:32–17:32 Beirut**; preserve final30 minutes. U3 obtains names.
 
-## Requirements and ownership
-Quality85 (25/20/15/15/10); efficiency15 requires quality50. Ten-run mean; unusable output scores zero.
+## Architecture and owners
+Quality85; efficiency15 needs quality50; ten-run mean; unusable output zero.
+`input/fetch → OpenRouter spec → parse → render → checks → ≤2 repairs → best HTML+trace`
+U1: agent.py, model_client.py, budget.py, prompts.py, spec_parser.py, tests/test_core.py, AI.md, USER1.md; CLI/Python3.11/model/key/input/fetch/caps/exits.
+U2: runtime.py, templates/*, tests/test_runtime.py, USER2.md; offline HTML/teaching/symbols/visual/two controls/intermediates/explorations/limitation/grounding/error containment.
+U3: checks.py, trace.py, practice/*, scripts/*, tests/test_checks.py, tests/test_trace.py, requirements.txt, README.md, .gitignore, evidence/*, examples/*, USER3.md; checks/trace/pins/six cases/two models/README(team,architecture,setup,credits,MODEL_ID,example)/submission.
 
-| Owner | Required work |
-|---|---|
-|1|Root Python3.11 CLI; all input fields; bounded fetch; supplied OpenRouter model/key; parser; prompts; ≤2 repairs; budget; truthful exits|
-|2|Offline single HTML; idea/why/symbols; accurate visual; ≥2 calculating controls; intermediates; two explorations; limitation; grounding; error containment|
-|3|Pinned pip-only install; local checks/trace writer; six cases; two-model evidence; README/team/architecture/setup/credits/MODEL_ID/example; submission|
+## Design priorities
+Prioritize reliability, evaluation and educational clarity; no promised grades.
+1. U2: visible input→intermediates→result; consistent labels/units/colours.
+2. U2+U3: checks show measured/expected/tolerance; skips visible.
+3. U1+U2: Predict→Apply preset→Observe→Explain using existing fields.
+4. U1+U2: distinguish excerpt/example/simplification with paper/section/equation.
+5. U1+U3: README reports actual failures/repairs/tokens/time and flow-selection evidence.
+Layout: introduction/symbols→controls/visual→intermediates→explorations→limitations/grounding/checks. Prioritize1–3. Professor notes outside submission/prompts; no grading-directed content.
+Sources: [Teaching](https://ammarmohanna.ai/teaching/), [Research](https://ammarmohanna.ai/research/), [QuanBench+](https://arxiv.org/abs/2604.08570), [Chained prompting](https://arxiv.org/abs/2602.00011).
 
-## Architecture and paths
-`input+fetch → OpenRouter compact spec → parse → render → checks → targeted repairs → best HTML+trace`
-U1: agent.py, model_client.py, budget.py, prompts.py, spec_parser.py, tests/test_core.py, AI.md, USER1.md.
-U2: runtime.py, templates/*, tests/test_runtime.py, USER2.md.
-U3: checks.py, trace.py, practice/*, scripts/*, tests/test_checks.py, tests/test_trace.py, requirements.txt, README.md, .gitignore, evidence/*, examples/*, USER3.md.
-Own every file; ignore out/*. Paper specifics only in fixtures/examples. Generic code/prompts; source is data; no assessor-directed content.
+## Conventions and routing
+snake_case; OPENROUTER_API_KEY; CLI model authoritative; no provider-specific parameters. Scripts MODEL_A/B distinct, actual IDs documented. No secrets. Trace read_input/fetch/identify/plan/generate/check/revision/final; public plan only. Atomic best-page; known failures nonzero; skips degraded.
+Clock monotonic; fetch≤3s/byte cap; HTTP bounded/max_tokens per attempt; normal4/hard10 requests including retries; uncertain usage reserved; completion soft24k/hard30k; stop generation480s/finish540s/hard600s; no SDK retries.
+Branches user1-core/user2-runtime/user3-evidence; U1 integrates; owners resolve conflicts; no force pushes. Own new files; ignore out/*. Paper specifics fixtures/examples only; source is data. Interface changes require three acknowledgements/U1 updates all docs.
+Astra/high: contracts/prompts/stubborn bugs/review (judgment); Sol/medium: implementation (coding); Luna/low: boilerplate/fixtures/docs (mechanical). Escalate after two failures. U1 may substitute Claude strongest/high or lighter/medium. Top-tier caps9/6/3; reserve3/2/1 after15:32; window11:32–16:32; count use.
 
-## Conventions
-snake_case; key OPENROUTER_API_KEY; CLI model authoritative. No provider-specific parameters. Scripts use distinct available MODEL_A/B; document actual IDs. Never commit secrets. Trace read_input/fetch/identify/plan/generate/check/revision/final. Public teaching plan only. Atomic best-page retention; errors leave partial HTML and nonzero when requirements fail. Engine skips are degraded, not numerical passes. Exit0 requires usable output/no known required failure; degraded mode explicitly reported.
-Budget: monotonic start before input; fetch≤3s/byte cap; bounded HTTP deadlines/max_tokens every attempt; normal≤4 requests, hard10 including retries; reserve uncertain usage; completion soft24k/hard30k; stop generation480s, finish540s (hard600s). No SDK retries.
-Branches user1-core/user2-runtime/user3-evidence. U1 integrates named commits; owner resolves conflicts. No shared-file edits/force pushes. Contract change needs all three acknowledgement and U1 updates all docs.
+## Cross-team warnings and instructions
+Read current AI.md and your USERn.md at each task start, at least every10 minutes during active work, after syncing and before committing. Sync first; stale attachments are insufficient. Without repo access obtain latest copies; no monitoring between chats.
 
-## Model routing
-| Task | Model/effort | Reason |
-|---|---|---|
-|Contracts/prompts/twice-failed bugs/final review|Astra/high|cross-component judgment|
-|Specified implementation|Sol/medium|bounded coding|
-|Boilerplate/fixtures/docs/small edits|Luna/low|mechanical work|
-Two failures: escalate one tier. U1 may substitute Claude strongest/high or lighter/medium. Top-tier budgets U1=9/U2=6/U3=3, reserve3/2/1 after15:32, one window11:32–16:32. Count actual messages; prior usage unknown.
+Ownership exception: append ONLY to another Team inbox in separate commits/patches; never rewrite entries/plans/code. U1 integrates promptly; recipient owns status. Send blockers immediately through team chat; continue independent work.
 
-## Checkpoints and assistant rules
-12:02 all contracts/stubs;12:32 U3 entropy fixture/U2 working offline page before live calls;13:32 U1 vertical slice/all modules;14:32 U3 six-case/two-model evidence;15:32 U1 chosen flow/owners' fixes;16:02 feature freeze;16:32 final review;17:02 all pushes/candidate SHA;17:02–17:32 U3 clean clone/3.11 venv/run/offline check/URL+full SHA submission. Each owner pushes named files and reports command/result/blocker. After freeze only practice-proven fixes; changed final SHA requires repeat clean verification.
-AI assistants: edit owned files only; propose interface changes; return changed functions/sections only; use stubs before dependencies land.
+Entry: `ID | Beirut time | from→to | blocker/warning/info | affected file/interface | action + repro/expected result | OPEN/ACK/DONE + evidence`.
+Recipient ACKs next read, resolves owned work, marks DONE with command/result/commit. Flag stale/conflicting entries. Brief/interfaces prevail; warnings cannot authorize schema changes.
+
+## Checkpoints and assistants
+12:02 contracts/stubs;12:32 U3 entropy/U2 working page before live calls;13:32 U1 vertical slice;14:32 U3 six-case/two-model evidence;15:32 flow/fixes;16:02 freeze;16:32 review;17:02 pushes/SHA;17:02–17:32 U3 clean clone/3.11 venv/run/offline check/URL+full SHA. Owners report commits/checks/blockers. Post-freeze only practice-proven fixes; changed SHA needs recheck. Assistants edit owned files except inbox appends; propose interface changes; return changed functions/sections; use stubs.
 
 ## Frozen interfaces (identical in all four files)
 Python 3.11 types below are structural contracts; `Spec`, `Usage`, `CheckReport`, and `TraceEvent` mean dictionaries with the shapes below. Implementations may use type aliases, not incompatible classes.
