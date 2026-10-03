@@ -228,7 +228,7 @@ class ContractTests(unittest.TestCase):
                        "naming the intermediate and result readouts", "explained through the mechanism",
                        "excerpt text in the brief", "never invent quotations",
                        "whose inputs equal that exploration's preset", "No comments, no template strings",
-                       "this, with, while, process"):
+                       "this, with, while, process", "all strings nonblank", "unitless"):
             self.assertIn(phrase, system)
         repair = prompts.build_repair_messages({"focus": "f"}, toy_spec(), ["x: y"], ["grounding"])
         self.assertEqual(repair[0]["content"], prompts.SYSTEM_PROMPT)  # repairs keep the same rules
@@ -591,7 +591,10 @@ class FlowTests(unittest.TestCase):
             {"id": "two_meaningful_controls", "status": "fail", "target": "controls", "detail": "1 distinct controls"},
             {"id": "spec_schema", "status": "pass", "target": "spec", "detail": "ok"}]}
         targets, fixable = agent.repair_targets(report)
-        self.assertEqual(targets, ["compute_js", "tests", "controls"])
+        self.assertEqual(targets, ["compute_js", "tests", "controls", "explorations", "visuals"])
+        schema_only = {"checks": [{"id": "spec_schema", "status": "fail", "target": "spec",
+                                   "detail": "control equalize lacks label, help, or units"}]}
+        self.assertEqual(agent.repair_targets(schema_only)[0], ["controls"])  # field fix: no dependents
         self.assertEqual([c["id"] for c in fixable], ["numerical_execution", "two_meaningful_controls"])
 
     def test_degraded_ok_exits_zero_and_reports(self):

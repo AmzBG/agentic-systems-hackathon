@@ -32,8 +32,10 @@ from prompts import (MAX_SOURCE_CHARS, build_generation_messages, build_plan_mes
 from spec_parser import SPEC_KEYS, REVISABLE_KEYS, SpecError, error_targets, merge_revision, parse_spec
 
 REQUIRED_FIELDS = ("source_url", "focus", "audience")
-GENERATION_MAX_TOKENS = 11_000
-REPAIR_MAX_TOKENS = 5_500
+# Reasoning models spend most completion tokens before visible text; caps leave room for it.
+# Worst case with unverified usage (14k + 7k) stays under the 24k soft cap.
+GENERATION_MAX_TOKENS = 14_000
+REPAIR_MAX_TOKENS = 7_000
 PLAN_MAX_TOKENS = 800
 MAX_REPAIRS = 2
 MAX_RETRIES_PER_CALL = 1
@@ -290,7 +292,9 @@ def repair_targets(report: dict) -> tuple[list[str], list[dict]]:
         if head in PAGE_TARGETS:
             continue
         fixable.append(check)
-        keys = [_KEY_WORDS[head]] if head in _KEY_WORDS else []
+        # A direct target may need reference-dependent keys too; keys named only in the detail text
+        # (field-level schema findings) are revised alone to keep repairs small.
+        keys = expand_requested([_KEY_WORDS[head]]) if head in _KEY_WORDS else []
         keys += [_KEY_WORDS[word] for word in re.findall(r"[a-z_]+", str(check.get("detail", "")).lower())
                  if word in _KEY_WORDS]
         for key in keys:
@@ -527,7 +531,7 @@ class Runner:
                               details={"reason": "remaining failures are in the rendered page, not the specification"})
                 return False  # skips/degraded only, or renderer defects: no spec repair can help
             targets += [key for key in error_targets(errors) if key not in targets]
-            requested = expand_requested(targets) if targets else [k for k in SPEC_KEYS if k in REVISABLE_KEYS]
+            requested = targets or [k for k in SPEC_KEYS if k in REVISABLE_KEYS]
             failures = [f"{c.get('id')}: {c.get('detail')}" for c in fixable] + \
                        [f"previous revision rejected: {e}" for e in errors]
             record.update(mode="targeted", requested=requested)
