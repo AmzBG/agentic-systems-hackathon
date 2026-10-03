@@ -1,8 +1,10 @@
 # Paper to Playground
 
-An agent for the EECE503P / EECE798S hackathon. It turns a focused research-paper source and learning brief into a single offline interactive HTML explanation, plus an auditable JSONL execution trace.
+Paper to Playground is a self-verifying lesson compiler. The model understands the paper and designs a focused teaching specification; deterministic software renders the interactive explanation and verifies its calculations; the agent revises only demonstrated failures.
 
-The current core generates a compact specification that a shared offline runtime will render and check. The frozen interface and ownership are in `AI.md`. The new core and User 3 checker are integrated on `main`; the User 2 renderer has not landed yet, so an end-to-end success claim would be premature.
+Built for the EECE503P / EECE798S hackathon, it turns a focused research-paper source and learning brief into a single offline interactive HTML explanation, plus an auditable JSONL execution trace.
+
+The core generates a compact specification that the shared offline runtime renders and the checker verifies. The frozen interface and ownership are in `AI.md`. Core, renderer, and checker are integrated on `main`. A live entropy run has passed the validator and independent numerical oracle; real browser review remains unverified.
 
 **Assessment model:** DeepSeek V4.1 Flash via OpenRouter, using the pinned model ID `deepseek/deepseek-v4.1-flash`.
 
@@ -25,8 +27,7 @@ python -m pip install -r requirements.txt
 For tests:
 
 ```powershell
-python -m pip install -r requirements-dev.txt
-python -m pytest
+python -m unittest discover -s tests -v
 ```
 
 Copy `.env.example` to `.env` and place the development key only in the ignored `.env` file:
@@ -55,24 +56,24 @@ Successful runs create:
 - `out/index.html` - self-contained HTML with embedded styles, JavaScript, and visuals.
 - `out/trace.jsonl` - one event per line, including checks, revisions, elapsed time, and per-call token usage.
 
-Two public practice inputs are under `examples/attention/` and `examples/entropy/`.
+Two public practice inputs are under `examples/attention/` and `examples/entropy/`. The latter also contains a real model-generated [`index.html`](examples/entropy/index.html) and its [`trace.jsonl`](examples/entropy/trace.jsonl); the matching input is [`case.json`](examples/entropy/case.json). The trace preserves both failed and accepted repairs.
 Preview the six-case run plan without making an API request:
 
 ```powershell
 python scripts/run_all.py --models deepseek/deepseek-v4.1-flash --repeats 1 --output evidence/baseline --dry-run
 ```
 
-## Preliminary architecture
+## Architecture status
 
-The pipeline validates the input and source, asks the command-line-selected OpenRouter model for a compact teaching specification plus a pure calculation function, renders that through one reusable offline HTML runtime, runs structural and numerical checks, and requests a targeted repair if a check fails. It writes the best artifact atomically and records actual stage events without credentials or hidden reasoning. The new CLI is `agent.py`; `paper_playground/` is a legacy path awaiting User 1's cleanup.
+The pipeline validates the input and source, asks the command-line-selected OpenRouter model for a compact teaching specification plus a pure calculation function, renders that through one reusable offline HTML runtime, runs structural and numerical checks, and requests a targeted repair if a check fails. It writes the best artifact atomically and records actual stage events without credentials or hidden reasoning. The CLI is `agent.py`; the former direct-HTML pipeline has been removed.
 
-The shared contract sets hard guards at 10 API calls, 30,000 completion tokens, and 10 minutes. The normal strategy targets one generation call and at most two targeted repairs.
+The shared contract sets hard guards at 10 API calls, 30,000 completion tokens, and 10 minutes. The normal strategy targets one generation call and at most two targeted repairs. The current OpenRouter setting is `--reasoning low`, with an explicit `--reasoning {low,off,model}` option for experiments.
 
 ## Evidence status
 
-Offline contract tests and a fresh Python 3.11 wheel-only installation have passed; the install check also confirmed that the pinned QuickJS engine interrupts an infinite loop. All six practice URLs yielded extractable source text through the real fetch path. These are development checks, not generated-page results.
+Offline contract tests and a fresh Python 3.11 wheel-only installation have passed; the install check also confirmed that the pinned QuickJS engine interrupts an infinite loop. All six practice URLs yielded extractable source text through the real fetch path, although one live entropy fetch failed near the three-second cap and was routed to the core owner.
 
-No live repeated-run results, repair rates, API token totals, or end-to-end timings have been measured yet, so no single-vs-planned flow quality claim is made. The single flow is only the provisional low-call baseline. The User 2 renderer and a validated public example output pair are still required before final clean-clone and browser verification.
+`evidence/DEVELOPMENT_RUNS.md` records actual failed development attempts and the passing low-reasoning entropy showcase. That run used three requests, including one rejected targeted repair and one accepted repair; it took 64.156 seconds and 27,215 verified scored tokens. Final checks passed 24 bounded numerical probes and showed three consequential controls. The published page and trace pass `scripts/validate_output.py`; a separate test executes the page interpreter against hand-calculated entropy identities. A [two-repeat entropy flow comparison](evidence/paired_entropy/README.md) found 2/2 passing single runs and 2/2 passing planned runs, with no demonstrated quality gain from planning and 68.5% more scored tokens for it. Single remains the provisional default for this measured case, not a universal claim. Real browser verification and final clean-clone verification remain open.
 
 ## Open specification questions
 
@@ -84,10 +85,8 @@ The GitHub repository is currently private. The team plans to make it public bef
 
 ## Reuse credits
 
-- Requests: HTTP transport.
-- Beautiful Soup: HTML text extraction.
+- Python standard-library HTTP and HTML parsing: source ingestion and OpenRouter transport.
 - pypdf: PDF text extraction.
 - QuickJS: bounded local execution of generated numerical calculations during validation.
-- pytest: development tests only.
 
 No paper-specific generated answer or page is included in the agent.

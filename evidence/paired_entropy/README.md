@@ -1,0 +1,14 @@
+# Entropy flow comparison — 3 October 2026
+
+Four live runs used `deepseek/deepseek-v4.1-flash`, `--reasoning low`, the same input `examples/entropy/case.json`, pinned Python 3.11 dependencies, and the same implementation revision (after merge `7eaaeee`, before U1's later `b569145`; a docs-only User 3 commit occurred between pairs). Each pair used `scripts/run_all.py --models deepseek/deepseek-v4.1-flash --flows single planned --repeats 1 --reasoning low --cases examples/entropy/case.json --output out/paired-entropy-N`, with a fresh `N` per pair. The runner issued the `--flow` flag; traces show a received plan for both planned runs and no planning call for either single run. Full traces are retained beside this file; generated HTML for these four non-showcase runs remains in ignored `out/`.
+
+| Pair | Flow | Fetched PDF chars | Requests | Prompt / completion (reasoning subset) | Scored tokens | Wall time | Outcome / repair |
+|---|---|---:|---:|---:|---:|---:|---|
+| 1 | single | 37,940 | 1 | 7,102 / 13,018 (9,993) | 20,120 | 50.937 s | Exit 0; validator and independent oracle pass; no repair |
+| 1 | planned | 43,527 | 2 | 12,912 / 10,214 (7,588) | 23,126 | 39.031 s | Exit 0; validator and independent oracle pass; no repair |
+| 2 | single | 14,370 | 1 | 5,560 / 9,602 (7,403) | 15,162 | 45.016 s | Exit 0; validator and independent oracle pass; no repair |
+| 2 | planned | 35,427 | 3 | 19,741 / 16,590 (9,959) | 36,331 | 64.047 s | Exit 0; validator and independent oracle pass; one full regeneration accepted |
+
+Reasoning tokens are a subset of completion tokens, not added again. All four usage reports are verified, with zero unknown calls. The independent test executes each page's embedded interpreter AST against the hand-calculated four-equal and certain-outcome identities in `practice/oracles/core_identities.json`, including probabilities and per-outcome contributions; inactive output slots may be explicit zeros. Both explorations on all four pages start with a prediction prompt. A spot check found visible paper-support and simplification labels, but not every source claim was independently checked against the PDF. No real-browser interaction result is claimed.
+
+Single: 2/2 validator and oracle pass, two requests, 35,282 scored tokens, 95.953 s total. Planned: 2/2 pass, five requests, 59,457 scored tokens, 103.078 s total. On this one mechanism, planning showed no verified quality gain and used 68.5% more scored tokens; retain **single** as the provisional default. Do not extrapolate this to hidden papers or claim a statistically reliable latency advantage: the PDF extractor's three-second cap supplied different amounts of source text (14,370–43,527 chars) across runs. The prior failing runs and the accepted targeted repair of the published example remain separately documented in `evidence/DEVELOPMENT_RUNS.md`.

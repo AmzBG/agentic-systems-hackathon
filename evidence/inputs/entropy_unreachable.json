@@ -1,0 +1,6 @@
+{
+  "source_url": "https://example.invalid/entropy.pdf",
+  "focus": "Explain discrete entropy for a second-year engineering learner using a small editable probability distribution. Show probabilities, each -p log2(p) contribution, and their sum in bits. Compare certainty with four equal outcomes and explain the zero-probability convention. This is a development-only unreachable-source scenario; do not present the synthetic URL as a paper citation.",
+  "audience": "A second-year engineering undergraduate comfortable with logarithms and elementary probability.",
+  "excerpt": "Supplied source context, paraphrased from Claude Shannon, A Mathematical Theory of Communication, Section 6 (1948): H = -sum_i p_i log2(p_i) measures uncertainty for a discrete source. A certain outcome has H = 0; for n equally likely outcomes H = log2(n), the maximum for fixed n. This paragraph is supplied in the brief; it was not fetched from the synthetic URL."
+}
