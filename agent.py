@@ -36,8 +36,29 @@ MAX_FIELD_CHARS = 16_000  # per brief field; longer text keeps its focus-relevan
 # Reasoning models spend most completion tokens before visible text; caps leave room for it.
 # Worst case with unverified usage (16k + 7k) stays under the 24k soft cap.
 # OpenRouter unified reasoning settings; "model" sends no reasoning field at all.
-REASONING_MODES = {"model": None, "low": {"effort": "low"}, "off": {"enabled": False}}
-DEFAULT_REASONING = "low"
+REASONING_MODES = {"model": None, "low": {"effort": "low"}, "off": {"enabled": False},
+                   "high": {"effort": "high"}}  # high: experimental only
+DEFAULT_REASONING = "auto"
+# Model-specific defaults apply only to recognised models; any other model gets the generic path.
+MODEL_PROFILES = {"deepseek/deepseek-v4.1-flash": {"reasoning": "low"}}
+
+
+def resolve_reasoning(model: str, mode: str) -> dict | None:
+    """Explicit modes win; 'auto' uses the model profile, else sends no reasoning field."""
+    if mode != "auto":
+        return REASONING_MODES[mode]
+    profile = MODEL_PROFILES.get(model.split(":", 1)[0].strip().lower())
+    return REASONING_MODES[profile["reasoning"]] if profile else None
+
+
+def provider_preferences(reasoning: dict | None, sort: str | None) -> dict | None:
+    """Require providers to honour the reasoning setting; optional dev-only routing sort."""
+    preferences: dict = {}
+    if reasoning is not None:
+        preferences["require_parameters"] = True
+    if sort:
+        preferences["sort"] = sort
+    return preferences or None
 GENERATION_MAX_TOKENS = 16_000
 REPAIR_MAX_TOKENS = 7_000
 PLAN_MAX_TOKENS = 3_000  # reasoning precedes the visible plan; 3k + 16k generation < 24k soft cap
@@ -721,7 +742,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", required=True, help="output directory")
     parser.add_argument("--model", required=True, help="OpenRouter model ID used for every call")
     parser.add_argument("--flow", choices=("single", "planned"), default="single")
-    parser.add_argument("--reasoning", choices=sorted(REASONING_MODES), default=DEFAULT_REASONING,
+    parser.add_argument("--provider-sort", choices=("throughput", "latency"), default=None,
+                        help="development only: OpenRouter provider routing order")
+    parser.add_argument("--reasoning", choices=sorted(REASONING_MODES) + ["auto"], default=DEFAULT_REASONING,
                         help="OpenRouter reasoning control for every call")
     return parser
 
@@ -748,7 +771,8 @@ def run(argv: list[str] | None = None, *, environ: dict | None = None, client_fa
     runner = Runner(
         args, budget=budget, environ=environ,
         client_factory=client_factory or (lambda model, key, b: OpenRouterClient(
-            model, key, b, reasoning=REASONING_MODES[args.reasoning])),
+            model, key, b, reasoning=resolve_reasoning(model, args.reasoning),
+            provider=provider_preferences(resolve_reasoning(model, args.reasoning), args.provider_sort))),
         fetcher=fetcher or fetch_source,
         render=_resolve("runtime", "render") if render is _DEFAULT else render,
         run_checks=_resolve("checks", "run_checks") if run_checks is _DEFAULT else run_checks,

@@ -88,6 +88,7 @@ class OpenRouterClient:
         opener: Callable = urllib.request.urlopen,
         clock: Callable[[], float] = time.monotonic,
         reasoning: dict | None = None,
+        provider: dict | None = None,
     ) -> None:
         if not model_id or not api_key:
             raise ValueError("model_id and api_key are required")
@@ -100,6 +101,8 @@ class OpenRouterClient:
         self._clock = clock
         # OpenRouter's unified reasoning control (not a provider-specific field); None sends nothing.
         self.reasoning = reasoning
+        # OpenRouter provider routing preferences (e.g. require_parameters); None sends nothing.
+        self.provider = provider
         self.last_call: dict = {}
 
     def __repr__(self) -> str:  # never expose the key
@@ -133,11 +136,13 @@ class OpenRouterClient:
         started = self._clock()
         self.last_call = {"request_number": request_number, "model_id": self.model_id,
                           "max_tokens": max_tokens, "timeout_seconds": round(timeout, 1),
-                          "reasoning": self.reasoning}
+                          "reasoning": self.reasoning, "provider_preferences": self.provider}
         try:
             payload_out = {"model": self.model_id, "messages": messages, "max_tokens": max_tokens}
             if self.reasoning is not None:
                 payload_out["reasoning"] = self.reasoning
+            if self.provider is not None:
+                payload_out["provider"] = self.provider
             body = json.dumps(payload_out).encode("utf-8")
             request = urllib.request.Request(self._url, data=body, method="POST", headers={
                 "Authorization": f"Bearer {self._api_key}",
@@ -168,6 +173,8 @@ class OpenRouterClient:
             self.last_call["finish_reason"] = finish if isinstance(finish, str) else None
             served = payload.get("model")
             self.last_call["served_model"] = served[:120] if isinstance(served, str) else None
+            serving = payload.get("provider")
+            self.last_call["served_provider"] = serving[:80] if isinstance(serving, str) else None
             return visible_text(choice.get("message")), usage
         finally:
             self.last_call["duration_seconds"] = round(self._clock() - started, 3)
