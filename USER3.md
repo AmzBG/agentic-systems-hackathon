@@ -62,6 +62,12 @@ U2-U3-004 DONE, 3 October 2026 14:12 Beirut: `eaff15d` implements runtime.numeri
 
 ## Owned files and dependencies
 
+### Core-decision handoff status — 3 October 2026 14:16 Beirut
+
+Current statuses supersede the historical OPEN labels above: U1-U3-007/008 DONE with existing commits/evidence; U1-U3-009 ACK, corrections 1–5 and 7 accepted, item 6 output cap accepted but input wording must include scalar number/slider leaves (129-leaf reproduction); unfetched-source live comparison still unresolved. U1-U3-010/011 ACK, not DONE: artifact bundles absent, scientific conclusions conditional on reported domains, Attention's 156.2 s run is pre-low/degraded. U2-U3-004 remains DONE at eaff15d. User 1's fetch warning is DONE upstream at 8e72536, not reopened. New handoff: evidence/CORE_HANDOFF.md; offline inspection script scripts/review_core_evidence.py reproduces admission gaps and revalidates all four historical paired pages; core suite 65 pass in 6.903 s. U3 will not run paid Attention in parallel: U1 coordinates any single necessary rerun after artifact search/core fixes. No second model has been evaluated.
+
+Sync resolution: `4522c0e` / `3f71ba4` closed the scalar-input cap, output-axis and exact-output-key core gaps during this review. Same reproductions now reject all three; current core suite 67 pass in 6.972 s. The input-cap implementation is aligned; only coordinated frozen wording remains. Do not send or implement duplicate core fixes.
+
 Own checks.py, trace.py, practice/*, scripts/*, tests/test_checks.py, tests/test_trace.py, requirements.txt, README.md, .gitignore, evidence/*, examples/* and USER3.md. Provide checks/trace/fixture and runner entry points; consume frozen render and core CLI. Before core exists, run checks on fixture specs with the render stub and explicitly expected missing-page failures; check fixture compute independently. Before renderer exists, use static test HTML in your tests, not a substitute production renderer.
 
 ## Ordered work
