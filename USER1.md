@@ -60,7 +60,7 @@ Already used on your coding accounts: **0 known**, not inferred from this planni
 Cut separate planning first if it does not beat single-call quality per token; then optional fetch content processing, extra prompt variants and cosmetic diagnostics. Keep fetch attempt/trace, all input fields, cap enforcement, two repairs maximum and best-artifact retention.
 
 ## Working rules and checkpoints
-Read AI.md first. Work only on your branch and owned paths; User 1 integrates pushed named commits. Only Team inbox appends are allowed in a collaborator's USER file; route code fixes to its owner. Before each checkpoint run your task checks, push, and report commit SHA and result. No later collaborator implementation is required for early work: use the frozen stubs and offline fixture dictionaries.
+Read AI.md first. Work on main in owned paths only; pull before each commit and push small named commits. Only Team inbox appends are allowed in a collaborator's USER file; route code fixes to its owner. Before each checkpoint run your task checks, push, and report commit SHA and result. No later collaborator implementation is required for early work: use the frozen stubs and offline fixture dictionaries.
 
 Checkpoint pushes: **12:02** contracts/stubs/owned test entry points; **12:32** entropy fixture/runtime smoke evidence; **13:32** real owned modules and vertical-slice fixes; **14:32** six-case/two-model support; **15:32** flow decision and regressions; **16:02** feature freeze with no TODO on required paths; **16:32** final-review fixes; **17:02** all final artifacts pushed. **17:02–17:32** clean verification and submission only. Times are Beirut, 3 October 2026, under the stated six-hours-remaining assumption.
 
