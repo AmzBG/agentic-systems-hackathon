@@ -48,6 +48,11 @@ MIN_REGENERATION_TOKENS = 8_000
 TRUNCATED_NOTE = ("the previous response was cut off at the completion-token limit before END_COMPUTE; "
                   "reason briefly and write compact JSON without indentation")
 PAGE_PROBE_SECONDS = 2.0
+PAGE_OUTPUT_LEAVES = 128  # templates/runtime.js caps numeric leaves across all outputs combined
+
+
+def _leaves(value: Any) -> int:
+    return sum(_leaves(v) for v in value) if isinstance(value, list) else 1
 FETCH_SECONDS = 3.0
 FETCH_MAX_BYTES = 6 * 1024 * 1024
 EXTRACT_MAX_CHARS = 400_000
@@ -132,6 +137,10 @@ def fallback_page(reason: str) -> str:
 
 # ------------------------------------------------------------------ source fetch
 
+class FetchFailure(ValueError):
+    """A specific, safe-to-trace reason the source text could not be used."""
+
+
 class _TextExtractor(HTMLParser):
     SKIP = {"script", "style", "noscript", "svg", "head", "nav", "footer"}
 
@@ -168,6 +177,8 @@ def _extract_pdf(data: bytes, deadline: float, clock: Callable[[], float]) -> tu
     reader = PdfReader(io.BytesIO(data))
     for page in reader.pages:
         if clock() > deadline or size > EXTRACT_MAX_CHARS:
+            if not parts:
+                raise FetchFailure("fetch deadline reached after download, before any PDF page was extracted")
             return "\n".join(parts), True
         text = page.extract_text() or ""
         parts.append(text)
@@ -213,7 +224,7 @@ def fetch_source(url: str, focus: str, *, opener: Callable = urllib.request.urlo
         if data.lstrip()[:5] == b"%PDF-" or "pdf" in ctype.lower():
             result["kind"] = "pdf"
             if capped:
-                raise ValueError("PDF exceeded the byte cap")
+                raise FetchFailure("PDF exceeded the byte cap")
             text, truncated = _extract_pdf(data, started + FETCH_SECONDS, clock)
         else:
             decoded = data.decode("utf-8", errors="replace")
@@ -228,12 +239,16 @@ def fetch_source(url: str, focus: str, *, opener: Callable = urllib.request.urlo
             truncated = capped
         text = _normalize(text)
         if not text:
-            raise ValueError("no extractable text")
+            raise FetchFailure(f"no extractable text in the {result['kind']} source")
         selected = select_passages(text, focus)
         result.update(status="ok", text=selected, chars=len(text),
                       truncated=truncated or len(selected) < len(text))
     except ImportError:
         result["error"] = "PDF text extraction unavailable"
+    except FetchFailure as exc:
+        result["error"] = str(exc)
+    except TimeoutError:
+        result["error"] = f"download did not finish within {FETCH_SECONDS:g} s"
     except Exception as exc:  # any fetch failure is traced, then generation proceeds
         result["error"] = type(exc).__name__
     result["seconds"] = round(clock() - started, 3)
@@ -272,9 +287,14 @@ def page_compute_check(spec: dict, root: Path = Path(__file__).resolve().parent)
             context.set_time_limit(PAGE_PROBE_SECONDS)
             context.set_memory_limit(64 * 1024 * 1024)
             call = f"JSON.stringify(NumericRuntime.run({ast}, {inputs}, NumericRuntime.budget()))"
-            missing = declared - set(json.loads(context.eval(interpreter + "\n" + call)))
+            result = json.loads(context.eval(interpreter + "\n" + call))
+            missing = declared - set(result)
             if missing:
                 return {**check, "status": "fail", "detail": f"{name}: page compute omits outputs {sorted(missing)}"}
+            leaves = sum(_leaves(result[key]) for key in declared)
+            if leaves > PAGE_OUTPUT_LEAVES:
+                return {**check, "status": "fail",
+                        "detail": f"{name}: outputs hold {leaves} numbers; the page shows at most {PAGE_OUTPUT_LEAVES} in total"}
         except Exception as exc:
             reason = str(exc).splitlines()[0] if str(exc) else type(exc).__name__
             return {**check, "status": "fail", "detail": f"{name}: page interpreter error: {reason}"[:300]}
@@ -379,6 +399,7 @@ class Runner:
         self.usage_totals = {"prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0,
                              "total_tokens": 0, "unverified_attempts": 0}
         self.rejected: Candidate | None = None
+        self.repair_base: dict | None = None  # schema-invalid but parsed generation; base for targeted repair
         self.case: dict[str, str] = {}
         self._secret = ""
 
@@ -568,6 +589,8 @@ class Runner:
                 self.consider(self.evaluate(spec, "generation", "generate"))
             except SpecError as exc:
                 errors = exc.errors
+                if exc.spec is not None and error_targets(errors):
+                    self.repair_base = exc.spec
                 if client.last_call.get("finish_reason") == "length":
                     errors = [TRUNCATED_NOTE] + errors
                 self.emit("generate", "parse", "fail", failures=errors[:40])
@@ -594,7 +617,14 @@ class Runner:
                plan: str | None, errors: list[str]) -> bool:
         """One repair request. Returns False when no actionable failure exists."""
         record: dict = {"number": number, "accepted": False}
-        if self.best is None:
+        base = self.best.spec if self.best is not None else self.repair_base
+        if self.best is None and self.repair_base is not None and error_targets(errors):
+            # The generation parsed but broke field-level schema rules: revise only those keys.
+            requested = error_targets(errors)
+            record.update(mode="targeted", requested=requested)
+            messages = build_repair_messages(self.case, self.repair_base, errors, requested)
+            max_tokens = REPAIR_MAX_TOKENS
+        elif self.best is None:
             if not errors and self.rejected is not None:
                 errors = [f"{c.get('id')}: {c.get('detail')}" for c in self.rejected.report["checks"]
                           if c.get("status") == "fail"]
@@ -630,7 +660,7 @@ class Runner:
             self.revisions.append(record)
             return True
         try:
-            spec = parse_spec(text) if self.best is None else merge_revision(self.best.spec, text, record["requested"])
+            spec = parse_spec(text) if record["mode"] == "full" else merge_revision(base, text, record["requested"])
         except SpecError as exc:
             record["errors"] = exc.errors[:40]
             self.revisions.append(record)
