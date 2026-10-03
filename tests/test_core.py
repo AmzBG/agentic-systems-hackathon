@@ -232,7 +232,9 @@ class ContractTests(unittest.TestCase):
                        "whose inputs equal that exploration's preset", "No comments, no template strings",
                        "this, with, process", "all strings nonblank", "unitless", "at most 256 iterations",
                        "filter, indexOf, includes", "== and !=", "Math.LN2 (use Math.log(2))",
-                       "across all outputs combined", "instead of substituting sentinel numbers"):
+                       "across all outputs combined", "instead of substituting sentinel numbers",
+                       "each test name a true statement about those inputs and values",
+                       "when that narrows a range the brief asks for, say so and why in the limitation"):
             self.assertIn(phrase, system)
         repair = prompts.build_repair_messages({"focus": "f"}, toy_spec(), ["x: y"], ["grounding"])
         self.assertEqual(repair[0]["content"], prompts.SYSTEM_PROMPT)  # repairs keep the same rules

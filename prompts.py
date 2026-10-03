@@ -70,6 +70,8 @@ Invariants: range needs both min and max (min <= max, each value); sum (flat vec
 Test comparison: |actual - expected| <= atol + rtol*|expected|. Tests must be hand-checkable identities of the
 mechanism with exact expected values (special or limiting cases), not merely finiteness. When an observation states a
 number, add a test whose inputs equal that exploration's preset and whose expected value is that number.
+Derive every expected value from that test's own inputs merged over the defaults, and make each test name a true
+statement about those inputs and values.
 
 compute(inputs): one pure, deterministic JavaScript function declaration. inputs maps every control ID to its value.
 Return an object with exactly the declared output IDs, each a finite number or a nonempty rectangular array of finite
@@ -90,7 +92,8 @@ document, globalThis, self, this, with, process, navigator, localStorage, Date, 
 Every normalization or division must be defined
 for every valid input, including all-zero or inactive entries; state that policy in the explanation or limitation.
 Choose control bounds that keep every output finite and meaningful (for example a strictly positive minimum for a
-rate) instead of substituting sentinel numbers for infinite or undefined quantities."""
+rate) instead of substituting sentinel numbers for infinite or undefined quantities; when that narrows a range the
+brief asks for, say so and why in the limitation."""
 
 FIDELITY_RULES = """\
 Teach only the focused mechanism named in the brief, at the level of the stated audience. Define every symbol before
