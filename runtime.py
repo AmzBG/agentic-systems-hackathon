@@ -55,6 +55,8 @@ class _Parser:
                 raise RuntimeSpecError(f"Unsafe or unsupported compute name: {token}")
             if token in ("==", "!="):
                 raise RuntimeSpecError("Coercive equality is unsupported; use === or !==")
+            if token == "var":
+                raise RuntimeSpecError("Function-scoped var is unsupported; use let or const")
             self.tokens.append(token)
         if len(self.tokens) > 8192:
             raise RuntimeSpecError("Compute token limit exceeded")
@@ -144,7 +146,7 @@ class _Parser:
                         raise RuntimeSpecError("Unsupported for-of declaration")
                     seq = self.expression()
                     self.take(")")
-                    return ["each", init[1][0][0], seq, self.statement()]
+                    return ["each", init[1][0][0], seq, self.statement(), init[2]]
                 self.take(";")
                 cond = self.expression()
                 self.take(";")
@@ -168,14 +170,14 @@ class _Parser:
             self.depth -= 1
 
     def declaration(self):
-        self.take()
+        kind = self.take()
         pairs = []
         while True:
             name = self.name()
             pairs.append([name, self.expression() if self.accept("=") else ["lit", None]])
             if not self.accept(","):
                 break
-        return ["decl", pairs]
+        return ["decl", pairs, kind]
 
     _PRECEDENCE = {"=": 1, "+=": 1, "-=": 1, "*=": 1, "/=": 1,
                    "||": 3, "&&": 4, "==": 5, "!=": 5, "===": 5, "!==": 5,
@@ -547,19 +549,24 @@ def _teaching(spec):
     parts.append('</section><section><h2>Symbols and units</h2><div class="scroll"><table><caption>Notation</caption><thead><tr><th>Symbol</th><th>Meaning</th><th>Units</th></tr></thead><tbody>')
     for s in spec.get("symbols", []):
         parts.append('<tr>' + ''.join(f'<td>{esc(s.get(k, ""))}</td>' for k in ("symbol", "meaning", "units")) + '</tr>')
-    parts.append('</tbody></table></div></section><section><h2>Guided explorations</h2>')
+    parts.append('</tbody></table></div></section>')
+    introduction = ''.join(parts)
+    parts = ['<section aria-labelledby="explorations"><h2 id="explorations">Guided explorations</h2><p>Make a prediction, apply the example, then compare it with the calculated result.</p>']
     for index, e in enumerate(spec.get("explorations", [])):
         parts.append(f'<article><h3>{esc(e.get("title", ""))}</h3>')
         parts.append(f'<p><strong>Predict:</strong> {esc(e.get("instruction", ""))}</p>')
         parts.append(f'<button type="button" class="preset" data-preset="{index}">Explore: {esc(e.get("title", ""))}</button>')
+        parts.append(' <a href="#results">View updated results</a><details><summary>Compare your prediction</summary>')
         for key, label in (("observe", "Observe"), ("why", "Explain")):
             parts.append(f'<p><strong>{label}:</strong> {esc(e.get(key, ""))}</p>')
-        parts.append('</article>')
-    parts.append('</section><section><h2>Grounding</h2><ul>')
+        parts.append('</details></article>')
+    parts.append('</section>')
+    explorations = ''.join(parts)
+    parts = ['<section><h2>Grounding</h2><ul>']
     for g in spec.get("grounding", []):
         parts.append(f'<li><strong>{esc(g.get("paper", ""))}</strong> — {esc(g.get("locator", ""))} <span class="badge">{esc(g.get("support", ""))}</span><p>{esc(g.get("claim", ""))}</p></li>')
     parts.append(f'</ul><h3>Limitation</h3><p>{esc(spec.get("limitation", ""))}</p></section>')
-    return ''.join(parts)
+    return introduction, explorations, ''.join(parts)
 
 
 def render(spec: dict) -> str:
@@ -575,9 +582,10 @@ def render(spec: dict) -> str:
     # collections are not assumed safe enough to traverse.
     teaching_spec = spec if isinstance(spec, dict) else {}
     try:
-        teaching = _teaching(teaching_spec)
+        teaching, explorations, grounding = _teaching(teaching_spec)
     except (AttributeError, TypeError):
         teaching = '<h1>Teaching page</h1><p>Malformed teaching metadata.</p>'
+        explorations = grounding = ''
     payload = {"spec": {k: v for k, v in teaching_spec.items() if k in (
         "controls", "outputs", "visuals", "explorations", "tests", "invariants")}, "ast": tree, "error": error}
     try:
@@ -596,8 +604,9 @@ def render(spec: dict) -> str:
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'sha256-{digest}\'; style-src \'unsafe-inline\'; img-src data:; connect-src \'none\'; object-src \'none\'; base-uri \'none\'; form-action \'none\'">'
             f'<title>{_escape(teaching_spec.get("title", "Teaching page"))}</title><style>{css}</style></head><body><main>{teaching}'
-            f'<section><h2>Calculate</h2><p id="status" role="status" aria-live="polite">{_escape(status)}</p>'
+            f'<section aria-labelledby="calculate"><h2 id="calculate">Calculate</h2><p>Change an input and follow the intermediate values to the result. Values update when an edit is committed.</p><p id="status" role="status" aria-live="polite">{_escape(status)}</p>'
             '<noscript>Degraded: JavaScript is disabled. Teaching content remains available; calculations and self-checks have not run.</noscript>'
-            '<div id="controls"></div></section><section><h2>Intermediate and result outputs</h2><p>Chart and table numbers are rounded for readability; calculations use full precision.</p><p id="result-status">No valid result yet.</p><div id="outputs"></div><div id="visuals"></div></section>'
-            '<section><h2>Self-check</h2><p id="check-status" role="status">Not run.</p><ul id="checks"></ul></section></main>'
+            '<div id="controls"></div><a href="#explorations">Try the two guided explorations</a></section><section aria-labelledby="results"><h2 id="results" tabindex="-1">Intermediate and result outputs</h2><p>Chart and table numbers are rounded for readability; calculations use full precision.</p><p id="result-status">No valid result yet.</p><div id="visuals"><div id="outputs"></div></div></section>'
+            f'{explorations}{grounding}'
+            '<section><h2>Self-check</h2><p id="check-status" role="status">Not run.</p><p>These checks test the specified examples and identities; they do not verify every claim in the explanation.</p><details><summary>Inspect measured values, expectations and tolerances</summary><ul id="checks"></ul></details></section></main>'
             f'<script type="application/json" id="runtime-data">{serialized}</script><script>{script}</script></body></html>')

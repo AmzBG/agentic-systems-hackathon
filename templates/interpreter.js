@@ -23,10 +23,10 @@ const NumericRuntime = (() => {
     try{return fn[brand](args,b);}finally{b.depth--;}
   }
   function environment(parent=null) {
-    return {vars:Object.create(null),parent,
+    return {vars:Object.create(null),constants:new Set(),parent,
       get(k){if(own(this.vars,k))return this.vars[k];if(this.parent)return this.parent.get(k);fail('Unknown local: '+k);},
-      set(k,v){if(own(this.vars,k)){this.vars[k]=v;return v;}if(this.parent)return this.parent.set(k,v);fail('Unknown assignment: '+k);},
-      declare(k,v){if(own(this.vars,k))fail('Duplicate local: '+k);this.vars[k]=v;}};
+      set(k,v){if(own(this.vars,k)){if(this.constants.has(k))fail('Cannot reassign const: '+k);this.vars[k]=v;return v;}if(this.parent)return this.parent.set(k,v);fail('Unknown assignment: '+k);},
+      declare(k,v,constant=false){if(own(this.vars,k))fail('Duplicate local: '+k);this.vars[k]=v;if(constant)this.constants.add(k);}};
   }
   function keyValue(key) {
     if(typeof key!=='string' && !(typeof key==='number' && Number.isInteger(key)))fail('Invalid property key');
@@ -101,19 +101,34 @@ const NumericRuntime = (() => {
   function statement(n,e,b) {
     b.tick();const k=n[0];
     if(k==='block'){const local=environment(e);for(const s of n[1]){const r=statement(s,local,b);if(r)return r;}return null;}
-    if(k==='decl'){for(const [name,v] of n[1])e.declare(name,expression(v,e,b));return null;}
+    if(k==='decl'){for(const [name,v] of n[1])e.declare(name,expression(v,e,b),n[2]==='const');return null;}
     if(k==='expr'){expression(n[1],e,b);return null;}
     if(k==='return')return {type:'return',value:expression(n[1],e,b)};
-    if(k==='throw')fail('Compute reported: '+String(expression(n[1],e,b)));
+    if(k==='throw'){
+      const value=expression(n[1],e,b);
+      // Never coerce a compound value: shared/cyclic arrays can expand without
+      // bound inside native String(), outside the interpreter's work budget.
+      const message=value===null?'null':typeof value==='string'?value.slice(0,1024):
+        typeof value==='number'||typeof value==='boolean'?String(value):'non-scalar error value';
+      fail('Compute reported: '+message);
+    }
     if(k==='if')return statement(truth(expression(n[1],e,b))?n[2]:n[3],e,b);
     if(k==='break'||k==='continue')return {type:k};
     if(k==='for') {
-      const local=environment(e);statement(n[1],local,b);let loops=0;
-      while(truth(expression(n[2],local,b))){if(++loops>256)fail('Loop iteration limit exceeded');const r=statement(n[4],local,b);if(r&&r.type==='return')return r;if(r&&r.type==='break')break;expression(n[3],local,b);}return null;
+      let local=environment(e);statement(n[1],local,b);let loops=0;
+      while(truth(expression(n[2],local,b))){
+        if(++loops>256)fail('Loop iteration limit exceeded');const r=statement(n[4],local,b);
+        if(r&&r.type==='return')return r;if(r&&r.type==='break')break;
+        // Lexical loop bindings are fresh for each iteration. Closures keep
+        // the completed iteration's bindings, before the next increment.
+        const next=environment(e),keys=Object.keys(local.vars);b.alloc(keys.length);
+        for(const key of keys)next.declare(key,local.vars[key],local.constants.has(key));
+        local=next;expression(n[3],local,b);
+      }return null;
     }
     if(k==='each') {
       const seq=expression(n[2],e,b);if(!Array.isArray(seq)||seq.length>128)fail('for-of requires a bounded array');
-      for(const value of seq){b.tick();const local=environment(e);local.declare(n[1],value);const r=statement(n[3],local,b);if(r&&r.type==='return')return r;if(r&&r.type==='break')break;}return null;
+      for(const value of seq){b.tick();const local=environment(e);local.declare(n[1],value,n[4]==='const');const r=statement(n[3],local,b);if(r&&r.type==='return')return r;if(r&&r.type==='break')break;}return null;
     }
     fail('Unsupported AST statement');
   }

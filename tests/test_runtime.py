@@ -256,6 +256,15 @@ def page_result(spec, actions="", inspection=None):
 
 
 class ContractTests(unittest.TestCase):
+    def test_teaching_sequence_and_prediction_reveal(self):
+        page = render(entropy_spec())
+        self.assertLess(page.index('id="calculate"'), page.index('id="results"'))
+        self.assertLess(page.index('id="results"'), page.index('id="explorations"'))
+        self.assertLess(page.index('id="explorations"'), page.index('<h2>Grounding'))
+        self.assertEqual(page.count('<summary>Compare your prediction</summary>'), 2)
+        self.assertEqual(page.count('href="#results"'), 2)
+        self.assertIn('they do not verify every claim', page)
+
     def test_exploration_order_predict_apply_observe_explain(self):
         page = render(entropy_spec())
         self.assertLess(page.index('<strong>Predict:'), page.index('data-preset="0"'))
@@ -521,7 +530,9 @@ class InteractionTests(unittest.TestCase):
         spec["visuals"][0]["output"] = "contributions"
         spec["compute_js"] = spec["compute_js"].replace("return {probabilities, contributions, entropy, energy, scaled_field};", "return {probabilities, contributions: [-2,0,1,3], entropy, energy, scaled_field};")
         result = page_result(spec, inspection="{status:text('status'),attrs:nodes.filter(n=>n.tag==='rect').map(n=>n.attrs)}")
-        self.assertEqual(result["status"], "Inputs and calculation valid.")
+        # Negative sample bars deliberately contradict the entropy identity;
+        # chart geometry remains valid while the scientific failure is visible.
+        self.assertEqual(result["status"], "Calculation completed; 1 scientific check(s) failed.")
         for attrs in result["attrs"]:
             for key in ("x", "y", "width", "height"):
                 self.assertTrue(math.isfinite(float(attrs[key])))
@@ -564,6 +575,28 @@ class InteractionTests(unittest.TestCase):
         result = page_result(spec)
         self.assertIn("4 failed", result["checkStatus"])
         self.assertIn("expectation not met", result["checks"])
+        self.assertIn("scientific check(s) failed", result["status"])
+        self.assertEqual(page_result(spec, inspection="document.getElementById('status').className"), "caution")
+
+    def test_visuals_follow_their_outputs_and_tables_keep_semantic_axes(self):
+        spec = attention_spec()
+        spec["visuals"][0].update(x_label="Key columns", y_label="Query rows")
+        result = page_result(spec, inspection="{cards:document.getElementById('outputs').children.map(n=>n.textContent),headers:nodes.filter(n=>n.tag==='th').map(n=>n.textContent)}")
+        self.assertEqual(len(result["cards"]), len(spec["outputs"]))
+        for output, card in zip(spec["outputs"], result["cards"]):
+            self.assertIn(output["label"], card)
+            for visual in spec["visuals"]:
+                if visual["output"] == output["id"]:
+                    self.assertIn(visual["title"], card)
+        self.assertIn("Query rows", result["headers"])
+        self.assertIn("Key columns 1", result["headers"])
+        swept_spec = all_kinds_spec()
+        sweep = page_result(swept_spec, inspection="nodes.filter(n=>n.tag==='th').map(n=>n.textContent)")
+        visual = next(v for v in swept_spec["visuals"] if v["kind"] == "line")
+        control = next(c for c in swept_spec["controls"] if c["id"] == visual["sweep"]["control"])
+        output = next(o for o in swept_spec["outputs"] if o["id"] == visual["output"])
+        self.assertIn(f"{visual['x_label']} ({control['units']})", sweep)
+        self.assertIn(f"{output['label']} ({output['units']})", sweep)
 
     def test_later_calculation_failure_labels_retained_result(self):
         spec = entropy_spec()
@@ -576,6 +609,37 @@ class InteractionTests(unittest.TestCase):
 
 
 class SafetyTests(unittest.TestCase):
+    def test_compound_thrown_values_cannot_expand_error_messages(self):
+        for body in (
+            "let a=[0];for(let i=0;i<25;i++){a=[a,a];}throw a;",
+            "const a=[0];a[0]=a;throw a;",
+            "throw {message:[1,2]};",
+        ):
+            spec = entropy_spec()
+            spec["compute_js"] = "function compute(inputs){" + body + "}"
+            result = page_result(spec)
+            self.assertIn("non-scalar error value", result["status"])
+            self.assertLess(len(result["status"]), 200)
+            self.assertEqual(result["outputs"], "")
+
+    def test_var_is_rejected_and_const_binding_is_enforced(self):
+        with self.assertRaisesRegex(RuntimeSpecError, "var is unsupported"):
+            parse_compute("function compute(inputs){var x=1;if(true){var x=7;}return x;}")
+        for body in ("const x=1;x=7;", "for(const x of [1,2]){x=7;}"):
+            spec = entropy_spec()
+            spec["compute_js"] = "function compute(inputs){" + body + "return {probabilities:[1],contributions:[1],entropy:1};}"
+            self.assertIn("Cannot reassign const", page_result(spec)["status"])
+
+    def test_counted_loop_closures_keep_each_iterations_binding(self):
+        spec = entropy_spec()
+        spec["compute_js"] = """function compute(inputs){
+          const callbacks=[];
+          for(let i=0;i<3;i++){callbacks.push(()=>i);}
+          const contributions=callbacks.map(f=>f());
+          return {probabilities:[1],contributions,entropy:contributions[0]};
+        }"""
+        self.assertEqual(calculate(spec)["contributions"], [0, 1, 2])
+
     def test_coercive_equality_is_rejected_instead_of_changing_js_semantics(self):
         with self.assertRaises(RuntimeSpecError):
             parse_compute("function compute(inputs) { return inputs.count == '4'; }")
@@ -680,7 +744,8 @@ class SafetyTests(unittest.TestCase):
         parsed = PageInspection(render(entropy_spec()))
         for tag, attrs in parsed.tags:
             self.assertNotIn("src", attrs)
-            self.assertNotIn("href", attrs)
+            if "href" in attrs:
+                self.assertTrue(attrs["href"].startswith("#"), attrs)
             self.assertNotIn("action", attrs)
         script = parsed.scripts[1][1]
         for forbidden in (r"\beval\s*\(", r"\bnew\s+Function\b", r"\bfetch\s*\(", r"\bDate\b", r"Math\.random", r"\.innerHTML\b", r"insertAdjacentHTML", r"XMLHttpRequest", r"WebSocket"):
