@@ -37,7 +37,8 @@ MAX_FIELD_CHARS = 16_000  # per brief field; longer text keeps its focus-relevan
 # Worst case with unverified usage (16k + 7k) stays under the 24k soft cap.
 # OpenRouter unified reasoning settings; "model" sends no reasoning field at all.
 REASONING_MODES = {"model": None, "low": {"effort": "low"}, "off": {"enabled": False},
-                   "high": {"effort": "high"}}  # high: experimental only
+                   "high": {"effort": "high"},  # experimental only
+                   "minimal": {"effort": "minimal"}, "budget8k": {"max_tokens": 8000}}  # experimental only
 DEFAULT_REASONING = "auto"
 # Model-specific defaults apply only to recognised models; any other model gets the generic path.
 MODEL_PROFILES = {"deepseek/deepseek-v4.1-flash": {"reasoning": "low"}}
