@@ -27,8 +27,7 @@ python -m pip install -r requirements.txt
 For tests:
 
 ```powershell
-python -m pip install -r requirements-dev.txt
-python -m pytest
+python -m unittest discover -s tests -v
 ```
 
 Copy `.env.example` to `.env` and place the development key only in the ignored `.env` file:
@@ -66,7 +65,7 @@ python scripts/run_all.py --models deepseek/deepseek-v4.1-flash --repeats 1 --ou
 
 ## Architecture status
 
-The pipeline validates the input and source, asks the command-line-selected OpenRouter model for a compact teaching specification plus a pure calculation function, renders that through one reusable offline HTML runtime, runs structural and numerical checks, and requests a targeted repair if a check fails. It writes the best artifact atomically and records actual stage events without credentials or hidden reasoning. The new CLI is `agent.py`; `paper_playground/` is a legacy path awaiting User 1's cleanup.
+The pipeline validates the input and source, asks the command-line-selected OpenRouter model for a compact teaching specification plus a pure calculation function, renders that through one reusable offline HTML runtime, runs structural and numerical checks, and requests a targeted repair if a check fails. It writes the best artifact atomically and records actual stage events without credentials or hidden reasoning. The CLI is `agent.py`; the former direct-HTML pipeline has been removed.
 
 The shared contract sets hard guards at 10 API calls, 30,000 completion tokens, and 10 minutes. The normal strategy targets one generation call and at most two targeted repairs.
 
@@ -86,10 +85,8 @@ The GitHub repository is currently private. The team plans to make it public bef
 
 ## Reuse credits
 
-- Requests: HTTP transport.
-- Beautiful Soup: HTML text extraction.
+- Python standard-library HTTP and HTML parsing: source ingestion and OpenRouter transport.
 - pypdf: PDF text extraction.
 - QuickJS: bounded local execution of generated numerical calculations during validation.
-- pytest: development tests only.
 
 No paper-specific generated answer or page is included in the agent.

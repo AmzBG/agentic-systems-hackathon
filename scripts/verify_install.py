@@ -53,6 +53,7 @@ def main() -> int:
             ("wheel_only_install", [str(python), "-m", "pip", "install", "--only-binary=:all:",
                                     "-r", str(ROOT / "requirements.txt")]),
             ("quickjs_limits", [str(python), "-c", PROBE]),
+            ("unittest", [str(python), "-m", "unittest", "discover", "-s", "tests", "-q"]),
         ]
         for name, command in steps:
             try:
