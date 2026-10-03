@@ -756,14 +756,17 @@ class EvidenceDrivenTests(unittest.TestCase):
         spec = toy_spec()
         spec["outputs"].append({"id": "big", "label": "Big", "units": "1", "role": "intermediate"})
         spec["compute_js"] = ("function compute(inputs) { const scaled = inputs.xs.map(x => inputs.gain * x); "
-                              "const big = Array(8).fill(0).map(() => Array(8).fill(0)); const big2 = big.concat([]); "
-                              "return { scaled, total: 1, big: big.concat(big2.slice(0, 1)) }; }")
+                              "const big = Array(8).fill(0).map(() => Array(8).fill(0)); "
+                              "return { scaled, total: 1, big }; }")
         check = agent.page_compute_check(spec)
         if check is None:
             self.skipTest("QuickJS or User 2 runtime unavailable")
-        self.assertEqual(check["status"], "pass")  # 3 + 1 + 9x8=72 numbers <= 128
-        spec["compute_js"] = spec["compute_js"].replace("big2.slice(0, 1)", "big2")  # 3 + 1 + 128 > 128
-        self.assertEqual(agent.page_compute_check(spec)["status"], "fail")
+        self.assertEqual(check["status"], "pass")  # 3 + 1 + 8x8 = 68 numbers <= 128, every axis <= 8
+        spec["outputs"].append({"id": "big2", "label": "Big 2", "units": "1", "role": "intermediate"})
+        spec["compute_js"] = spec["compute_js"].replace("total: 1, big }", "total: 1, big, big2: big }")
+        failed = agent.page_compute_check(spec)  # 3 + 1 + 64 + 64 = 132 > 128 across all outputs
+        self.assertEqual(failed["status"], "fail")
+        self.assertIn("at most 128 in total", failed["detail"])
 
     def test_control_inputs_total_cap(self):
         spec = toy_spec()
@@ -772,7 +775,7 @@ class EvidenceDrivenTests(unittest.TestCase):
         spec["controls"].append(dict(spec["controls"][-1], id="m2"))
         with self.assertRaises(SpecError) as ctx:
             validate_spec(spec)  # 3 + 64 + 64 > 128
-        self.assertTrue(any("across all vector and matrix inputs" in e for e in ctx.exception.errors))
+        self.assertTrue(any("all numeric inputs combined" in e for e in ctx.exception.errors))
 
     def test_input_cap_counts_scalar_controls_like_the_runtime(self):  # U2-U1-003 repro 1
         spec = toy_spec()
