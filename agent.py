@@ -400,6 +400,15 @@ def repair_targets(report: dict) -> tuple[list[str], list[dict]]:
     return targets, fixable
 
 
+def schema_targets(errors: list[str]) -> list[str]:
+    """Spec keys named by schema error paths. A whole-list controls error (e.g. the 128-leaf input cap) is
+    fixed by changing shapes or controls, so the keys that reference control IDs and shapes may change too."""
+    keys = error_targets(errors)
+    if any(error.startswith("controls:") for error in errors):
+        keys += [key for key in expand_requested(["controls"]) if key not in keys]
+    return keys
+
+
 # ------------------------------------------------------------------ runner
 
 class Runner:
@@ -647,7 +656,7 @@ class Runner:
         base = self.best.spec if self.best is not None else self.repair_base
         if self.best is None and self.repair_base is not None and error_targets(errors):
             # The generation parsed but broke field-level schema rules: revise only those keys.
-            requested = error_targets(errors)
+            requested = schema_targets(errors)
             record.update(mode="targeted", requested=requested)
             messages = build_repair_messages(self.case, self.repair_base, errors, requested)
             max_tokens = REPAIR_MAX_TOKENS
@@ -673,7 +682,7 @@ class Runner:
                     self.emit("revision", f"revision_{number}", "skip", failures=report["failures"],
                               details={"reason": "remaining failures are in the rendered page, not the specification"})
                 return False  # skips/degraded only, or renderer defects: no spec repair can help
-            targets += [key for key in error_targets(errors) if key not in targets]
+            targets += [key for key in schema_targets(errors) if key not in targets]
             requested = targets or [k for k in SPEC_KEYS if k in REVISABLE_KEYS]
             failures = [f"{c.get('id')}: {c.get('detail')}" for c in fixable] + \
                        [f"previous revision rejected: {e}" for e in errors]

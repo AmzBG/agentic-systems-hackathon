@@ -827,6 +827,29 @@ class EvidenceDrivenTests(unittest.TestCase):
         self.assertIn("across all numeric inputs combined, where each slider or number counts as one",
                       " ".join(prompts.SYSTEM_PROMPT.split()))
 
+    def test_input_cap_repair_may_change_controls_and_what_references_them(self):
+        over = toy_spec()
+        matrix = {"label": "M", "help": "h", "units": "1", "kind": "matrix", "min": 0, "max": 1, "step": 1}
+        over["controls"] += [dict(matrix, id=cid, shape=[8, 8], default=[[0] * 8 for _ in range(8)])
+                             for cid in ("m1", "m2")]
+        over["explorations"][1]["preset"]["m2"] = [[1] * 8 for _ in range(8)]  # 1 + 3 + 64 + 64 = 132
+        fixed_controls = over["controls"][:3] + [dict(matrix, id="m2", shape=[7, 7], default=[[0] * 7 for _ in range(7)])]
+        fixed_explorations = copy.deepcopy(over["explorations"])
+        fixed_explorations[1]["preset"]["m2"] = [[1] * 7 for _ in range(7)]  # the preset must follow the new shape
+        h = Harness(api_reply(wire(over)),
+                    api_reply(wire(metadata={"version": 1, "controls": fixed_controls,
+                                             "explorations": fixed_explorations}, compute="")))
+        self.assertEqual(h.run(), 0)
+        repair = h.sent_bodies()[1]
+        self.assertEqual(repair["max_tokens"], agent.REPAIR_MAX_TOKENS)  # targeted, not a full regeneration
+        self.assertIn('top-level keys: ["controls", "explorations", "tests", "visuals"]',
+                      repair["messages"][1]["content"])
+        requested = [e for e in h.events if e["action"] == "revision_1:targets"][0]["revisions"][0]["requested"]
+        self.assertEqual(requested[0], "controls")  # an input-contract failure leads with controls, not compute
+        self.assertEqual(h.final()["details"]["repairs"], {"attempted": 1, "accepted": 1})
+        field_only = ["controls[0].step: must be a finite positive number"]
+        self.assertEqual(agent.schema_targets(field_only), ["controls"])  # field-level findings stay small
+
     def test_page_probe_enforces_runtime_output_shape_and_exact_keys(self):  # U2-U1-003 repro 2
         if agent.page_compute_check(toy_spec()) is None:
             self.skipTest("QuickJS or User 2 runtime unavailable")
