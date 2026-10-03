@@ -3,6 +3,17 @@
 ## Mission
 Build the autonomous command-line generator that preserves the learning brief, obtains a compact spec and repairs only demonstrated failures. Keep every network attempt inside the time/request/token limits while leaving the best available artifact and an honest trace.
 
+## Cross-team warnings and instructions
+Read current AI.md and your USERn.md at each task start, at least every10 minutes during active work, after syncing and before committing. Fetch/integrate checkpoint commits first; rereading a stale uploaded copy is insufficient. Without repository access, request/re-upload the latest copy; do not claim automatic monitoring between chats.
+
+Exception to ownership: teammates may append entries ONLY to another user's “Team inbox,” via a separate commit/patch; never rewrite existing entries, task plans or code. U1 integrates these commits promptly; recipient owns status updates. Send blockers immediately through team chat as well; do independent work meanwhile.
+
+Entry: `ID | Beirut time | from→to | blocker/warning/info | affected file/interface | action + repro/expected result | OPEN/ACK/DONE + evidence`.
+Recipient ACKs on next read, resolves owned work, and marks DONE with command/result/commit; stale/conflicting instructions stay flagged for resolution. Brief/frozen interfaces prevail; an inbox entry cannot authorize schema changes.
+
+## Team inbox
+No entries yet. Append teammate warnings here; recipient updates status only.
+
 ## Owned files and dependencies
 Own agent.py, model_client.py, budget.py, prompts.py, spec_parser.py, tests/test_core.py, AI.md and USER1.md. Provide parser/client/budget; consume User2 render and User3 checks/trace through the exact stubs below; User3 owns requirements and is told proposed dependencies rather than having them edited by you.
 
@@ -21,6 +32,17 @@ Own agent.py, model_client.py, budget.py, prompts.py, spec_parser.py, tests/test
 
 Use stdlib urllib for HTTP unless requirements owner explicitly pins an alternative. API responses can contain structured text segments; normalize visibly returned content only, never reasoning fields. Reserve before transport, include timeouts, reject unlimited retries, preserve API usage and unknown usage honestly. `--input/--output/--model` are required; missing API key is traced failure and nonzero. Always attempt bounded source fetch, then proceed on supplied text after failure. Fallback page must say generation incomplete, never invented science; known failed run is nonzero even if a readable partial page survives.
 
+## Continuing assistant prompt — Sol / medium
+> I am User 1. Use Sol/medium for this review and specified implementation; escalate after two failed attempts on the same task.
+
+Read the current AI.md, my USER file and the challenge PDF. Check my Team inbox now, before every new task, at least every10 minutes during active work, after syncing and before commits. Fetch/integrate new checkpoint commits first; do not reread a stale attachment and claim it is current. If files are snapshots, ask for the latest copy when needed; no background monitoring between chats.
+
+ACK applicable OPEN entries, handle owned blockers first, and mark DONE only with verification evidence. For another user's issue, append a structured warning to ONLY their Team inbox in a separate commit/patch: ID, Beirut time, sender/recipient, severity, affected file/interface, requested action, reproduction/expected result and OPEN status. Never overwrite their entries or edit their code/task plan. U1 integrates warning commits promptly; send urgent blockers through team chat immediately. Continue independent work while waiting. Recipient owns status changes; the brief and frozen interfaces prevail.
+
+Apply the new design priorities to generic generation/repair prompts: visible calculation chain, Predict→Apply preset→Observe→Explain in existing fields, and honest excerpt/example/simplification grounding. Preserve input forwarding, model selection, budgets, targeted repairs, best-page retention and truthful traces. Coordinate runtime needs with U2 and check/evidence needs with U3 through their inboxes.
+
+Identify gaps and implement focused corrections in owned files. No professor-specific branding, grading-directed text, unrelated features or silent interface changes. Verify with appropriate tests/browser evidence; report changed files, commands/results and unresolved inbox entries. Return only changed functions or document sections. Continue the existing schedule; do not restart.
+
 ## Pasteable assistant prompts
 **Astra / high — contract review (one message).**
 > Read AI.md and the attached brief. I am User1. Review our v1 spec, wire delimiters, revision merge, budget accounting and ownership for contradictions. Preserve the decided runtime/spec architecture. Propose only indispensable changes; do not edit User2/User3 files or supply implementation. Return a precise contract correction list and a proof for each. Keep paper content out of code/prompts.
@@ -38,7 +60,7 @@ Already used on your coding accounts: **0 known**, not inferred from this planni
 Cut separate planning first if it does not beat single-call quality per token; then optional fetch content processing, extra prompt variants and cosmetic diagnostics. Keep fetch attempt/trace, all input fields, cap enforcement, two repairs maximum and best-artifact retention.
 
 ## Working rules and checkpoints
-Read AI.md first. Work only on your branch and owned paths; User 1 integrates pushed named commits. Do not edit a collaborator's file; send a precise failing command and expected behavior to its owner. Before each checkpoint run your task checks, push, and report commit SHA and result. No later collaborator implementation is required for early work: use the frozen stubs and offline fixture dictionaries.
+Read AI.md first. Work on main in owned paths only; pull before each commit and push small named commits. Only Team inbox appends are allowed in a collaborator's USER file; route code fixes to its owner. Before each checkpoint run your task checks, push, and report commit SHA and result. No later collaborator implementation is required for early work: use the frozen stubs and offline fixture dictionaries.
 
 Checkpoint pushes: **12:02** contracts/stubs/owned test entry points; **12:32** entropy fixture/runtime smoke evidence; **13:32** real owned modules and vertical-slice fixes; **14:32** six-case/two-model support; **15:32** flow decision and regressions; **16:02** feature freeze with no TODO on required paths; **16:32** final-review fixes; **17:02** all final artifacts pushed. **17:02–17:32** clean verification and submission only. Times are Beirut, 3 October 2026, under the stated six-hours-remaining assumption.
 

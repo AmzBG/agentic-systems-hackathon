@@ -1,0 +1,645 @@
+"""User 1 core tests (stdlib unittest, offline).
+
+python -m unittest tests.test_core -v
+"""
+
+from __future__ import annotations
+
+import copy
+import inspect
+import io
+import json
+import tempfile
+import unittest
+import urllib.error
+from pathlib import Path
+
+import agent
+import prompts
+from budget import HARD_COMPLETION_TOKENS, MAX_ATTEMPTS, Budget, BudgetExceeded
+from model_client import ModelCallError, OpenRouterClient, parse_usage
+from spec_parser import SpecError, merge_revision, parse_spec, validate_spec
+
+TRACE_KEYS = {"stage", "action", "result", "prompt_tokens", "completion_tokens", "elapsed_seconds",
+              "checks", "failures", "revisions", "details"}
+STAGES = {"read_input", "fetch", "identify", "plan", "generate", "check", "revision", "final"}
+KEY = "sk-or-test-secret-value"
+_TEMP_DIRS: list[tempfile.TemporaryDirectory] = []
+
+
+def tearDownModule() -> None:
+    for directory in _TEMP_DIRS:
+        directory.cleanup()
+
+
+def toy_spec() -> dict:
+    """Neutral synthetic mechanism (y = gain * x + bias); no paper content."""
+    return {
+        "version": 1,
+        "plan": "Show how a gain and an offset move a straight line.",
+        "title": "Gain and offset",
+        "audience": "Beginner",
+        "starting_point": {"idea": "Scale then shift.", "why": "Common pattern.", "explanation": "y = g x + b."},
+        "symbols": [{"symbol": "g", "meaning": "gain", "units": "1"}],
+        "controls": [
+            {"id": "gain", "label": "Gain", "help": "", "units": "1", "kind": "slider",
+             "default": 1, "min": 0, "max": 4, "step": 0.5},
+            {"id": "xs", "label": "Inputs", "help": "", "units": "1", "kind": "vector",
+             "default": [1, 2, 3], "min": -5, "max": 5, "step": 1, "shape": [3]},
+        ],
+        "outputs": [
+            {"id": "scaled", "label": "Scaled", "units": "1", "role": "intermediate"},
+            {"id": "total", "label": "Total", "units": "1", "role": "result"},
+        ],
+        "visuals": [
+            {"id": "bars", "kind": "bar", "title": "Scaled", "output": "scaled", "x_label": "i", "y_label": "v"},
+            {"id": "curve", "kind": "line", "title": "Total vs gain", "output": "total", "x_label": "g",
+             "y_label": "sum", "sweep": {"control": "gain", "min": 0, "max": 4, "points": 9}},
+        ],
+        "explorations": [
+            {"title": "Zero gain", "instruction": "Set gain 0", "observe": "All zero", "why": "Scaling by 0",
+             "preset": {"gain": 0}},
+            {"title": "Double", "instruction": "Set gain 2", "observe": "Doubles", "why": "Linear",
+             "preset": {"gain": 2, "xs": [1, 1, 1]}},
+        ],
+        "limitation": "Toy linear example.",
+        "grounding": [{"paper": "Synthetic note", "locator": "Eq. 1", "support": "excerpt", "claim": "y = g x + b."},
+                      {"paper": "Synthetic note", "locator": "this page", "support": "example", "claim": "Toy values."}],
+        "tests": [
+            {"name": "identity", "inputs": {}, "expected": {"scaled": [1, 2, 3], "total": 6}, "atol": 0, "rtol": 0},
+            {"name": "zero", "inputs": {"gain": 0}, "expected": {"total": 0}, "atol": 1e-9, "rtol": 0},
+        ],
+        "invariants": [{"name": "finite", "output": "total", "kind": "finite", "atol": 0, "rtol": 0}],
+        "compute_js": "function compute(inputs) { const scaled = inputs.xs.map(x => inputs.gain * x); "
+                      "return { scaled, total: scaled.reduce((a, b) => a + b, 0) }; }",
+    }
+
+
+def wire(spec: dict | None = None, *, compute: str | None = None, metadata: dict | None = None) -> str:
+    spec = spec or toy_spec()
+    meta = metadata if metadata is not None else {k: v for k, v in spec.items() if k != "compute_js"}
+    text = "BEGIN_SPEC\n" + json.dumps(meta, indent=1) + "\nEND_SPEC\n"
+    code = spec.get("compute_js") if compute is None else compute
+    if code:
+        text += "BEGIN_COMPUTE\n" + code + "\nEND_COMPUTE\n"
+    return text
+
+
+class FakeClock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+class FakeResponse(io.BytesIO):
+    def __init__(self, body: bytes, headers: dict | None = None) -> None:
+        super().__init__(body)
+        self.headers = headers or {}
+
+
+class FakeOpener:
+    """Scripted urlopen: items are response dicts, bytes, or exceptions."""
+
+    def __init__(self, *script) -> None:
+        self.script = list(script)
+        self.requests: list = []
+
+    def __call__(self, request, timeout=None):
+        self.requests.append((request, timeout))
+        item = self.script.pop(0)
+        if isinstance(item, BaseException):
+            raise item
+        if isinstance(item, FakeResponse):
+            return item
+        if isinstance(item, dict):
+            item = json.dumps(item).encode()
+        return FakeResponse(item)
+
+
+def api_reply(content, usage: dict | None = None) -> dict:
+    reply = {"model": "test/model", "choices": [{"message": {"content": content}, "finish_reason": "stop"}]}
+    if usage is not False:
+        reply["usage"] = usage or {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150}
+    return reply
+
+
+def http_error(code: int) -> urllib.error.HTTPError:
+    return urllib.error.HTTPError("https://x", code, "err", {}, io.BytesIO(b"{}"))
+
+
+def ok_report() -> dict:
+    return {"ok": True, "degraded": False, "checks": [{"id": "all", "status": "pass", "detail": "", "target": None}],
+            "failures": [], "revisions": []}
+
+
+def failing_report(target: str = "title") -> dict:
+    return {"ok": False, "degraded": False,
+            "checks": [{"id": "bad_title", "status": "fail", "detail": "title rejected", "target": target}],
+            "failures": ["bad_title: title rejected"], "revisions": []}
+
+
+class Harness:
+    """Runs agent.run with fake HTTP, fetch, renderer, checks and trace capture."""
+
+    def __init__(self, *replies, checks=None, render="default", trace=True, case=None, clock=None) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        _TEMP_DIRS.append(self.tmp)
+        self.dir = Path(self.tmp.name)
+        self.case_path = self.dir / "case.json"
+        self.case_path.write_text(json.dumps(case or {
+            "source_url": "https://example.org/paper", "focus": "the focus", "audience": "students",
+            "extra_one": "first extra string", "extra_two": "second extra string"}), encoding="utf-8")
+        self.out = self.dir / "out"
+        self.opener = FakeOpener(*replies)
+        self.events: list[dict] = []
+        self.clients: list[OpenRouterClient] = []
+        self.checks = checks or (lambda spec, html: ok_report())
+        self.render = (lambda spec: f"<!doctype html><title>{spec['title']}</title>") if render == "default" else render
+        self.trace = (lambda path, event: self.events.append(json.loads(json.dumps(event)))) if trace else None
+        self.clock = clock or FakeClock()
+
+    def client_factory(self, model, key, budget):
+        client = OpenRouterClient(model, key, budget, opener=self.opener, clock=self.clock)
+        self.clients.append(client)
+        return client
+
+    def run(self, *extra: str) -> int:
+        code = agent.run(["--input", str(self.case_path), "--output", str(self.out), "--model", "test/model", *extra],
+                         environ={"OPENROUTER_API_KEY": KEY}, client_factory=self.client_factory,
+                         fetcher=lambda url, focus: {"status": "failed", "error": "URLError"},
+                         render=self.render, run_checks=self.checks, write_trace=self.trace, clock=self.clock)
+        return code
+
+    @property
+    def html(self) -> str:
+        return (self.out / "index.html").read_text(encoding="utf-8")
+
+    def stages(self) -> list[str]:
+        return [e["stage"] for e in self.events]
+
+    def sent_bodies(self) -> list[dict]:
+        return [json.loads(req.data) for req, _ in self.opener.requests]
+
+    def final(self) -> dict:
+        return self.events[-1]
+
+
+class ContractTests(unittest.TestCase):
+    def test_frozen_signatures(self):
+        self.assertEqual(list(inspect.signature(parse_spec).parameters), ["text"])
+        self.assertEqual(list(inspect.signature(OpenRouterClient.call_model).parameters),
+                         ["self", "messages", "max_tokens"])
+        self.assertEqual(list(inspect.signature(Budget.reserve).parameters), ["self", "max_tokens"])
+        self.assertEqual(list(inspect.signature(Budget.record).parameters), ["self", "usage"])
+        self.assertEqual(list(inspect.signature(Budget.remaining_seconds).parameters), ["self"])
+
+    def test_usage_shape(self):
+        self.assertEqual(set(parse_usage({})), {"prompt_tokens", "completion_tokens", "total_tokens",
+                                                "reasoning_tokens", "verified"})
+        self.assertFalse(parse_usage(None)["verified"])
+
+    def test_trace_events_complete_and_ordered(self):
+        h = Harness(api_reply(wire()))
+        self.assertEqual(h.run(), 0)
+        for event in h.events:
+            self.assertEqual(set(event), TRACE_KEYS)
+            self.assertIn(event["stage"], STAGES)
+        self.assertEqual(h.stages().count("final"), 1)
+        self.assertEqual(h.stages()[-1], "final")
+        for stage in ("read_input", "fetch", "identify", "plan", "generate", "check"):
+            self.assertIn(stage, h.stages())
+        elapsed = [e["elapsed_seconds"] for e in h.events]
+        self.assertEqual(elapsed, sorted(elapsed))
+
+    def test_wire_round_trip_and_no_paper_text_in_prompts(self):
+        self.assertEqual(parse_spec(wire()), toy_spec())
+        plan_system = prompts.build_plan_messages({"focus": "f"}, {})[0]["content"]
+        for text in (prompts.SYSTEM_PROMPT.lower(), plan_system.lower()):
+            for word in ("entropy", "shannon", "attention", "transformer", "softmax", "mohanna", "professor",
+                         "instructor", "rubric", "grade", "grading", "assessor", "assessment", "score"):
+                self.assertNotIn(word, text)
+
+    def test_prompts_require_teaching_sequence_and_honest_grounding(self):
+        system = " ".join(prompts.SYSTEM_PROMPT.split())
+        for phrase in ("through each intermediate output to the result", "calculation order",
+                       "at least one visual shows an intermediate output", "Predict:", "Then apply the preset",
+                       "naming the intermediate and result readouts", "explained through the mechanism",
+                       "excerpt text in the brief", "never invent quotations",
+                       "whose inputs equal that exploration's preset", "No comments, no template strings",
+                       "this, with, while, process"):
+            self.assertIn(phrase, system)
+        repair = prompts.build_repair_messages({"focus": "f"}, toy_spec(), ["x: y"], ["grounding"])
+        self.assertEqual(repair[0]["content"], prompts.SYSTEM_PROMPT)  # repairs keep the same rules
+
+
+class ParserTests(unittest.TestCase):
+    def assertRejects(self, text, fragment=""):
+        with self.assertRaises(SpecError) as ctx:
+            parse_spec(text)
+        if fragment:
+            self.assertTrue(any(fragment in e for e in ctx.exception.errors), ctx.exception.errors)
+
+    def test_whole_and_inner_fences_allowed(self):
+        spec = toy_spec()
+        meta = json.dumps({k: v for k, v in spec.items() if k != "compute_js"})
+        text = ("```\nBEGIN_SPEC\n```json\n" + meta + "\n```\nEND_SPEC\nBEGIN_COMPUTE\n```javascript\n"
+                + spec["compute_js"] + "\n```\nEND_COMPUTE\n```")
+        self.assertEqual(parse_spec(text), spec)
+
+    def test_wire_violations(self):
+        good = wire()
+        self.assertRejects(good.replace("END_COMPUTE\n", ""), "unpaired")
+        self.assertRejects(good + "END_SPEC\n", "duplicate END_SPEC")
+        self.assertRejects("Sure! Here it is:\n" + good, "outside")
+        self.assertRejects(good + "console.log(1)\n", "outside")
+        self.assertRejects(wire(compute=""), "missing compute")
+        self.assertRejects(good.replace('"version": 1', '"version": 1,,'), "invalid JSON")
+
+    def test_json_hazards(self):
+        meta = {k: v for k, v in toy_spec().items() if k != "compute_js"}
+        text = json.dumps(meta)
+        self.assertRejects(wire().replace(json.dumps(meta, indent=1), text[:-1] + ', "title": "dup"}'), "invalid JSON")
+        self.assertRejects(wire().replace('"limitation": "Toy linear example."', '"limitation": NaN'), "invalid JSON")
+        self.assertRejects(wire(metadata={**meta, "compute_js": "x"}), "compute block")
+
+    def test_schema_violations(self):
+        def broken(mutate):
+            spec = toy_spec()
+            mutate(spec)
+            return wire(spec)
+        self.assertRejects(broken(lambda s: s["controls"][1].update(id="gain")), "duplicates")
+        self.assertRejects(broken(lambda s: s["outputs"][0].update(id="bars")), "duplicates")
+        self.assertRejects(broken(lambda s: s["controls"][0].update(kind="knob")), "unsupported control kind")
+        self.assertRejects(broken(lambda s: s["controls"][0].update(default=9)), "within")
+        self.assertRejects(broken(lambda s: s["controls"][1].update(default=[1, 2])), "shape")
+        self.assertRejects(broken(lambda s: s["controls"][0].update(step=0)), "positive")
+        self.assertRejects(broken(lambda s: s["controls"][0].update(default=True)), "within")
+        self.assertRejects(broken(lambda s: s["explorations"].pop()), "exactly 2")
+        self.assertRejects(broken(lambda s: s["tests"].pop()), "at least 2")
+        self.assertRejects(broken(lambda s: s["explorations"][0]["preset"].update(nope=1)), "unknown control")
+        self.assertRejects(broken(lambda s: s["visuals"][1]["sweep"].update(max=9)), "within the control")
+        self.assertRejects(broken(lambda s: s["visuals"][1]["sweep"].update(points=60)), "points")
+        self.assertRejects(broken(lambda s: s["invariants"][0].update(kind="sum")), "needs expected")
+        self.assertRejects(broken(lambda s: s.update(grounding=[])), "at least 1")
+        self.assertRejects(broken(lambda s: s["tests"][0]["expected"].update(total=[[1], [1, 2]])), "rectangular")
+        self.assertRejects(broken(lambda s: s["outputs"][0].update(role="result")), "intermediate")
+
+    def test_grounding_must_cite_paper_and_label_examples(self):
+        spec = toy_spec()
+        spec["grounding"] = [spec["grounding"][1]]
+        self.assertRejects(wire(spec), "citing the paper")
+        spec = toy_spec()
+        spec["grounding"] = [spec["grounding"][0]]  # simplification stated elsewhere is schema-valid
+        self.assertEqual(len(parse_spec(wire(spec))["grounding"]), 1)
+        spec = toy_spec()
+        spec["grounding"][0]["support"] = "unverified"
+        self.assertEqual(parse_spec(wire(spec))["grounding"][0]["support"], "unverified")
+
+    def test_unsafe_compute_rejected(self):
+        for code in ("function compute(inputs) { return fetch('x'); }",
+                     "function compute(inputs) { return {total: Math.random()}; }",
+                     "function compute(inputs) { return [].constructor.constructor('x')(); }",
+                     "function compute(inputs) { return {t: Date.now()}; }",
+                     "const compute = (inputs) => ({})"):
+            self.assertRejects(wire(compute=code), "compute_js")
+
+    def test_unknown_metadata_preserved(self):
+        spec = toy_spec()
+        spec["note_for_runtime"] = {"x": 1}
+        self.assertEqual(parse_spec(wire(spec))["note_for_runtime"], {"x": 1})
+
+    def test_merge_replaces_atomically_on_copy(self):
+        base = toy_spec()
+        new_controls = copy.deepcopy(base["controls"])
+        new_controls[0]["label"] = "Gain factor"
+        merged = merge_revision(base, wire(metadata={"version": 1, "controls": new_controls}, compute=""),
+                                ["controls"])
+        self.assertEqual(merged["controls"][0]["label"], "Gain factor")
+        self.assertEqual(len(merged["controls"]), 2)
+        self.assertEqual(base["controls"][0]["label"], "Gain")  # base untouched
+
+    def test_merge_rules(self):
+        base = toy_spec()
+        with self.assertRaises(SpecError):  # key not requested
+            merge_revision(base, wire(metadata={"version": 1, "title": "x"}, compute=""), ["limitation"])
+        with self.assertRaises(SpecError):  # unknown key
+            merge_revision(base, wire(metadata={"version": 1, "mystery": 1}, compute=""), ["title"])
+        with self.assertRaises(SpecError):  # version missing
+            merge_revision(base, wire(metadata={"title": "x"}, compute=""), ["title"])
+        with self.assertRaises(SpecError):  # compute not requested
+            merge_revision(base, wire(metadata={"version": 1}), ["title"])
+        with self.assertRaises(SpecError):  # merged result invalid
+            merge_revision(base, wire(metadata={"version": 1, "tests": []}, compute=""), ["tests"])
+        code = "function compute(inputs) { const scaled = inputs.xs.map(x => x * inputs.gain); return {scaled, total: 0}; }"
+        merged = merge_revision(base, wire(metadata={"version": 1}, compute=code), ["compute_js"])
+        self.assertEqual(merged["compute_js"], code)
+        self.assertEqual(merge_revision(base, wire(metadata={"version": 1}, compute=""), ["compute_js"]), base)
+
+    def test_shared_fixtures_if_present(self):
+        paths = sorted(Path("practice/specs").glob("*.json"))
+        if not paths:
+            self.skipTest("User 3 fixtures not integrated on this branch")
+        for path in paths:
+            with self.subTest(path.name):
+                validate_spec(json.loads(path.read_text(encoding="utf-8")))
+
+
+class BudgetTests(unittest.TestCase):
+    def test_attempt_cap_counts_failures(self):
+        budget = Budget(clock=FakeClock())
+        for _ in range(MAX_ATTEMPTS):
+            budget.reserve(10)
+            budget.record(parse_usage(None))
+        with self.assertRaises(BudgetExceeded):
+            budget.reserve(10)
+        self.assertEqual(budget.attempts, MAX_ATTEMPTS)
+
+    def test_unverified_usage_keeps_reservation(self):
+        budget = Budget(clock=FakeClock())
+        budget.reserve(20_000)
+        budget.record({"verified": False, "completion_tokens": None})
+        self.assertEqual(budget.charged_completion, 20_000)
+        with self.assertRaises(BudgetExceeded):
+            budget.reserve(HARD_COMPLETION_TOKENS - 20_000 + 1)
+        budget.reserve(HARD_COMPLETION_TOKENS - 20_000)
+
+    def test_verified_usage_counts_reasoning_once(self):
+        budget = Budget(clock=FakeClock())
+        budget.reserve(5_000)
+        budget.record(parse_usage({"prompt_tokens": 9, "completion_tokens": 300,
+                                   "completion_tokens_details": {"reasoning_tokens": 200}}))
+        self.assertEqual(budget.charged_completion, 300)
+
+    def test_pairing_enforced(self):
+        budget = Budget(clock=FakeClock())
+        with self.assertRaises(RuntimeError):
+            budget.record(parse_usage(None))
+        budget.reserve(1)
+        with self.assertRaises(RuntimeError):
+            budget.reserve(1)
+
+    def test_time_window(self):
+        clock = FakeClock()
+        budget = Budget(clock=clock)
+        self.assertEqual(budget.remaining_seconds(), 480)
+        clock.now += 470
+        self.assertEqual(budget.remaining_seconds(), 10)
+        with self.assertRaises(BudgetExceeded):
+            budget.reserve(1)
+        self.assertEqual(budget.attempts, 0)
+
+
+class ClientTests(unittest.TestCase):
+    def make(self, *script):
+        opener = FakeOpener(*script)
+        budget = Budget(clock=FakeClock())
+        return OpenRouterClient("vendor/model-x", KEY, budget, opener=opener, clock=FakeClock()), opener, budget
+
+    def test_request_shape_and_visible_text(self):
+        reply = api_reply([{"type": "text", "text": "A"}, {"type": "reasoning", "text": "hidden"},
+                           {"type": "text", "text": "B"}])
+        reply["choices"][0]["message"]["reasoning"] = "hidden too"
+        client, opener, budget = self.make(reply)
+        text, usage = client.call_model([{"role": "user", "content": "hi"}], 123)
+        self.assertEqual(text, "AB")
+        request, timeout = opener.requests[0]
+        self.assertEqual(json.loads(request.data), {"model": "vendor/model-x",
+                                                    "messages": [{"role": "user", "content": "hi"}],
+                                                    "max_tokens": 123})
+        self.assertEqual(request.get_header("Authorization"), f"Bearer {KEY}")
+        self.assertLessEqual(timeout, 240)
+        self.assertTrue(usage["verified"])
+        self.assertEqual(budget.attempts, 1)
+        self.assertNotIn(KEY, repr(client) + json.dumps(client.last_call))
+
+    def test_missing_usage_is_unverified_and_fully_charged(self):
+        client, _, budget = self.make(api_reply("x", usage=False))
+        _, usage = client.call_model([], 700)
+        self.assertFalse(usage["verified"])
+        self.assertEqual(budget.charged_completion, 700)
+
+    def test_failures_are_counted_and_classified(self):
+        client, _, budget = self.make(http_error(500), http_error(401), TimeoutError())
+        for retryable in (True, False, True):
+            with self.assertRaises(ModelCallError) as ctx:
+                client.call_model([], 100)
+            self.assertEqual(ctx.exception.retryable, retryable)
+            self.assertNotIn(KEY, str(ctx.exception))
+        self.assertEqual(budget.attempts, 3)
+        self.assertEqual(budget.charged_completion, 300)
+
+    def test_timeout_clipped_to_generation_window(self):
+        clock = FakeClock()
+        budget = Budget(clock=clock)
+        opener = FakeOpener(api_reply("x"))
+        client = OpenRouterClient("m", KEY, budget, opener=opener, clock=clock)
+        clock.now += 400
+        client.call_model([], 10)
+        self.assertLessEqual(opener.requests[0][1], 80)
+
+
+class InputTests(unittest.TestCase):
+    def test_required_fields_and_forwarding(self):
+        h = Harness(api_reply(wire()))
+        self.assertEqual(h.run(), 0)
+        user_message = h.sent_bodies()[0]["messages"][1]["content"]
+        for value in ("first extra string", "second extra string", "the focus", "students", "https://example.org/paper"):
+            self.assertIn(value, user_message)
+
+    def test_missing_required_field_fails_with_trace(self):
+        h = Harness(case={"source_url": "https://x", "focus": "f"})
+        self.assertEqual(h.run(), agent.EXIT_USAGE)
+        self.assertEqual(h.events[0]["result"], "fail")
+        self.assertIn("Generation incomplete", h.html)
+        self.assertEqual(h.opener.requests, [])
+
+    def test_missing_key_is_traced_failure(self):
+        h = Harness()
+        code = agent.run(["--input", str(h.case_path), "--output", str(h.out), "--model", "m"], environ={},
+                         fetcher=lambda u, f: {"status": "failed"}, render=h.render, run_checks=h.checks,
+                         write_trace=h.trace, clock=h.clock)
+        self.assertEqual(code, agent.EXIT_FAILED)
+        self.assertTrue(any("OPENROUTER_API_KEY" in " ".join(e["failures"]) for e in h.events))
+
+    def test_key_never_traced(self):
+        h = Harness(api_reply(wire()), http_error(500))
+        h.run()
+        self.assertNotIn(KEY, json.dumps(h.events))
+
+    def test_fetch_html_and_failures(self):
+        page = b"<html><head><script>bad()</script></head><body><p>Alpha</p><p>Beta</p></body></html>"
+        result = agent.fetch_source("https://x", "alpha", opener=FakeOpener(FakeResponse(page, {"Content-Type": "text/html"})))
+        self.assertEqual(result["status"], "ok")
+        self.assertIn("Alpha", result["text"])
+        self.assertNotIn("bad()", result["text"])
+        failed = agent.fetch_source("https://x", "f", opener=FakeOpener(urllib.error.URLError("denied")))
+        self.assertEqual((failed["status"], failed["error"]), ("failed", "URLError"))
+        self.assertEqual(agent.fetch_source("file:///etc/passwd", "f")["status"], "skipped")
+
+    def test_fetch_failure_still_generates(self):
+        h = Harness(api_reply(wire()))
+        self.assertEqual(h.run(), 0)
+        fetch = [e for e in h.events if e["stage"] == "fetch"][0]
+        self.assertEqual(fetch["result"], "fail")
+
+    def test_passage_selection_bounded(self):
+        text = ("filler " * 300 + "\n") * 40 + "the special mechanism " * 50
+        selected = agent.select_passages(text, "special mechanism", limit=6000)
+        self.assertLessEqual(len(selected), 6000 + 100)
+        self.assertIn("special mechanism", selected)
+
+
+class FlowTests(unittest.TestCase):
+    def test_success_single_call(self):
+        h = Harness(api_reply(wire()))
+        self.assertEqual(h.run(), 0)
+        self.assertIn("Gain and offset", h.html)
+        self.assertEqual(len(h.opener.requests), 1)
+        self.assertEqual(h.final()["details"]["exit_code"], 0)
+
+    def test_targeted_repair_then_success(self):
+        bad = toy_spec()
+        bad["title"] = "Bad"
+        checks = lambda spec, html: failing_report() if spec["title"] == "Bad" else ok_report()
+        h = Harness(api_reply(wire(bad)), api_reply(wire(metadata={"version": 1, "title": "Fixed"}, compute="")),
+                    checks=checks)
+        self.assertEqual(h.run(), 0)
+        self.assertIn("Fixed", h.html)
+        repair_prompt = h.sent_bodies()[1]["messages"][1]["content"]
+        self.assertIn("bad_title", repair_prompt)
+        self.assertIn('["title"]', repair_prompt)
+        for event in h.events:  # every request-named action must be a numbered API attempt
+            if event["action"] == "request" or event["action"].endswith(":request"):
+                self.assertIsInstance(event["details"].get("request_number"), int)
+
+    def test_exhaustion_keeps_best_page_and_fails(self):
+        checks = lambda spec, html: failing_report()
+        h = Harness(api_reply(wire()), api_reply(wire(metadata={"version": 1, "title": "Try 2"}, compute="")),
+                    api_reply(wire(metadata={"version": 1, "title": "Try 3"}, compute="")), checks=checks)
+        self.assertEqual(h.run(), 1)
+        self.assertEqual(len(h.opener.requests), 3)  # 1 generation + 2 repairs max
+        self.assertIn("Gain and offset", h.html)  # ties keep the earlier candidate
+        self.assertEqual(h.final()["result"], "fail")
+
+    def test_malformed_then_full_regeneration(self):
+        h = Harness(api_reply("I cannot follow the format."), api_reply(wire()))
+        self.assertEqual(h.run(), 0)
+        self.assertIn("previous response was rejected", h.sent_bodies()[1]["messages"][1]["content"])
+
+    def test_unsafe_compute_never_written(self):
+        h = Harness(api_reply(wire(compute="function compute(inputs) { fetch('https://e'); return {}; }")),
+                    api_reply("still wrong"))
+        self.assertEqual(h.run(), 1)
+        self.assertIn("Generation incomplete", h.html)
+        self.assertNotIn("fetch(", h.html)
+
+    def test_safety_failure_from_checks_is_not_retained(self):
+        report = {"ok": False, "degraded": False, "failures": ["unsafe"],
+                  "checks": [{"id": "unsafe", "status": "fail", "detail": "x", "target": "compute_js", "tier": "safety"}]}
+        h = Harness(api_reply(wire()), api_reply(wire()), api_reply(wire()), checks=lambda s, p: report)
+        self.assertEqual(h.run(), 1)
+        self.assertIn("Generation incomplete", h.html)
+
+    def test_collaborator_errors_contained(self):
+        def explode(spec, html):
+            raise RuntimeError("checker bug")
+        h = Harness(api_reply(wire()), checks=explode)
+        self.assertEqual(h.run(), 1)
+        self.assertIn("Gain and offset", h.html)
+        self.assertEqual(len(h.opener.requests), 1)  # no demonstrated failure, no blind repair
+        h2 = Harness(api_reply(wire()), render=None)
+        self.assertEqual(h2.run(), 1)
+        self.assertIn("Generation incomplete", h2.html)
+
+    def test_stub_checks_do_not_trigger_repairs(self):
+        stub = {"ok": False, "degraded": True, "failures": ["checks not implemented"],
+                "checks": [{"id": "stub", "status": "skip", "detail": "checks not implemented", "target": None}],
+                "revisions": []}
+        h = Harness(api_reply(wire()), checks=lambda s, p: stub)
+        self.assertEqual(h.run(), 1)
+        self.assertEqual(len(h.opener.requests), 1)
+
+    def test_page_only_failures_do_not_trigger_spec_repairs(self):
+        report = failing_report(target="html")
+        h = Harness(api_reply(wire()), checks=lambda s, p: report)
+        self.assertEqual(h.run(), 1)
+        self.assertEqual(len(h.opener.requests), 1)
+        skip = [e for e in h.events if e["stage"] == "revision" and e["result"] == "skip"]
+        self.assertIn("rendered page", skip[0]["details"]["reason"])
+
+    def test_spec_level_target_narrowed_from_detail(self):
+        def checks(spec, html):
+            if spec["explorations"][0]["title"] == "Zero gain":
+                return {"ok": False, "degraded": False, "revisions": [],
+                        "checks": [{"id": "spec_schema", "status": "fail", "target": "spec",
+                                    "detail": "exploration 0 lacks guidance"}],
+                        "failures": ["spec_schema: exploration 0 lacks guidance"]}
+            return ok_report()
+        fixed = copy.deepcopy(toy_spec()["explorations"])
+        fixed[0]["title"] = "Predict the zero-gain line"
+        h = Harness(api_reply(wire()), api_reply(wire(metadata={"version": 1, "explorations": fixed}, compute="")),
+                    checks=checks)
+        self.assertEqual(h.run(), 0)
+        self.assertIn('["explorations"]', h.sent_bodies()[1]["messages"][1]["content"])
+
+    def test_repair_targets_mapping(self):
+        report = {"checks": [
+            {"id": "numerical_execution", "status": "fail", "target": "compute_js", "detail": "t1: expected total failed"},
+            {"id": "offline_html", "status": "fail", "target": "html", "detail": "page lacks embedded CSS"},
+            {"id": "two_meaningful_controls", "status": "fail", "target": "controls", "detail": "1 distinct controls"},
+            {"id": "spec_schema", "status": "pass", "target": "spec", "detail": "ok"}]}
+        targets, fixable = agent.repair_targets(report)
+        self.assertEqual(targets, ["compute_js", "tests", "controls"])
+        self.assertEqual([c["id"] for c in fixable], ["numerical_execution", "two_meaningful_controls"])
+
+    def test_degraded_ok_exits_zero_and_reports(self):
+        report = ok_report()
+        report["degraded"] = True
+        h = Harness(api_reply(wire()), checks=lambda s, p: report)
+        self.assertEqual(h.run(), 0)
+        self.assertTrue(h.final()["details"]["degraded"])
+
+    def test_missing_trace_writer_fails(self):
+        h = Harness(api_reply(wire()), trace=False)
+        self.assertEqual(h.run(), 1)
+
+    def test_retry_counted_and_auth_failure_stops(self):
+        h = Harness(http_error(503), api_reply(wire()))
+        self.assertEqual(h.run(), 0)
+        self.assertEqual([e["details"].get("request_number") for e in h.events if e["stage"] == "generate"
+                          and e["action"] == "request"], [1, 2])
+        h2 = Harness(http_error(401))
+        self.assertEqual(h2.run(), 1)
+        self.assertEqual(len(h2.opener.requests), 1)
+
+    def test_missing_usage_traced_as_null(self):
+        h = Harness(api_reply(wire(), usage=False))
+        self.assertEqual(h.run(), 0)
+        call = [e for e in h.events if e["action"] == "request"][0]
+        self.assertIsNone(call["completion_tokens"])
+        self.assertEqual(h.final()["details"]["charged_completion_tokens"], agent.GENERATION_MAX_TOKENS)
+
+    def test_deadline_exhaustion(self):
+        clock = FakeClock()
+        h = Harness(api_reply(wire()), clock=clock)
+        original = h.client_factory
+
+        def late_factory(model, key, budget):
+            clock.now += 500  # past the generation stop before the first call
+            return original(model, key, budget)
+        h.client_factory = late_factory
+        self.assertEqual(h.run(), 1)
+        self.assertEqual(h.opener.requests, [])
+        self.assertIn("Generation incomplete", h.html)
+
+    def test_planned_flow_uses_plan(self):
+        h = Harness(api_reply("Teach the scaling idea first."), api_reply(wire()))
+        self.assertEqual(h.run("--flow", "planned"), 0)
+        self.assertIn("Teach the scaling idea first.", h.sent_bodies()[1]["messages"][1]["content"])
+        self.assertIn("plan", h.stages())
+
+
+if __name__ == "__main__":
+    unittest.main()

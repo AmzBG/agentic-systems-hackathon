@@ -1,0 +1,7 @@
+{
+  "source_url": "https://arxiv.org/pdf/0809.4248v1",
+  "focus": "Illustrate first-order radioactive decay with N(t)=N0 exp(-lambda t). Let learners set initial amount, nonnegative decay constant, and time; show remaining fraction and amount, and compare the half-life time ln(2)/lambda. State that the deterministic curve describes expected bulk behavior, not an individual random decay event.",
+  "audience": "A second-year engineering undergraduate familiar with exponentials, logarithms, and simple rates of change.",
+  "excerpt": "Paraphrase, not a quotation: Cooper models Cassini RTG thermal power as proportional to N0 times lambda times exp(-lambda t). This case removes the energy and rate factors to teach remaining amount N(t)=N0 exp(-lambda t), with half-life as a teaching derivation rather than an experimental claim.",
+  "section": "Cooper (2008), Searching for modifications to the exponential radioactive decay law with the Cassini spacecraft, PDF p. 1, paragraph beginning The thermal power output of an RTG; P_th(t)=N0 lambda exp(-lambda t) E_d. The linked primary PDF is openly readable."
+}

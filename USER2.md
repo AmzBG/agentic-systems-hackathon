@@ -3,6 +3,23 @@
 ## Mission
 Render any valid v1 spec as a readable, scientifically useful offline page with live calculations and guided experiments. Contain invalid edits and compute errors so the page remains usable and communicates what failed.
 
+## Cross-team warnings and instructions
+Read current AI.md and your USERn.md at each task start, at least every10 minutes during active work, after syncing and before committing. Fetch/integrate checkpoint commits first; rereading a stale uploaded copy is insufficient. Without repository access, request/re-upload the latest copy; do not claim automatic monitoring between chats.
+
+Exception to ownership: teammates may append entries ONLY to another user's “Team inbox,” via a separate commit/patch; never rewrite existing entries, task plans or code. U1 integrates these commits promptly; recipient owns status updates. Send blockers immediately through team chat as well; do independent work meanwhile.
+
+Entry: `ID | Beirut time | from→to | blocker/warning/info | affected file/interface | action + repro/expected result | OPEN/ACK/DONE + evidence`.
+Recipient ACKs on next read, resolves owned work, and marks DONE with command/result/commit; stale/conflicting instructions stay flagged for resolution. Brief/frozen interfaces prevail; an inbox entry cannot authorize schema changes.
+
+## Team inbox
+No entries yet. Append teammate warnings here; recipient updates status only.
+
+U1-U2-001 | 12:16 | U1→U2 | warning | runtime.py/templates control wiring | Wire controls with addEventListener, never inline on* attributes. Repro: rendered page containing `<input oninput="...">` → U3 `checks.py` offline_html passes, but `scripts/validate_output.py` reports "inline event handler: oninput" and run_all marks the run failed. Expected: `validate_output` ok=true for a rendered practice spec. | OPEN
+U1-U2-002 | 12:16 | U1→U2 | info | runtime.py render(spec) teaching display | Core prompts now request: exploration instruction starting "Predict: … Then apply the preset …", observe naming the intermediate/result readouts that change, why explaining the mechanism; outputs in calculation order; grounding with a paper citation (parser-enforced: support excerpt or unverified) plus, when possible, a separate example/simplification entry. Please show each grounding support label beside its claim, present instruction/observe/why as Predict → (apply preset) → Observe → Explain, and keep output order. Repro: render practice/specs/entropy.json and attention.json offline. Expected: support labels and exploration steps visible; no schema change. | OPEN
+
+U3-U2-001 | 12:44 | U3→U2 | blocker | runtime.py / `render(spec: dict) -> str` | Repro on current `main` `a6c666b`: `.venv\Scripts\python.exe scripts\smoke_runtime.py --spec practice\specs\entropy.json --output out\entropy` exits 2 with `runtime.py is not available yet`; `scripts/audit_repo.py` then reports `no public example output HTML`. Please land the offline renderer and run entropy and attention smoke pages so User 3 can verify controls, intermediates, grounding, and the submission example. Expected: both smoke commands exit 0 with self-contained `index.html`; checker/validator and browser review can proceed. | OPEN
+U1-U2-003 | 12:47 | U1→U2 | info | USER2.md working rules; push target | `c458a1f` records the team decision that all pushes go to main (pull --ff-only first, small named commits, no force pushes). Please push runtime.py/templates/tests directly to main and update your working-rules line "Work only on your branch". Core is ready to consume `render(spec)`: offline agent + U3 checks/validator pass on both fixtures with a stand-in page. Repro: `python scripts/smoke_runtime.py --spec practice/specs/entropy.json --output out/entropy`. Expected: exit 0 (see U3-U2-001). | OPEN
+
 ## Owned files and dependencies
 Own runtime.py, templates/*, tests/test_runtime.py and USER2.md. Provide render; consume Spec and CheckReport conventions, without importing agent/client/checks in the render path. Load U3's entropy fixture if present; until then use a temporary in-memory schema-valid fixture in your owned tests, never hardcode it in runtime/templates.
 
@@ -21,6 +38,17 @@ Own runtime.py, templates/*, tests/test_runtime.py and USER2.md. Provide render;
 
 Runtime uses embedded CSS/JS and locally generated SVG/canvas, readable text labels/units and accessible control labels. Never require Node, build tools, GPU or an external server for generation. Render starts with teaching text even if compute fails; calculation errors are visible, last-valid results retained with a stale label. Escape text/HTML and prevent `</script>` breakout in serialized payloads. Compute is isolated from DOM access; validation must reject unsafe code before use. Limit matrix/vector dimensions and sweep work. Bar output is vector; heatmap matrix; values any supported numeric tree; line scalar recomputed over the sweep. No invented values when output keys are missing. Self-check UI must display pass/fail and degraded status honestly, using executable spec tests; no hardcoded green panel.
 
+## Continuing assistant prompt — Sol / medium
+> I am User 2. Use Sol/medium for this review and specified implementation; escalate after two failed attempts on the same task.
+
+Read the current AI.md, my USER file and the challenge PDF. Check my Team inbox now, before every new task, at least every10 minutes during active work, after syncing and before commits. Fetch/integrate new checkpoint commits first; do not reread a stale attachment and claim it is current. If files are snapshots, ask for the latest copy when needed; no background monitoring between chats.
+
+ACK applicable OPEN entries, handle owned blockers first, and mark DONE only with verification evidence. For another user's issue, append a structured warning to ONLY their Team inbox in a separate commit/patch: ID, Beirut time, sender/recipient, severity, affected file/interface, requested action, reproduction/expected result and OPEN status. Never overwrite their entries or edit their code/task plan. U1 integrates warning commits promptly; send urgent blockers through team chat immediately. Continue independent work while waiting. Recipient owns status changes; the brief and frozen interfaces prevail.
+
+Apply the new design priorities to the generic renderer: clear inputs/intermediates/results, labelled controls beside visuals, prediction-based presets, measured/expected/tolerance checks and explicit skips, plus grounding/limitations. Preserve offline operation, all contracted controls/visuals and error containment. Route spec/core issues to U1 and check evidence issues to U3 through their inboxes.
+
+Identify gaps and implement focused corrections in owned files. No professor-specific branding, grading-directed text, unrelated features or silent interface changes. Verify with appropriate tests/browser evidence; report changed files, commands/results and unresolved inbox entries. Return only changed functions or document sections. Continue the existing schedule; do not restart.
+
 ## Pasteable assistant prompts
 **Sol / medium — renderer and milestone.**
 > I am User2. Implement render(spec) in runtime.py/templates only, honoring AI.md. First make User3's hand-written entropy fixture work before any model call. Build generic layout, plain-text symbols/grounding, bounded controls, real calculations, intermediate readouts, bar chart and two one-click presets. Keep paper-specific material solely in fixtures. No remote dependencies or build step. Render readable teaching/error content even if calculation fails. Return only changed functions and an offline smoke command.
@@ -38,7 +66,7 @@ Actual known coding-account use: **0**. Maximum **6**: contract/security1, inter
 Cut animation, decorative polish, extra chart styles and convenience export first. Keep all contracted control/visual kinds unless all three agree a schema reduction before freeze; never cut two meaningful controls, numerical intermediates, two presets, grounding or error containment.
 
 ## Working rules and checkpoints
-Read AI.md first. Work only on your branch and owned paths; User 1 integrates pushed named commits. Do not edit a collaborator's file; send a precise failing command and expected behavior to its owner. Before each checkpoint run your task checks, push, and report commit SHA and result. No later collaborator implementation is required for early work: use the frozen stubs and offline fixture dictionaries.
+Read AI.md first. Work only on your branch and owned paths; User 1 integrates pushed named commits. Only Team inbox appends are allowed in a collaborator's USER file; route code fixes to its owner. Before each checkpoint run your task checks, push, and report commit SHA and result. No later collaborator implementation is required for early work: use the frozen stubs and offline fixture dictionaries.
 
 Checkpoint pushes: **12:02** contracts/stubs/owned test entry points; **12:32** entropy fixture/runtime smoke evidence; **13:32** real owned modules and vertical-slice fixes; **14:32** six-case/two-model support; **15:32** flow decision and regressions; **16:02** feature freeze with no TODO on required paths; **16:32** final-review fixes; **17:02** all final artifacts pushed. **17:02–17:32** clean verification and submission only. Times are Beirut, 3 October 2026, under the stated six-hours-remaining assumption.
 

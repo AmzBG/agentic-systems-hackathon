@@ -1,0 +1,7 @@
+{
+  "source_url": "https://arxiv.org/html/1711.10051v4",
+  "focus": "Show a two-point line model y_hat = intercept + slope times x, its residuals observed minus predicted, each squared residual, and total sum of squared errors. Let learners edit observations and line coefficients; label the calculation as loss evaluation, not an optimizer.",
+  "audience": "A second-year engineering undergraduate familiar with coordinates, linear equations, and squaring numbers.",
+  "excerpt": "Paraphrase, not a quotation: Chen and Price define the least-squares solution by minimizing the squared residual norm ||X beta - y||_2^2. This case evaluates that norm for a two-point scalar line and does not optimize its coefficients.",
+  "section": "Chen and Price (2017), Active Regression via Linear-Sample Sparsification, Section 1, Active Linear Regression on a Finite Domain, displayed least-squares definition. The linked arXiv HTML full text is openly readable."
+}
