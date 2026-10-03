@@ -56,3 +56,11 @@ class NumericalTests(unittest.TestCase):
         self.assertFalse(report["ok"])
         self.assertIn("offline_html", {c["id"] for c in report["checks"] if c["status"] == "fail"})
 
+    def test_attention_public_identities_and_four_live_controls(self) -> None:
+        path = Path(__file__).resolve().parents[1] / "practice" / "specs" / "attention.json"
+        spec = json.loads(path.read_text(encoding="utf-8"))
+        report = run_checks(spec, self.html)
+        self.assertTrue(report["ok"], report["failures"])
+        influence = next(check for check in report["checks"] if check["id"] == "two_meaningful_controls")
+        self.assertEqual(influence["status"], "pass")
+
