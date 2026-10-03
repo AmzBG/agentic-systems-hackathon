@@ -7,6 +7,7 @@
   const clone=v=>JSON.parse(JSON.stringify(v));
   const finite=v=>typeof v==='number'&&Number.isFinite(v);
   const format=n=>finite(n)?Number(n.toPrecision(7)).toString():String(n);
+  const displayValue=v=>Array.isArray(v)?'['+v.map(displayValue).join(', ')+']':format(v);
   const tickNumber=n=>finite(n)?Number(n.toPrecision(3)).toString():String(n);
   const unit=u=>u||'units not specified';
   const shortLabel=label=>label.length>10?label.slice(0,9)+'…':label;
@@ -80,7 +81,9 @@
   }
   function renderOutputs(result) {
     el('outputs').replaceChildren();
-    for(const o of spec.outputs){const box=create('div',undefined,el('outputs'));box.className='output';create('h3',o.label+' — '+o.role+' ('+unit(o.units)+')',box);const value=result[o.id];create('pre',Array.isArray(value)?JSON.stringify(value,null,2):format(value),box);}
+    const containers=new Map();
+    for(const o of spec.outputs){const box=create('div',undefined,el('outputs'));box.className='output';containers.set(o.id,box);create('h3',o.label+' — '+o.role+' ('+unit(o.units)+')',box);create('pre',displayValue(result[o.id]),box);}
+    return containers;
   }
   const ns='http://www.w3.org/2000/svg';
   function svgNode(tag,attrs,parent,text){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(text!==undefined)n.textContent=text;if(parent)parent.append(n);return n;}
@@ -93,18 +96,21 @@
     svgNode('text',{transform:'translate(18 160) rotate(-90)','text-anchor':'middle'},svg,v.y_label+' ('+unit(yUnits)+')');
   }
   function domain(values,zero=false){let min=Math.min(...values),max=Math.max(...values);if(zero){min=Math.min(0,min);max=Math.max(0,max);}if(min===max){const d=Math.max(1,Math.abs(min)*.1);min-=d;max+=d;}if(!finite(max-min))fail('Chart numeric range is too large');return [min,max];}
-  function numericTable(value,title,parent,labels) {
+  function numericTable(value,title,parent,labels,axes={}) {
     const div=create('div',undefined,parent);div.className='scroll';const table=create('table',undefined,div);create('caption',title,table);
     const rows=Array.isArray(value)?(Array.isArray(value[0])?value:value.map(x=>[x])):[[value]];
-    if(rows.some(r=>r.some(Array.isArray))){create('pre',JSON.stringify(value,null,2),parent);return;}
-    const head=create('tr',undefined,create('thead',undefined,table));create('th','Index',head);
-    for(let i=0;i<rows[0].length;i++){const th=create('th','Column '+(i+1),head);th.scope='col';}
-    const body=create('tbody',undefined,table);rows.forEach((r,i)=>{const tr=create('tr',undefined,body);const th=create('th',(labels&&labels[i])||'Row '+(i+1),tr);th.scope='row';r.forEach(x=>create('td',format(x),tr));});
+    if(rows.some(r=>r.some(Array.isArray))){create('pre',displayValue(value),parent);return;}
+    const matrix=Array.isArray(value)&&Array.isArray(value[0]);
+    const rowAxis=axes.columns?'Sample':matrix?(axes.y||'Row'):(axes.x||'Index');
+    const head=create('tr',undefined,create('thead',undefined,table));create('th',rowAxis,head).scope='col';
+    for(let i=0;i<rows[0].length;i++){const label=axes.columns?axes.columns[i]:matrix?(axes.x||'Column')+' '+((labels&&labels[i])||(i+1)):(axes.value||'Value');const th=create('th',label,head);th.scope='col';}
+    const body=create('tbody',undefined,table);rows.forEach((r,i)=>{const tr=create('tr',undefined,body);const th=create('th',(labels&&labels[i])||rowAxis+' '+(i+1),tr);th.scope='row';r.forEach(x=>create('td',format(x),tr));});
   }
   function renderVisual(v,result,inputs,b,parent) {
     const output=spec.outputs.find(o=>o.id===v.output),value=result[v.output],s=shape(value);
+    const tableAxes={x:v.x_label,y:v.y_label,value:output.label+' ('+unit(output.units)+')'};
     create('h3',v.title,parent);
-    if(v.kind==='values'){numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels);return;}
+    if(v.kind==='values'){numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels,tableAxes);return;}
     if(v.kind==='heatmap') {
       if(s.dims.length!==2)fail('Heatmap requires a matrix');
       create('p',v.x_label+' × '+v.y_label+'; '+output.label+(output.units?' ('+output.units+')':''),parent);
@@ -115,14 +121,14 @@
         if(cols<=4)svgNode('text',{x:x+255/cols,y:y+110/rows+5,'text-anchor':'middle'},svg,tickNumber(value[r][c]));}}
       for(let c=0;c<cols;c++){const label=(v.labels&&v.labels[c])||String(c+1);const tick=svgNode('text',{x:90+(c+.5)*510/cols,y:276,'text-anchor':'middle'},svg,shortLabel(label));svgNode('title',{},tick,label);}
       svgNode('text',{x:350,y:310,'text-anchor':'middle'},svg,v.x_label);svgNode('text',{x:350,y:340,'text-anchor':'middle'},svg,'Scale: '+format(lo)+' to '+format(hi)+' '+unit(output.units));
-      svgNode('text',{transform:'translate(18 150) rotate(-90)','text-anchor':'middle'},svg,v.y_label);numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels);return;
+      svgNode('text',{transform:'translate(18 150) rotate(-90)','text-anchor':'middle'},svg,v.y_label);numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels,tableAxes);return;
     }
     if(v.kind==='bar') {
       if(s.dims.length!==1)fail('Bar chart requires a vector');
       const svg=chart(v,parent),[lo,hi]=domain(value,true);axis(svg,v,1,value.length,lo,hi,'',output.units,true);
       const y=x=>284-(x-lo)/(hi-lo)*240,zero=y(0),width=510/value.length;
       value.forEach((x,i)=>{svgNode('rect',{x:92+i*width,y:Math.min(zero,y(x)),width:Math.max(1,width-8),height:Math.abs(y(x)-zero),fill:'#207a96'},svg);svgNode('text',{x:92+(i+.5)*width,y:Math.max(38,Math.min(280,y(x)+(x<0?18:-7))),'text-anchor':'middle'},svg,format(x));const label=(v.labels&&v.labels[i])||String(i+1);const tick=svgNode('text',{x:92+(i+.5)*width,y:306,'text-anchor':'middle'},svg,label.length>10?label.slice(0,9)+'…':label);svgNode('title',{},tick,label);});
-      numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels);return;
+      numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels,tableAxes);return;
     }
     if(v.kind==='line') {
       if(s.dims.length!==0)fail('Line chart requires a scalar output');
@@ -130,7 +136,7 @@
       for(let i=0;i<sw.points;i++){const x=i===sw.points-1?sw.max:sw.min+(sw.max-sw.min)*i/(sw.points-1),next=clone(inputs);next[sw.control]=x;const value=compute(validate(next),b)[v.output];if(!finite(value))fail('Sweep output must be scalar');points.push([x,value]);}
       const svg=chart(v,parent),[lo,hi]=domain(points.map(p=>p[1]));axis(svg,v,sw.min,sw.max,lo,hi,control.units,output.units);
       svgNode('polyline',{points:points.map(([x,y])=>(88+(x-sw.min)/(sw.max-sw.min)*520)+','+(284-(y-lo)/(hi-lo)*240)).join(' '),fill:'none',stroke:'#207a96','stroke-width':3},svg);
-      numericTable(points,'Sweep: '+v.x_label+' ('+control.units+'), '+output.label+' ('+output.units+')',parent);return;
+      numericTable(points,'Sweep: '+v.x_label+' ('+unit(control.units)+'), '+output.label+' ('+unit(output.units)+')',parent,undefined,{columns:[v.x_label+' ('+unit(control.units)+')',output.label+' ('+unit(output.units)+')']});return;
     }
     fail('Unsupported visual');
   }
@@ -156,15 +162,17 @@
     for(const [name,actual] of cases)for(const t of spec.invariants)check(name+': '+t.name,()=>{const value=actual[t.output];let measured=value,expected=t.kind;if(t.kind==='sum'){measured=value.reduce((a,c)=>a+c,0);expected=t.expected;}if(t.kind==='row_sum'){if(shape(value).dims.length!==2)fail('Row sum invariant requires matrix');measured=value.map(row=>row.reduce((a,c)=>a+c,0));expected='each row '+t.expected;}if(t.kind==='range')expected='['+t.min+', '+t.max+']';const output=spec.outputs.find(o=>o.id===t.output);return {ok:invariant(t,actual),detail:'Measured '+JSON.stringify(measured)+' ('+unit(output.units)+'); expected '+expected+'; atol '+t.atol+', rtol '+t.rtol};});
     el('check-status').textContent=passed+' passed; '+failed+' failed; '+skipped+' skipped.';
     el('check-status').className=failed?'fail':'pass';
+    return failed;
   }
   function recalculate() {
-    const b=NumericRuntime.budget(2000000);let result;
-    try{result=compute(state,NumericRuntime.budget());last=result;renderOutputs(result);el('result-status').textContent='Current valid result.';}
+    const b=NumericRuntime.budget(2000000);let result,containers;
+    try{result=compute(state,NumericRuntime.budget());last=result;containers=renderOutputs(result);el('result-status').textContent='Current valid result.';}
     catch(error){status('Calculation failed. '+error.message,true);el('result-status').textContent=last?'Last valid result retained — stale for current inputs.':'No valid result available.';el('check-status').textContent='Degraded: current calculation failed; checks not run.';el('check-status').className='skip';el('checks').replaceChildren();return;}
-    el('visuals').replaceChildren();let visualFailures=0;
-    for(const v of spec.visuals){const box=create('div',undefined,el('visuals'));box.className='chart';try{renderVisual(v,result,state,b,box);}catch(error){visualFailures++;box.replaceChildren();create('h3',v.title,box);create('p','Visual unavailable: '+error.message,box).className='error';}}
+    el('visuals').replaceChildren(el('outputs'));let visualFailures=0;
+    for(const v of spec.visuals){const box=create('div',undefined,containers.get(v.output));box.className='chart';try{renderVisual(v,result,state,b,box);}catch(error){visualFailures++;box.replaceChildren();create('h3',v.title,box);create('p','Visual unavailable: '+error.message,box).className='error';}}
     status(visualFailures?'Calculation valid; '+visualFailures+' visual(s) unavailable.':'Inputs and calculation valid.',visualFailures>0);
-    try{selfChecks(result,b);}catch(error){el('check-status').textContent='Degraded: '+error.message;el('check-status').className='skip';}
+    try{const failed=selfChecks(result,b);if(failed){status('Calculation completed; '+failed+' scientific check(s) failed.'+(visualFailures?' '+visualFailures+' visual(s) unavailable.':''));el('status').className='caution';}}
+    catch(error){el('check-status').textContent='Degraded: '+error.message;el('check-status').className='skip';status('Calculation completed; scientific checks unavailable.'+(visualFailures?' '+visualFailures+' visual(s) unavailable.':''));el('status').className='caution';}
   }
   if(data.error||!data.ast){status('Degraded: '+(data.error||'Compute unavailable'),true);el('check-status').textContent='Skipped: compute was not admitted.';document.querySelectorAll('.preset').forEach(button=>button.disabled=true);return;}
   try {
