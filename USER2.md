@@ -151,3 +151,85 @@ Numeric sliders/numbers require finite min/max/step and bounded defaults; vector
 Compare numeric leaves with `abs(actual-expected) <= atol + rtol*abs(expected)`; tolerances finite and nonnegative. Range applies to each leaf; sum applies to a flat vector; row_sum applies to every matrix row; nondecreasing applies to a flat vector. Tests/invariants are declarative, never model-written executable assertions. No DOM, network, imports, eval, Function constructor, Date, randomness or unbounded loops in compute; cap dimensions to 8 and total leaves to 128. Local engine runs must have enforceable time/memory limits. Include scientific identity checks in tests, not merely finiteness.
 
 Revisions use the same three delimiter pairs: metadata contains only requested top-level replacement keys plus version; compute block is required only when compute changes. Merge on a copy; full schema validation follows. Arrays replace atomically, never append. Unknown revision keys fail. Preserve the previous candidate until the replacement renders and checks better; prefer full-pass, then fewer required failures, with numerical/scientific checks weighted above cosmetic ones.
+
+## Runtime implementation evidence — 3 October 2026
+
+Branch: `user2-runtime`. No commit or push made. Only runtime.py,
+templates/runtime.css, templates/interpreter.js, templates/runtime.js,
+tests/test_runtime.py, and this progress section changed.
+
+Milestones 1–4 implemented; milestone 5 features frozen and owned suite passing.
+Acceptance remains incomplete pending collaborator scripts/fixtures and actual
+browser/Python 3.11 evidence.
+
+- Standalone teaching content survives compute admission/calculation failures.
+- Six bounded control kinds, four visual kinds, labeled intermediate/results,
+  two default-based presets, up to 41 sweep points, and all five invariant kinds.
+- Maximum dimension 8, aggregate numeric leaves 128 separately for inputs and
+  outputs; finite rectangular values required. No invented missing outputs.
+- Invalid edits retain valid inputs. Failed calculations label retained results
+  stale. Self-check expectations actually execute and can fail visibly.
+- Plain-text rendering, inert JSON, hashed trusted-script CSP, and a bounded
+  AST interpreter. Supplied compute source never executes in the host engine.
+
+Supported compute language: local lexical variables, numeric expressions,
+strict equality, boolean/numeric conditions, arrays and plain records, local
+functions/arrows, if/return/throw, counted for and array for-of loops, approved
+Math operations, Array(length).fill, map/reduce/slice/forEach/push/concat.
+Properties are interpreter-owned; prototype/global access is denied. Missing
+function arguments fail explicitly. No implicit string/boolean arithmetic or
+loose equality; unsupported source/behavior produces an explained degraded
+state. This is a restricted numeric language, not full ECMAScript compatibility.
+Per-calculation limits: 100,000 instructions, 16,384 allocated value slots,
+256 iterations per counted loop, call depth 32, intermediate array length 128.
+Sweeps and self-checks share a 2,000,000-instruction batch ceiling.
+
+Passing commands on Python 3.14.5:
+
+```text
+python -m unittest tests.test_runtime.ContractTests -v
+    4 tests passed
+python -m unittest tests.test_runtime.ControlTests tests.test_runtime.VisualTests -v
+    12 tests passed
+python -m unittest tests.test_runtime.SafetyTests -v
+    11 tests passed
+python -m unittest tests.test_runtime -v
+    43 tests passed; zero skips
+python tests/test_runtime.py --smoke entropy --output out/entropy
+python tests/test_runtime.py --smoke attention --output out/attention
+python tests/test_runtime.py --smoke all-kinds --output out/all-kinds
+    Each wrote index.html; generation alone is not browser execution evidence
+```
+
+The numerical/interaction tests execute the shipped JavaScript using the
+installed Windows Chakra JSRT engine through stdlib ctypes, in child processes
+with an 8-second timeout and a 128 MiB engine memory limit. Interaction tests
+use a minimal DOM contract double. They verify handlers, calculations, SVG
+construction, self-checks and retained state, but do not prove browser layout,
+keyboard behavior, CSP enforcement or operation with browser networking disabled.
+On hosts without Chakra these execution tests explicitly skip.
+
+Final review reproduced and fixed compound-assignment evaluation order,
+invented null arguments and coercive-equality semantic mismatches. Security
+checks cover literal/escaped/dynamic prototype access, script termination,
+nonfinite/malformed/missing outputs, cycles and bounded resource exhaustion.
+
+Exact blocked collaborator acceptance commands:
+
+```text
+python scripts/smoke_runtime.py --spec practice/specs/entropy.json --output out/entropy
+python scripts/smoke_runtime.py --spec practice/specs/attention.json --output out/attention
+python scripts/audit_repo.py
+```
+
+All fail because the named scripts are absent. practice/specs/entropy.json and
+practice/specs/attention.json are also absent; examples/*/case.json are CLI
+inputs, not v1 specs. Expected collaborator behavior: load offline v1 fixtures
+directly, write standalone pages, and audit forbidden assets without model calls.
+Owned in-memory entropy/attention fixtures provide the closest offline paths.
+
+Actual browser verification was attempted with the generated entropy file.
+The in-app browser rejected file: navigation under its URL policy and prohibited
+workarounds; no browser verification is claimed. Only Python 3.14 is installed,
+so Python 3.11 compatibility remains unverified. No dependencies, network calls,
+Node/build tools, model calls or collaborator implementation imports were added.
