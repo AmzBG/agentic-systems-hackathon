@@ -4,7 +4,7 @@ This is SHA-specific evidence, not a final-release declaration. Generation and t
 
 ## Actual generation results
 
-Model `deepseek/deepseek-v4.1-flash`, single flow, low reasoning. Each case made exactly one request, no planning request, no repair, exit 0, numerical checks pass, degraded false. Pages and sanitized traces are in the named case directories; `runs.jsonl` retains usage and flow evidence. `oracles.json` contains separately calculated expectations, executed against the delivered page AST using bounded QuickJS, not model-written expected values.
+Model `deepseek/deepseek-v4.1-flash`, single flow, low reasoning. Each case made exactly one request, no planning request, no repair, exit 0, numerical checks pass, degraded false. Pages and sanitized traces are in the named case directories; `runs.json` retains usage and flow evidence. `oracles.json` contains separately calculated expectations, executed against the delivered page AST using bounded QuickJS, not model-written expected values.
 
 | Case | Prompt | Completion | Total | Trace seconds | Independent comparison |
 |---|---:|---:|---:|---:|---|
