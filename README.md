@@ -1,18 +1,17 @@
 # Paper to Playground
 
-Paper to Playground is a self-verifying lesson compiler. The model understands the paper and designs a focused teaching specification; deterministic software renders the interactive explanation and verifies its calculations; the agent revises only demonstrated failures.
+Paper to Playground turns a research-paper source and a short learning brief into one self-contained, offline,
+interactive HTML explanation of a single focused idea, plus a JSONL trace of how it was produced. The model designs a
+compact teaching specification and a pure calculation function; deterministic code renders the page, runs the
+calculations and checks them, and the agent asks the model to repair only demonstrated failures.
 
-Built for the EECE503P / EECE798S hackathon, it turns a focused research-paper source and learning brief into a single offline interactive HTML explanation, plus an auditable JSONL execution trace.
-
-The core generates a compact specification that the shared offline runtime renders and the checker verifies. The frozen interface and ownership are in `AI.md`. Core, renderer, and checker are integrated on `main`. A live entropy run has passed the validator and independent numerical oracle; real browser review remains unverified.
-
-**Assessment model:** DeepSeek V4.1 Flash via OpenRouter, using the pinned model ID `deepseek/deepseek-v4.1-flash`.
+Built for the EECE503P / EECE798S agentic-systems hackathon.
 
 ## Team
 
-1. **Jadjnm (User 1):** agent core, source ingestion, model calls, budgets, and CLI integration.
-2. **AmzBG (User 2):** offline page runtime, controls, visuals, and browser behavior.
-3. **Jiany-S (User 3):** checks, trace, practice evidence, installation, and release verification.
+1. **Jadjnm (User 1):** agent core: input and source handling, model calls, budgets, parsing, repairs, CLI.
+2. **AmzBG (User 2):** offline page runtime: controls, visuals, numeric interpreter, browser behavior.
+3. **Jiany-S (User 3):** checks, trace, practice evidence, installation and release verification.
 
 ## Setup
 
@@ -24,71 +23,78 @@ py -3.11 -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-For tests:
+Set `OPENROUTER_API_KEY` in the environment, or copy `.env.example` to `.env` (ignored by Git) and fill in the key.
+
+## Run
 
 ```powershell
-python -m unittest discover -s tests -v
-```
-
-Copy `.env.example` to `.env` and place the development key only in the ignored `.env` file:
-
-```text
-OPENROUTER_API_KEY=your-development-key
-```
-
-Never commit the key or place it in an input, generated page, trace, prompt log, or screenshot.
-
-Once a model ID and key are available, one small paid request can verify the connection:
-
-```powershell
-python scripts/check_openrouter.py --model deepseek/deepseek-v4.1-flash
-```
-
-## Required command
-
-```powershell
-python -m pip install -r requirements.txt
 python agent.py --input case.json --output out --model deepseek/deepseek-v4.1-flash
 ```
 
-Successful runs create:
+- `--model` is authoritative: every model call goes to that model ID through OpenRouter, and nothing else is called.
+  The tested model is `deepseek/deepseek-v4.1-flash`.
+- `case.json` must contain the string fields `source_url`, `focus` and `audience`. Every other string field (for
+  example a supplied excerpt) is forwarded to the model as brief context.
+- Exit code `0` means every required check passed; `1` means the run failed (the best safe page, or a "Generation
+  incomplete" page, is still written); `2` means the input was invalid.
 
-- `out/index.html` - self-contained HTML with embedded styles, JavaScript, and visuals.
-- `out/trace.jsonl` - one event per line, including checks, revisions, elapsed time, and per-call token usage.
+Outputs:
 
-Two public practice inputs are under `examples/attention/` and `examples/entropy/`. The latter also contains a real model-generated [`index.html`](examples/entropy/index.html) and its [`trace.jsonl`](examples/entropy/trace.jsonl); the matching input is [`case.json`](examples/entropy/case.json). The refreshed showcase used one request with no repairs; older failed/accepted repair evidence remains in Git history.
-Preview the six-case run plan without making an API request:
+- `out/index.html`: one self-contained page with inline styles, script and SVG visuals. Its Content-Security-Policy
+  blocks all network access (`default-src 'none'`, `connect-src 'none'`), so it works offline.
+- `out/trace.jsonl`: one JSON event per line (read_input, fetch, identify, plan, generate, check, revision, final) with
+  checks, repairs, elapsed time and API-reported token usage per call. No key, authorization header, raw prompt or
+  hidden reasoning is written.
 
-```powershell
-python scripts/run_all.py --models deepseek/deepseek-v4.1-flash --repeats 1 --output evidence/baseline --dry-run
+## Architecture
+
+```text
+case.json -> bounded source fetch -> one OpenRouter generation (spec JSON + compute function)
+  -> parse and validate -> render offline page -> checks -> up to 2 targeted repairs -> best page + trace
 ```
 
-## Architecture status
+| File | Role |
+|---|---|
+| `agent.py` | CLI, input loading, source fetch (3 s, byte cap; a failure is traced and generation continues from the brief), orchestration, repair targeting, best-candidate retention, page-interpreter probe |
+| `prompts.py` | Generic generation and repair instructions; source text is treated as untrusted data |
+| `spec_parser.py` | Wire-format parser and schema validation |
+| `model_client.py`, `budget.py` | OpenRouter transport; hard limits of 10 requests including retries, 30,000 completion tokens and 10 minutes |
+| `runtime.py`, `templates/` | Deterministic renderer and the page's bounded numeric interpreter |
+| `checks.py` | Schema, offline HTML, compute safety, numerical execution (QuickJS), two meaningful controls |
+| `trace.py` | Sanitized JSONL trace writer |
 
-The pipeline validates the input and source, asks the command-line-selected OpenRouter model for a compact teaching specification plus a pure calculation function, renders that through one reusable offline HTML runtime, runs structural and numerical checks, and requests a targeted repair if a check fails. It writes the best artifact atomically and records actual stage events without credentials or hidden reasoning. The CLI is `agent.py`; the former direct-HTML pipeline has been removed.
+Each page shows the idea and why it matters, defined symbols, at least two controls, intermediate values and the
+result, a visual, exactly two guided explorations, a limitation, and grounding labelled `FROM PAPER`, `TOY EXAMPLE`,
+`SIMPLIFICATION` or `UNVERIFIED`. Generation and checking contain no paper-specific code.
 
-The shared contract sets hard guards at 10 API calls, 30,000 completion tokens, and 10 minutes. The normal strategy targets one generation call and at most two targeted repairs. The CLI `--model MODEL_ID` remains authoritative. The literal reasoning default is `--reasoning auto`: the DeepSeek V4.1 Flash profile resolves it to low reasoning and currently selects provider throughput routing. Other model IDs use the generic path unless explicitly configured. `--flow single` is the submission flow; planned is available only for development/evidence. Explicit reasoning/routing overrides are development controls, not a requirement to run optimization experiments.
+For `deepseek/deepseek-v4.1-flash` the defaults are single-call flow, low reasoning and throughput provider routing
+(OpenRouter's unified `reasoning` and `provider` fields), chosen on measured runs in `evidence/u1-runs/README.md` and
+`evidence/paired_entropy/README.md`. Other model IDs use the generic path with no model-specific fields.
 
-## Evidence status
+## Example
 
-[Release evidence and pickup instructions](evidence/release_84c31ac/README.md) retain four generated mechanisms with independent numerical comparisons, exact historical code provenance, usage, and [scientific/teaching findings](evidence/release_84c31ac/SCIENTIFIC_REVIEW.md). These are one-run numerical passes, not blanket teaching approval or proof of hidden-case robustness. The refreshed entropy example passed its independent oracle. A supplied [generated Attention page](evidence/reviews/attention.md) now has independent numerical/static review, but predates final code and retains documented wording/coverage warnings. Final-version acceptance, genuine browser QA, public access, owner freeze and final exact-SHA clean-clone verification remain release gates.
+`examples/entropy/` holds a public example pair: [`case.json`](examples/entropy/case.json) and its real generated
+[`index.html`](examples/entropy/index.html) and [`trace.jsonl`](examples/entropy/trace.jsonl) (1 request, no repairs,
+all six checks passed, 17,917 tokens). `examples/attention/case.json` is the second public input; its final generated
+page is in `evidence/u1-runs/final-93f7521/attention/`.
 
-Offline contract tests and a fresh Python 3.11 wheel-only installation have passed; the install check also confirmed that the pinned QuickJS engine interrupts an infinite loop. All six practice URLs yielded extractable source text through the real fetch path, although one live entropy fetch failed near the three-second cap and was routed to the core owner.
+## Validation
 
-`evidence/DEVELOPMENT_RUNS.md` records historical failed attempts and an older three-request entropy result (64.156 seconds, 27,215 scored tokens), not the current showcase. The refreshed published page used one request, no repairs, 46.609 trace seconds and 17,917 scored tokens on `84c31ac`; current validator and independent entropy identities pass. A [two-repeat entropy flow comparison](evidence/paired_entropy/README.md) found 2/2 passing single runs and 2/2 passing planned runs, with no demonstrated quality gain from planning and 68.5% more scored tokens for it. Single is selected for submission on this evidence, not a universal claim. Historical degraded baseline runs are not verified successes; supplied U1 bundles are separated by producing code/configuration in [their manifest](evidence/u1-runs/README.md). No new paid runs were made during stabilization.
+```powershell
+python -m unittest discover -s tests -q
+python scripts/verify_install.py
+python scripts/audit_repo.py
+python scripts/validate_output.py --output examples/entropy
+python scripts/check_entropy_oracle.py --output examples/entropy
+```
 
-## Open specification questions
-
-See `docs/QUESTIONS_FOR_INSTRUCTOR.md`. The current loader requires the three named fields (`source_url`, `focus`, and `audience`), accepts additional string fields, and can use an optional `excerpt`, `source_text`, or `paper_excerpt` field if paper downloads are unavailable.
-
-## Repository access
-
-The GitHub repository is currently private. The team plans to make it public before submission; verify that the instructor can open the final URL without signing in. Commits and pushes use the authorized team accounts only.
+Generated pages for other mechanisms with independent numerical comparisons are in `evidence/release_84c31ac/`, and
+independent reviews are in `evidence/reviews/`. These are single-run results, not a guarantee for unseen papers.
 
 ## Reuse credits
 
-- Python standard-library HTTP and HTML parsing: source ingestion and OpenRouter transport.
-- pypdf: PDF text extraction.
-- QuickJS: bounded local execution of generated numerical calculations during validation.
-
-No paper-specific generated answer or page is included in the agent.
+- Python standard library: HTTP transport to OpenRouter, HTML text extraction, JSON and unit tests.
+- [pypdf](https://pypi.org/project/pypdf/): PDF text extraction from fetched sources.
+- [quickjs](https://pypi.org/project/quickjs/) (QuickJS engine bindings): bounded execution of generated calculations
+  during checks.
+- [OpenRouter](https://openrouter.ai/): model API.
