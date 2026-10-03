@@ -2,6 +2,8 @@
 
 Integration update (3 October 2026): User 3's completed work is merged into the latest `main` after each prompt. The earlier branch-specific handoff and timeline below are historical; use `main` for current code and interfaces.
 
+**New agent: start with [evidence/AGENT_HANDOFF.md](evidence/AGENT_HANDOFF.md).** It indexes current decisions, completed commits, verified command/version boundaries, inbox status overrides, environment limitations, unavailable artifacts and exact next owner actions. Sync and reread this inbox first; the handoff is a snapshot, not a substitute for current repository files.
+
 ## Live User 3 work plan (3 October 2026)
 
 The core and checker are on `main`; User 3 works on `main` in owned paths only. The assessment model is `deepseek/deepseek-v4.1-flash`. The local ignored `.env` already has a key; no key value belongs in chat, traces, or Git. The team is User 1 `Jadjnm`, User 2 `AmzBG`, and User 3 `Jiany-S`. Repository access is confirmed for User 1 and User 3; User 2 owns the repository. The team plans to make the repository public before submission; final verification must check unauthenticated access.
