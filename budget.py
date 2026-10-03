@@ -81,6 +81,10 @@ class Budget:
         if prompt is not None:
             self.verified_prompt_tokens += prompt
 
+    def completion_left(self) -> int:
+        """Completion tokens still reservable under the hard cap."""
+        return max(0, HARD_COMPLETION_TOKENS - self.charged_completion)
+
     def allows_optional_call(self, max_tokens: int) -> bool:
         """Policy gate for repairs/plans: stay under the soft token cap.
 
