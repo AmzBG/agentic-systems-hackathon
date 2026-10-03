@@ -1,6 +1,8 @@
 # Paper to Playground
 
-An agent for the EECE503P / EECE798S hackathon. It turns a focused research-paper source and learning brief into a single offline interactive HTML explanation, plus an auditable JSONL execution trace.
+Paper to Playground is a self-verifying lesson compiler. The model understands the paper and designs a focused teaching specification; deterministic software renders the interactive explanation and verifies its calculations; the agent revises only demonstrated failures.
+
+Built for the EECE503P / EECE798S hackathon, it turns a focused research-paper source and learning brief into a single offline interactive HTML explanation, plus an auditable JSONL execution trace.
 
 The current core generates a compact specification that a shared offline runtime will render and check. The frozen interface and ownership are in `AI.md`. The new core and User 3 checker are integrated on `main`; the User 2 renderer has not landed yet, so an end-to-end success claim would be premature.
 
@@ -62,7 +64,7 @@ Preview the six-case run plan without making an API request:
 python scripts/run_all.py --models deepseek/deepseek-v4.1-flash --repeats 1 --output evidence/baseline --dry-run
 ```
 
-## Preliminary architecture
+## Architecture status
 
 The pipeline validates the input and source, asks the command-line-selected OpenRouter model for a compact teaching specification plus a pure calculation function, renders that through one reusable offline HTML runtime, runs structural and numerical checks, and requests a targeted repair if a check fails. It writes the best artifact atomically and records actual stage events without credentials or hidden reasoning. The new CLI is `agent.py`; `paper_playground/` is a legacy path awaiting User 1's cleanup.
 
