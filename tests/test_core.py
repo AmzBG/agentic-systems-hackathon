@@ -228,7 +228,8 @@ class ContractTests(unittest.TestCase):
                        "naming the intermediate and result readouts", "explained through the mechanism",
                        "excerpt text in the brief", "never invent quotations",
                        "whose inputs equal that exploration's preset", "No comments, no template strings",
-                       "this, with, while, process", "all strings nonblank", "unitless"):
+                       "this, with, process", "all strings nonblank", "unitless", "at most 256 iterations",
+                       "filter, indexOf, includes", "== and !="):
             self.assertIn(phrase, system)
         repair = prompts.build_repair_messages({"focus": "f"}, toy_spec(), ["x: y"], ["grounding"])
         self.assertEqual(repair[0]["content"], prompts.SYSTEM_PROMPT)  # repairs keep the same rules
@@ -304,6 +305,24 @@ class ParserTests(unittest.TestCase):
                      "function compute(inputs) { return {t: Date.now()}; }",
                      "const compute = (inputs) => ({})"):
             self.assertRejects(wire(compute=code), "compute_js")
+
+    def test_prompted_compute_subset_accepted_by_parser_and_runtime(self):
+        code = ("function compute(inputs) { const n = inputs.xs.length; let total = 0; "
+                "for (let i = 0; i < n; i++) { total += inputs.xs[i] ** 2 % 7; } "
+                "for (const v of inputs.xs) { total = total + Math.abs(v); } "
+                "function half(v) { return v / 2; } const sq = (v) => Math.sqrt(Math.max(v, 0)); "
+                "const scaled = inputs.xs.map((x, i) => (inputs.gain !== 0 && i >= 0 ? inputs.gain * x : 0)); "
+                "const acc = []; scaled.slice(0, 2).concat([1]).forEach(v => { acc.push(half(v)); }); "
+                "const pad = Array(3).fill(0); const ok = Number.isFinite(total) ? sq(total) : Math.PI * Math.E; "
+                "return { scaled, total: scaled.reduce((a, b) => a + b, 0) + ok * 0 + acc.length * 0 + pad.length * 0 }; }")
+        spec = toy_spec()
+        spec["compute_js"] = code
+        self.assertEqual(parse_spec(wire(spec))["compute_js"], code)
+        try:
+            from runtime import parse_compute
+        except ImportError:
+            self.skipTest("User 2 runtime not present")
+        parse_compute(code)
 
     def test_unknown_metadata_preserved(self):
         spec = toy_spec()

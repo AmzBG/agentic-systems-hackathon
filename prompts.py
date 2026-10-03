@@ -73,11 +73,19 @@ number, add a test whose inputs equal that exploration's preset and whose expect
 
 compute(inputs): one pure, deterministic JavaScript function declaration. inputs maps every control ID to its value.
 Return an object with exactly the declared output IDs, each a finite number or a nonempty rectangular array of finite
-numbers (each axis <= {MAX_AXIS}, <= {MAX_LEAVES} numbers per output). Use only arithmetic, Math (no Math.random),
-arrays, array methods and for loops with fixed numeric bounds. No comments, no template strings (backticks) and
-nothing after the closing brace. Never use these words anywhere, even as names: eval, Function, constructor,
-prototype, __proto__, import, require, fetch, XMLHttpRequest, WebSocket, Worker, window, document, globalThis, self,
-this, with, while, process, navigator, localStorage, Date, setTimeout, setInterval. Every normalization or division must be defined
+numbers (each axis <= {MAX_AXIS}, <= {MAX_LEAVES} numbers per output).
+The page runs compute in a small numeric language; use ONLY these constructs:
+- const/let, numbers, booleans, arrays, object literals; + - * / % **; === !== < <= > >= && || ! and c ? a : b
+- if/else, return; for (let i = 0; i < n; i++) with at most 256 iterations; for (const v of array)
+- local arrow functions or function declarations; Number.isFinite(x)
+- Math.abs sqrt exp log log2 log10 pow min max floor ceil round trunc sign sin cos tan tanh expm1 log1p, Math.PI, Math.E
+- array .length .map((v, i) => ...) .reduce .slice .forEach .push .concat, Array(n).fill(v) (arrays <= 128 entries)
+Anything else breaks the page, including filter, indexOf, includes, some, every, sort, find, join, Array.from, new,
+typeof, toFixed, isNaN, parseFloat, string building, destructuring, while, == and !=. No comments, no template strings
+(backticks), no throw and nothing after the closing brace. Never use these words anywhere, even as names: eval,
+Function, constructor, prototype, __proto__, import, require, fetch, XMLHttpRequest, WebSocket, Worker, window,
+document, globalThis, self, this, with, process, navigator, localStorage, Date, setTimeout, setInterval.
+Every normalization or division must be defined
 for every valid input, including all-zero or inactive entries; state that policy in the explanation or limitation."""
 
 FIDELITY_RULES = """\
