@@ -35,8 +35,9 @@ python agent.py --input case.json --output out --model deepseek/deepseek-v4.1-fl
   The tested model is `deepseek/deepseek-v4.1-flash`.
 - `case.json` must contain the string fields `source_url`, `focus` and `audience`. Every other string field (for
   example a supplied excerpt) is forwarded to the model as brief context.
-- Exit code `0` means every required check passed; `1` means the run failed (the best safe page, or a "Generation
-  incomplete" page, is still written); `2` means the input was invalid.
+- Exit code `0` means the page passed its required checks; `1` means the run failed (the best safe page, or a
+  "Generation incomplete" page, is still written); `2` means the input was invalid. Numerical checks run in the pinned
+  QuickJS engine; if it were missing, the run would be reported as degraded with those checks skipped, never passed.
 
 Outputs:
 
