@@ -2,19 +2,15 @@
 
 An agent for the EECE503P / EECE798S hackathon. It turns a focused research-paper source and learning brief into a single offline interactive HTML explanation, plus an auditable JSONL execution trace.
 
-This is a preliminary paper-agnostic foundation. The final project direction and instructor clarification may change the ingestion schema, prompting strategy, validation, and presentation template.
+The team is moving the preliminary generator to a compact specification that a shared offline runtime renders and checks. The frozen interface and ownership are in `AI.md`; the committed starter code is an earlier version until User 1 integrates the new modules.
 
 **Assessment model:** DeepSeek V4.1 Flash via OpenRouter, using the pinned model ID `deepseek/deepseek-v4.1-flash`.
 
-## Team workstreams
+## Team
 
-Assign one teammate to each lane before the timed session:
-
-1. **Agent pipeline:** source ingestion, OpenRouter calls, request/token/time budgets, CLI, and trace.
-2. **Learning artifact:** prompting, interaction patterns, numerical calculations, visuals, and accessibility.
-3. **Evaluation and integration:** public practice cases, browser testing, edge cases, README, and frozen submission checks.
-
-Replace these workstream labels with the three team members' names before submission.
+1. **Jadjnm (User 1):** agent core, source ingestion, model calls, budgets, and CLI integration.
+2. **AmzBG (User 2):** offline page runtime, controls, visuals, and browser behavior.
+3. **Jiany-S (User 3):** checks, trace, practice evidence, installation, and release verification.
 
 ## Setup
 
@@ -63,9 +59,9 @@ Two public practice inputs are under `examples/attention/` and `examples/entropy
 
 ## Preliminary architecture
 
-The current pipeline validates the input, uses a supplied excerpt when available or downloads and extracts HTML/PDF text, selects focus-relevant passages, asks the command-line-selected OpenRouter model for one self-contained artifact, runs deterministic checks, and makes one repair call only when checks fail. It writes the final HTML atomically and records genuine events without prompts, credentials, or hidden reasoning.
+The target pipeline validates the input and source, asks the command-line-selected OpenRouter model for a compact teaching specification plus a pure calculation function, renders that through one reusable offline HTML runtime, runs structural and numerical checks, and requests a targeted repair if a check fails. It writes the best artifact atomically and records actual stage events without credentials or hidden reasoning. This is the integration target; the initial code in `paper_playground/` still implements the earlier direct-HTML path.
 
-Hard guards enforce the assessment limits of 10 API calls, 30,000 completion tokens, and 10 minutes. The initial strategy targets one generation call and at most one repair call.
+The shared contract sets hard guards at 10 API calls, 30,000 completion tokens, and 10 minutes. The normal strategy targets one generation call and at most two targeted repairs.
 
 ## Open specification questions
 
@@ -80,6 +76,7 @@ The GitHub repository is currently private. Before submission, confirm that both
 - Requests: HTTP transport.
 - Beautiful Soup: HTML text extraction.
 - pypdf: PDF text extraction.
+- QuickJS: bounded local execution of generated numerical calculations during validation.
 - pytest: development tests only.
 
 No paper-specific generated answer or page is included in the agent.
