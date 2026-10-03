@@ -4,7 +4,7 @@ Paper to Playground is a self-verifying lesson compiler. The model understands t
 
 Built for the EECE503P / EECE798S hackathon, it turns a focused research-paper source and learning brief into a single offline interactive HTML explanation, plus an auditable JSONL execution trace.
 
-The current core generates a compact specification that a shared offline runtime will render and check. The frozen interface and ownership are in `AI.md`. The new core and User 3 checker are integrated on `main`; the User 2 renderer has not landed yet, so an end-to-end success claim would be premature.
+The current core generates a compact specification that the shared offline runtime renders and the checker verifies. The frozen interface and ownership are in `AI.md`. Core, renderer, and checker are integrated on `main`; an end-to-end success claim still awaits a verified live run and browser review.
 
 **Assessment model:** DeepSeek V4.1 Flash via OpenRouter, using the pinned model ID `deepseek/deepseek-v4.1-flash`.
 
@@ -73,7 +73,7 @@ The shared contract sets hard guards at 10 API calls, 30,000 completion tokens, 
 
 Offline contract tests and a fresh Python 3.11 wheel-only installation have passed; the install check also confirmed that the pinned QuickJS engine interrupts an infinite loop. All six practice URLs yielded extractable source text through the real fetch path. These are development checks, not generated-page results.
 
-No live repeated-run results, repair rates, API token totals, or end-to-end timings have been measured yet, so no single-vs-planned flow quality claim is made. The single flow is only the provisional low-call baseline. The User 2 renderer and a validated public example output pair are still required before final clean-clone and browser verification.
+One early live development run is recorded in `evidence/DEVELOPMENT_RUNS.md`: it used the assessment model but a stand-in page, parsed a spec, then failed schema validation before numerical checks. It is not a generated-page success. No live repeat set, repair rate, or single-vs-planned flow comparison has been measured, so the single flow remains only a provisional low-call baseline. The renderer is now integrated; a validated public example output pair and real browser verification are still required before final clean-clone verification.
 
 ## Open specification questions
 
