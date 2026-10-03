@@ -1,0 +1,23 @@
+{
+  "tested_production_sha": "14a5eaafc472a65b619e44db3db17016e57b0d0b",
+  "time": "3 October 2026 17:04-17:05 Beirut",
+  "surface": "actual Codex in-app Chromium, recovered browser4",
+  "artifact_type": "unchanged fresh generated outputs, not rerenders",
+  "pages": ["attention-1", "attention-2", "entropy", "attention-strict", "least-squares"],
+  "initial_computation_and_self_checks": "PASS all five",
+  "both_presets": "PASS all five; scientific prose defects reviewed separately",
+  "symbols_open": "PASS all five",
+  "mobile": "PASS all five: requested390x844, actual DOM375px, scrollWidth=clientWidth375",
+  "desktop": "PASS1265px on attention-1, entropy, attention-strict, least-squares; attention-2 desktop SKIP because override reset had not taken effect at its observation",
+  "console_warning_error_logs": "none on any page",
+  "comparisons": "PASS: changed matrix cells include actual preceding values, scalar results show previous/current",
+  "line_markers": "PASS fresh Entropy/LS; LS slope1.1 marker reads SSE0.04, exact-fit marker SSE0; Attention pages have no line chart",
+  "keyboard": "PASS LS slope1->1.1 SSE0->0.04; intercept1->1.1 SSE0.04->0.1",
+  "invalid_input": "PASS LS empty xs0 rejected/restored0 and last valid SSE0.1 retained",
+  "recovery": "PASS LS xs0=2 gives SSE5.38",
+  "server_disconnected": "PASS LS both presets after owned localhost server stopped: SSE6.5 then0, checks12passed0failed0skipped",
+  "fully_network_disabled": "SKIP: advertised browser capabilities only visibility/viewport; server stopped is not full network blocking",
+  "stale_computation_failure": "not injected into fresh pages; existing mocked regression and U2 offline fixture proof remain separately scoped",
+  "reset_action": "absent; optional feature omitted before cutoff",
+  "scientific_warning": "attention-1 visual titled row sums displays the weight matrix, not row sums; generated visual metadata defect, not renderer arithmetic"
+}

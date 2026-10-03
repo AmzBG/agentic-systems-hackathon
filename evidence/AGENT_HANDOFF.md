@@ -1,5 +1,18 @@
 # Resume here — User 3
 
+FINAL pickup: evidence/FINAL_RELEASE.md + final_14a5eaa/ supersede all older
+availability/access/freeze statements below. Sole-integrator authority granted;
+production14a5eaafc472a65b619e44db3db17016e57b0d0b tested in fresh3.11.9 clone,
+195PASS/install/audit/showcasePASS; five fresh paid CLI runsPASS with 91 independent
+numerical trials. First Attention exercised all3repairs; still false prose and
+missing required equal-score exploration. Public access200 confirmed. Fresh-page
+browser recovered with scoped actual QA all five, full network-disable SKIP;
+older U2offline60assertions retained separately. NOT READY
+for unconditional science/browser sign-off. Stop optional production changes
+17:02, submission schedule17:32Beirut. Preserve original generated artifacts;
+no more paid calls casually. Final documentation SHA differs without production
+edits; see final handoff and report.
+
 Latest pickup: read SCREENING_RELEASE_REVIEW.md and screening_independent.json
 first. Six completed SCR runs independently reviewed: keep single/auto→low;
 all compute references pass but Attention/off fails model tests/brief and LS/off

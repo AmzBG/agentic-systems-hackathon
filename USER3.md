@@ -1,5 +1,19 @@
 # USER3.md — checks and evidence
 
+Final integrator override17:03: user explicitly superseded ownership and authorized
+five fresh paid CLI checks from one controlling session (no editing subagents).
+Production candidate14a5eaafc472a65b619e44db3db17016e57b0d0b frozen before17:02;
+Python3.11.9 clean-clone195tests/audit/install/showcase checks PASS. Fresh5/5exit0,
+91 independent numerical trialsPASS; first Attention third repair demonstrated.
+Scientific prose/brief defects remain and fresh browser unavailable, so NOT READY
+for unconditional sign-off. Browser subsequently recovered: all five fresh pages
+have scoped actual QA in final_14a5eaa/browser.json; full network-disable remains
+SKIP and stale-failure injection is historical/mocked only. PUBLICHTTP200 resolves older
+PRIVATE404 gate. Evidence/FINAL_RELEASE.md and final_14a5eaa contain original
+artifacts, traces, costs/hashes. No production edits after tested candidate;
+evidence/development-oracle-only changes may follow. Never repeat paid checks
+without new authority/reason. Final remote SHA returned after publication.
+
 Latest pickup (3 October 2026): evidence/SCREENING_RELEASE_REVIEW.md plus
 screening_independent.json supersede old run-availability and fixture experiment
 claims. All SCR-1..6 reviewed; keep auto→low/single, no U3 paid calls. Combined

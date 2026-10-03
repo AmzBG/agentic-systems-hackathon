@@ -102,6 +102,9 @@ exit 0 is possible and explicitly means numerical execution skipped, not PASS.
 
 ## Release gates
 
+Final17:03 override: PUBLIC and unauthenticatedHTTP200 now verified; the
+following private-access paragraph records the earlier check, not current status.
+See FINAL_RELEASE.md for current clean-clone/fresh generation results.
 Repository URL: https://github.com/AmzBG/agentic-systems-hackathon
 Unauthenticated URL returned 404; authenticated visibility was PRIVATE. Owner
 AmzBG must make it accessible before submission. Do not report release GO yet.

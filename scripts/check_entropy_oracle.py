@@ -53,7 +53,8 @@ def verify_entropy_page(path: Path) -> dict:
     if len(weight_default) < 4:
         raise ValueError("entropy weight vector has fewer than four outcomes")
     probability_ids = [o["id"] for o in outputs
-                       if (o["id"] in {"q", "probs", "probabilities"} or "probab" in o["id"])
+                       if (o["id"] in {"q", "p", "probs", "probabilities"}
+                           or "probab" in (o["id"] + o["label"]).lower())
                        and "sum" not in o["id"]]
     contribution_ids = [o["id"] for o in outputs
                         if "contrib" in (o["id"] + o["label"]).lower()]

@@ -1,0 +1,7 @@
+{
+  "source_url": "https://arxiv.org/pdf/1706.03762",
+  "focus": "Explain scaled dot-product attention for editable Q and K of shape 2x2 and V of shape 2x1, plus a scaling on/off toggle. Default Q=K=[[1,0],[0,1]], V=[[10],[20]], scaling on. Allow Q/K entries -1000 to 1000 and V entries -20 to 20. Show raw dot products, scaled scores, row-wise weights and output. Use numerically stable softmax. Explore equal scores and a dominant score. Keep the computation valid for large inputs; no Transformer training.",
+  "audience": "Engineering undergraduate familiar with algebra; define every new symbol and explain intermediate calculations.",
+  "excerpt": "Paraphrase: Attention(Q,K,V)=softmax(Q*K^T/sqrt(d_k))*V, with softmax applied separately to each query row; d_k is the query/key vector dimension. Removing scaling means using Q*K^T directly. Subtracting each row maximum before exponentiation is an algebraically equivalent numerical implementation choice for this toy, not a separate attention mechanism.",
+  "section": "Vaswani et al., Attention Is All You Need (2017), Section 3.2.1, Equation 1."
+}

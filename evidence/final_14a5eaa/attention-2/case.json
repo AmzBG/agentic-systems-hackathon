@@ -1,0 +1,6 @@
+{
+  "source_url": "https://arxiv.org/html/1706.03762v7",
+  "focus": "Explain scaled dot-product attention from Section 3.2.1 using small editable Q, K, and V matrices. Show similarity scores, normalized attention weights, and the weighted output. Let the learner switch scaling on and off, explore equal scores and a dominant score, and verify that every row of weights sums to one.",
+  "audience": "A second-year engineering undergraduate who knows vectors, matrices, and basic probability but has not studied Transformers."
+}
+

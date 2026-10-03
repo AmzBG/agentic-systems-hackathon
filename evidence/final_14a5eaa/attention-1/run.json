@@ -1,0 +1,83 @@
+{
+  "name": "attention-1",
+  "input": "examples/attention/case.json",
+  "code_sha": "14a5eaafc472a65b619e44db3db17016e57b0d0b",
+  "python": "3.11.9",
+  "input_sha256": "bac7407efd2f5eec16e8ea50e98612fcc944b110ba125f4e7810472947879efd",
+  "exit_code": 0,
+  "elapsed_seconds": 90.735,
+  "cli": "python agent.py --input case.json --output out --model deepseek/deepseek-v4.1-flash",
+  "defaults": "single / reasoning auto -> profile low; adaptive truncation recovery allowed",
+  "status": "pass",
+  "validation": {
+    "ok": true,
+    "failures": [],
+    "html": "out\\final-live-14a5eaa\\attention-1\\index.html",
+    "trace": "out\\final-live-14a5eaa\\attention-1\\trace.jsonl",
+    "events": 25,
+    "attempts": 4,
+    "usage": {
+      "prompt_tokens": 25353,
+      "completion_tokens": 22183,
+      "total_tokens": 47536,
+      "reasoning_tokens": 16000,
+      "unknown_calls": 0,
+      "verified": true,
+      "scored_tokens": 47536
+    },
+    "elapsed_seconds": 90.25,
+    "repairs": [
+      {
+        "number": 1,
+        "mode": "full",
+        "requested": [
+          "version",
+          "plan",
+          "title",
+          "audience",
+          "starting_point",
+          "symbols",
+          "controls",
+          "outputs",
+          "visuals",
+          "explorations",
+          "limitation",
+          "grounding",
+          "tests",
+          "invariants",
+          "compute_js"
+        ],
+        "outcome": "parse_failed"
+      },
+      {
+        "number": 2,
+        "mode": "targeted",
+        "requested": [
+          "visuals",
+          "invariants"
+        ],
+        "outcome": "accepted"
+      },
+      {
+        "number": 3,
+        "mode": "targeted",
+        "requested": [
+          "compute_js",
+          "tests",
+          "outputs"
+        ],
+        "outcome": "accepted"
+      }
+    ],
+    "flow_evidence": {
+      "planning_attempts": 0,
+      "planning_response_received": false,
+      "effective_flow": "single"
+    }
+  },
+  "hashes": {
+    "case.json": "bac7407efd2f5eec16e8ea50e98612fcc944b110ba125f4e7810472947879efd",
+    "index.html": "a4796c765d6969deae05edcb66b696ec995803eeb15c0906c4859feda6d689bc",
+    "trace.jsonl": "249ad542f3f80fb48f56dbd7dace1b6f06481bb8b06899db4e99681f4775738e"
+  }
+}

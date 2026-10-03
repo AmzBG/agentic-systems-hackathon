@@ -26,6 +26,27 @@ def _event(stage: str, *, result: str = "pass", details: dict | None = None) -> 
 
 
 class EvidenceScriptTests(unittest.TestCase):
+    def test_entropy_oracle_accepts_explicit_probability_symbol_p(self) -> None:
+        from check_entropy_oracle import verify_entropy_page, _runtime_payload
+        html = (ROOT / 'examples/entropy/index.html').read_text(encoding='utf-8')
+        payload = _runtime_payload(html)
+        probability = next(o['id'] for o in payload['spec']['outputs'] if 'probab' in o['label'].lower())
+        import re
+        payload['spec'] = json.loads(json.dumps(payload['spec']).replace('"'+probability+'"', '"p"'))
+        def rename_return(node):
+            if not isinstance(node, list): return
+            if node and node[0] == 'object':
+                for pair in node[1]:
+                    if pair[0] == probability: pair[0] = 'p'
+            for child in node: rename_return(child)
+        rename_return(payload['ast'])
+        html = re.sub(r'(<script type="application/json" id="runtime-data">).*?(</script>)',
+                      lambda m: m.group(1)+json.dumps(payload)+m.group(2), html, count=1, flags=re.S)
+        with tempfile.TemporaryDirectory() as temp:
+            renamed = Path(temp) / 'index.html'
+            renamed.write_text(html, encoding='utf-8')
+            self.assertTrue(verify_entropy_page(renamed)['ok'])
+
     def test_rerender_preserves_retained_ast_and_teaching(self) -> None:
         from rerender_retained import recover, rerender
         from check_entropy_oracle import _runtime_payload

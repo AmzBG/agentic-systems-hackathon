@@ -4,7 +4,7 @@ PDF authoritative; require source_url/focus/audience; forward extras. Assumed cl
 
 ## Architecture and owners
 Quality85; efficiency15 needs quality50; ten-run mean; unusable output zero.
-`input/fetch → OpenRouter spec → parse → render → checks → ≤2 repairs → best HTML+trace`
+`input/fetch → OpenRouter spec → parse → render → checks → ≤3 bounded repairs → best HTML+trace`
 U1: agent.py, model_client.py, budget.py, prompts.py, spec_parser.py, tests/test_core.py, AI.md, USER1.md; CLI/Python3.11/model/key/input/fetch/caps/exits.
 U2: runtime.py, templates/*, tests/test_runtime.py, USER2.md; offline HTML/teaching/symbols/visual/two controls/intermediates/explorations/limitation/grounding/error containment.
 U3: checks.py, trace.py, practice/*, scripts/*, tests/test_checks.py, tests/test_trace.py, requirements.txt, README.md, .gitignore, evidence/*, examples/*, USER3.md; checks/trace/pins/six cases/two models/README(team,architecture,setup,credits,MODEL_ID,example)/submission.

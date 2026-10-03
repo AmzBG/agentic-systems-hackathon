@@ -86,6 +86,10 @@ all six checks passed, 17,917 tokens). `examples/attention/case.json` is the sec
 latest retained page is in `evidence/u1-runs/screen-27f581a/SCR-1/`.
 The six-run low/off comparison, failures and provenance are in
 [`evidence/SCREENING_RELEASE_REVIEW.md`](evidence/SCREENING_RELEASE_REVIEW.md).
+The exact-SHA clean install and five fresh CLI runs, including successful third
+repair recovery and remaining scientific warnings, are in
+[`evidence/FINAL_RELEASE.md`](evidence/FINAL_RELEASE.md). Execution PASS is not
+a guarantee that generated explanatory prose is correct.
 The Entropy showcase and trace remain unchanged historical generation; its exact
 provenance is in `examples/entropy/provenance.json`. Current-renderer QA uses
 separate re-rendered copies, never a relabelled generation trace.

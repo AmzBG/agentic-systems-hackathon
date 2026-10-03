@@ -1,0 +1,604 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ucLiVO4FQWQSzWfHE8N6R0YgB7RSj0qu65VYJJ4xGQU='; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>Squared-error loss of a two-point line</title><style>:root {
+  --page: #fff; --surface: #fff; --ink: #172c3d; --muted: #4a6272;
+  --rule: #d8e1e7; --accent: #176c76; --accent-soft: #edf5f5;
+  --amber: #785514; --amber-soft: #fff6df; --green: #176440; --red: #942723;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px;
+  --radius: 3px; --control-size: 44px;
+  --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font: 16px/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--ink); background: var(--page);
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1240px; margin: auto; padding: var(--space-6) var(--space-6) var(--space-7); }
+header, section { min-width: 0; margin-bottom: var(--space-6); }
+section { padding-top: var(--space-5); border-top: 1px solid var(--rule); }
+h1, h2, h3, h4, h5, p { margin-top: 0; }
+h4 { margin-bottom: var(--space-2); font-size: .9375rem; font-weight: 600; }
+h5 { margin-bottom: var(--space-2); font-size: .875rem; font-weight: 500; color: var(--muted); }
+h1 { max-width: 30ch; margin-bottom: var(--space-4); font-size: clamp(1.7rem, 3vw, 2.25rem); line-height: 1.18; letter-spacing: -.025em; }
+h2 { margin-bottom: var(--space-3); font-size: 1.25rem; line-height: 1.35; letter-spacing: -.015em; }
+h3 { margin-bottom: var(--space-2); font-size: 1rem; line-height: 1.4; }
+p { margin-bottom: var(--space-3); }
+p, li, h1, h2, h3, legend { overflow-wrap: anywhere; }
+small, .muted, .section-note { color: var(--muted); font-size: .875rem; }
+small { display: block; }
+.eyebrow { margin-bottom: var(--space-3); color: var(--accent); font-size: .8rem; letter-spacing: .055em; }
+.lead { max-width: 65ch; font-size: 1.2rem; line-height: 1.5; }
+.why { max-width: 80ch; }
+.lesson-notes { max-width: 85ch; margin-top: var(--space-3); color: var(--muted); font-size: .875rem; }
+.notation { padding-top: var(--space-3); margin-bottom: var(--space-5); }
+.notation table { font-size: .875rem; }
+.notation td:first-child { font-family: var(--mono); white-space: nowrap; }
+.notation td:not(:first-child) { font-family: inherit; }
+.notation summary { padding-left: 0; }
+.notation caption { font-weight: 400; color: var(--muted); }
+a { color: var(--accent); text-underline-offset: 3px; }
+button { min-height: var(--control-size); padding: var(--space-2) var(--space-4); border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent); color: white; font: inherit; font-weight: 600; cursor: pointer; }
+button:hover { background: #115660; }
+button:disabled { opacity: .6; cursor: not-allowed; }
+button.preset { background: var(--surface); color: var(--accent); }
+button.preset:hover { background: var(--accent-soft); }
+input, select, textarea { min-height: var(--control-size); max-width: 100%; padding: var(--space-2); border: 1px solid #8599a6; border-radius: 4px; background: var(--surface); color: var(--ink); font: inherit; }
+input[type=number] { width: 100%; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; padding: 0; border: 0; accent-color: var(--accent); background: transparent; }
+input[type=checkbox] { width: 22px; height: 22px; min-height: 22px; margin: var(--space-3) var(--space-2) var(--space-3) 0; accent-color: var(--accent); }
+label { display: block; font-size: .875rem; font-weight: 600; }
+fieldset { min-width: 0; margin: var(--space-5) 0 0; padding: var(--space-4) 0 0; border: 0; border-top: 1px solid var(--rule); }
+legend { padding: 0 var(--space-2) 0 0; font-weight: 650; font-size: .9375rem; }
+fieldset small { margin-bottom: var(--space-3); }
+output { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.control-heading { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+.control-heading output { color: var(--accent); font-weight: 650; white-space: nowrap; }
+.control-heading { font-size: .8125rem; }
+.scalar-control input[type=number] { max-width: 150px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.toggle-control { display: flex; align-items: center; min-height: var(--control-size); gap: var(--space-2); }
+.toggle-control label { flex: 1; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(88px, 1fr)); gap: var(--space-2); }
+.cell label { margin-bottom: var(--space-1); font-weight: 400; font-size: .75rem; color: var(--muted); }
+.scroll { max-width: 100%; overflow: auto; }
+#controls .scroll { padding: 5px; margin: -5px; }
+table { width: 100%; border-collapse: collapse; font-size: .875rem; font-variant-numeric: tabular-nums; }
+th, td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--rule); text-align: left; }
+th { font-weight: 600; color: var(--muted); }
+td { font-family: var(--mono); }
+caption { margin: var(--space-2) 0; text-align: left; font-weight: 600; }
+.workbench { padding: 0; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); }
+.workbench-heading { padding: var(--space-5); border-bottom: 1px solid var(--rule); }
+.workbench-heading p { margin-bottom: 0; }
+.workbench-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+.control-panel, .live-panel { margin: 0; padding: var(--space-5); border: 0; }
+.control-panel { background: var(--surface); border-right: 1px solid var(--rule); border-radius: 0 0 0 var(--radius); }
+.control-panel > h3, .live-panel > h3 { font-size: 1.05rem; }
+.control-panel > a { display: inline-block; margin-top: var(--space-5); font-size: .875rem; }
+.control-panel > .mobile-result-link { display: none; }
+.field-error:empty { display: none; }
+.field-error { margin: var(--space-2) 0 0; color: var(--red); }
+.live-panel { min-width: 0; }
+.output { min-width: 0; padding: var(--space-4) 0; margin: 0; border-top: 1px solid var(--rule); }
+.output:first-child { border-top: 0; }
+.output pre { margin: var(--space-2) 0; font-family: var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.output[data-role=result] { padding: var(--space-4) 0; margin-top: var(--space-3); background: transparent; border: 0; }
+.output-heading { display: flex; gap: var(--space-3); align-items: baseline; justify-content: space-between; }
+.output-role { flex: 0 0 auto; color: var(--muted); font-size: .75rem; }
+.output-value { margin: var(--space-2) 0; font: 500 1.25rem/1.35 var(--mono); font-variant-numeric: tabular-nums; }
+.output-value .units { margin-left: var(--space-2); color: var(--muted); font: 400 .875rem/1.4 system-ui, sans-serif; }
+.result-preview { margin: var(--space-4) 0 var(--space-5); padding: var(--space-4); background: var(--accent-soft); border-left: 3px solid var(--accent); }
+.result-preview > a, .preset-result > a { font-size: .875rem; font-weight: 600; }
+.result-preview .output-value { margin-bottom: 0; }
+.readout-label { margin-bottom: var(--space-1); color: var(--muted); font-size: .75rem; }
+.result-preview[data-stale=true] { border-color: var(--amber); background: var(--amber-soft); }
+.mechanism-note { max-width: 80ch; padding: var(--space-3) 0; font: 1.0625rem/1.7 Georgia, serif; white-space: pre-wrap; color: var(--ink); }
+.output .chart { margin-top: var(--space-4); }
+.output .chart > h3 { font-size: .875rem; color: var(--muted); font-weight: 500; }
+.chart { overflow: auto; }
+svg { width: 100%; min-width: 600px; max-width: 640px; height: auto; display: block; }
+svg text { font: 14px system-ui, sans-serif; fill: var(--ink); }
+.chart details { margin-top: var(--space-2); }
+.chart summary { font-size: .8125rem; }
+.plot-hint { display: none; margin-bottom: var(--space-2); }
+.exploration { padding: var(--space-5) 0; border-top: 1px solid var(--rule); }
+.exploration h3 { font-size: 1.125rem; }
+.exploration-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-4); margin: var(--space-4) 0; }
+.exploration-actions a { font-size: .875rem; }
+.prediction { max-width: 80ch; padding-left: var(--space-3); border-left: 2px solid #bb9654; }
+.exploration-feedback { max-width: 85ch; }
+.exploration-feedback p { padding-left: var(--space-3); }
+.preset-result { margin: var(--space-3) 0; font-size: .875rem; }
+.preset-result table { max-width: 720px; }
+details { min-width: 0; }
+summary { width: fit-content; max-width: 100%; min-height: var(--control-size); padding: var(--space-2) 0; color: var(--accent); font-weight: 600; cursor: pointer; }
+details[open] > summary { margin-bottom: var(--space-2); }
+.grounding-list { padding: 0; list-style: none; }
+.grounding-list li { padding: var(--space-4) 0; border-bottom: 1px solid var(--rule); }
+.grounding-list p { margin: var(--space-2) 0 0; max-width: 85ch; }
+.badge { display: inline-block; margin: 0 var(--space-2) var(--space-1) 0; padding: 2px 6px; border: 1px solid var(--rule); border-radius: 3px; font-size: .6875rem; font-weight: 650; letter-spacing: .02em; }
+.badge[data-support=excerpt] { color: #155563; border-color: #97bac2; background: #edf5f5; }
+.badge[data-support=example] { color: var(--muted); background: #f4f6f8; }
+.badge[data-support=simplification] { color: #705522; border-color: #d5c5a7; background: #faf7ef; }
+.badge[data-support=unverified] { color: var(--amber); border-color: #cfb271; background: var(--amber-soft); }
+.limitation { padding: var(--space-4) 0 var(--space-4) var(--space-4); border-top: 0; border-left: 2px solid #bb9654; }
+.limitation p { max-width: 85ch; margin: 0; }
+.verification { font-size: .875rem; }
+.verification h2 { font-size: 1.125rem; }
+ul { padding-left: var(--space-5); }
+#checks li { padding: var(--space-2) 0; }
+.error, .fail { color: var(--red); font-weight: 600; }
+.pass { color: var(--muted); }
+.skip { color: var(--amber); }
+#status { margin: 0; padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--rule); background: #f8fafb; font-size: .8125rem; }
+#result-status { color: var(--muted); font-size: .8125rem; }
+#check-status { margin-bottom: var(--space-2); font-weight: 600; }
+#status.caution { color: var(--amber); background: var(--amber-soft); border-left: 3px solid #997000; font-weight: 600; }
+:focus-visible { outline: 3px solid #b47413; outline-offset: 3px; }
+[aria-invalid=true] { border: 2px solid var(--red); }
+[id] { scroll-margin-top: var(--space-5); }
+@media (max-width: 1100px) {
+  main { padding: var(--space-5); }
+  .workbench-grid { grid-template-columns: minmax(0, 34fr) minmax(0, 66fr); }
+  .control-panel, .live-panel { padding: var(--space-4); }
+}
+@media (max-width: 800px) {
+  .control-panel > .mobile-result-link { display: inline-block; margin-top: 0; }
+  .plot-hint { display: block; }
+  .workbench-grid { grid-template-columns: minmax(0, 1fr); }
+  .control-panel { border-right: 0; border-bottom: 1px solid var(--rule); border-radius: 0; }
+  #controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+  #controls fieldset { margin-top: var(--space-3); }
+}
+@media (max-width: 520px) {
+  main { padding: var(--space-5) var(--space-4) var(--space-6); }
+  header, section { margin-bottom: var(--space-5); }
+  h1 { font-size: 1.75rem; }
+  .lead { font-size: 1.0625rem; }
+  .workbench-heading, .control-panel, .live-panel { padding: var(--space-4); }
+  .control-panel, .live-panel { margin: 0; }
+  #status { padding: var(--space-3) var(--space-4); }
+  #controls { display: block; }
+  #controls fieldset { margin-top: var(--space-5); }
+  .output-heading { flex-wrap: wrap; gap: var(--space-1); }
+  .output-heading h3 { margin: 0; }
+  th, td { padding: var(--space-2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Successful calculations have one quiet live announcement. */
+#status:empty, #result-status:empty, .preset-result:empty { display: none; }
+#status:empty { padding: 0; border: 0; }
+.prediction { border-left-color: var(--rule); }
+.numeric-value { text-align: right; }
+
+.scale-caption { margin: var(--space-2) 0; color: var(--muted); font-size: .8125rem; font-variant-numeric: tabular-nums; }
+.previous-value, .cell-previous { font-size: .75rem; color: var(--muted); }
+.cell-previous { display: block; white-space: normal; font-family: system-ui, sans-serif; }
+.changed-cell { background: var(--amber-soft); border-left: 3px solid var(--amber); }
+.line-position { font-size: .8125rem; font-variant-numeric: tabular-nums; }
+#outputs[data-stale=true] { border-left: 3px solid var(--amber); padding-left: var(--space-3); }
+.output[data-role=result] { border-top: 2px solid var(--accent); }
+</style></head><body><main><header><p class="eyebrow">Paper to Playground</p><h1>Squared-error loss of a two-point line</h1><p class="lead">x_i is the input coordinate of observation i, y_i its observed label; b and m are the intercept and slope of a candidate line; p_i = b + m x_i is its prediction at x_i; r_i = y_i - p_i is the residual; q_i = r_i^2 is the squared residual; SSE = q_1 + q_2 is the total squared-error loss.</p><p class="why"><strong>Why it matters:</strong> Squaring keeps every residual contribution nonnegative and makes a large residual weigh more than a small one, which is why the least-squares solution is defined as the minimizer of this sum; the page evaluates the sum for coefficients the learner fixes.</p><details class="lesson-notes"><summary>About this lesson</summary><p><strong>Audience:</strong> A second-year engineering undergraduate familiar with coordinates, linear equations and squaring numbers.</p><p><strong>Plan:</strong> Evaluate the squared-error loss SSE = sum over i of (y_i - b - m x_i)^2 for two observations, reading the predictions, residuals and squared residuals that compose it. Controls edit both observations and the line&#x27;s slope and intercept; the loss is evaluated at fixed coefficients and never optimized.</p></details></header><section class="notation" aria-label="Symbols and units"><details open><summary>Symbols and units</summary><div class="scroll"><table><caption>Notation</caption><thead><tr><th scope="col">Symbol</th><th scope="col">Meaning</th><th scope="col">Units</th></tr></thead><tbody><tr><td>i</td><td>index of an observation, i = 1 or 2</td><td>unitless</td></tr><tr><td>x_i</td><td>input coordinate of observation i, the entries of the xs control</td><td>unitless</td></tr><tr><td>y_i</td><td>observed label of observation i, the entries of the ys control</td><td>unitless</td></tr><tr><td>m</td><td>slope of the candidate line</td><td>unitless</td></tr><tr><td>b</td><td>intercept of the candidate line</td><td>unitless</td></tr><tr><td>p_i</td><td>predicted value of the line at x_i, p_i = b + m x_i</td><td>unitless</td></tr><tr><td>r_i</td><td>residual of observation i, r_i = y_i - p_i</td><td>unitless</td></tr><tr><td>q_i</td><td>squared residual of observation i, q_i = r_i r_i</td><td>unitless</td></tr><tr><td>SSE</td><td>total sum of squared residuals, SSE = q_1 + q_2</td><td>unitless</td></tr></tbody></table></div></details></section><section class="workbench" aria-labelledby="calculate"><div class="workbench-heading"><h2 id="calculate">Try it</h2></div><p id="status" role="status" aria-live="polite">Calculation pending; JavaScript is required for interactive results.</p><noscript>Degraded: JavaScript is disabled. Teaching content remains available; calculations and self-checks have not run.</noscript><div class="workbench-grid"><section class="control-panel" aria-labelledby="input-heading"><h3 id="input-heading">Inputs</h3><a class="mobile-result-link" href="#principal-result">View current result</a><div id="controls"></div><a href="#explorations">Experiments</a></section><section class="live-panel" aria-labelledby="results"><h3 id="results" tabindex="-1">Calculation</h3><p id="result-status">No valid result yet.</p><p class="mechanism-note">p_i = b + m * x_i for i = 1, 2; r_i = y_i - p_i; q_i = r_i * r_i; SSE = sum over i of q_i</p><div id="principal-result" tabindex="-1"></div><p class="section-note">Comparisons use the preceding successful input change. Changed cells include their previous values; differences within 1e-9 + 1e-7 × |previous| are treated as unchanged.</p><div id="visuals"><div id="outputs"></div></div><p class="section-note">Plot labels are rounded; numeric tables show full precision.</p></section></div></section><section aria-labelledby="explorations"><h2 id="explorations">Experiments</h2><article class="exploration"><h3>1. Zero slope: one constant prediction</h3><p class="prediction" id="prediction-0"><strong>Predict:</strong> slope m is set to 0 while xs = [0, 2], ys = [1, 3] and intercept b = 0.5 keep their default values, so both predictions equal 0.5. What are the two squared residuals and SSE?</p><div class="exploration-actions"><button type="button" class="preset" data-preset="0" aria-describedby="prediction-0">Apply preset</button> <a href="#results">View updated results</a></div><div class="preset-result" id="preset-result-0" role="status" aria-live="polite"></div><details class="exploration-feedback" id="feedback-0"><summary>Compare your prediction</summary><p><strong>Observe:</strong> q_1 falls to 0.25 and q_2 rises to 6.25, and the SSE readout moves from 2.5 to 6.5; the residual r_2 becomes 2.5.</p><p><strong>Explain:</strong> With m = 0 every prediction is p_i = b = 0.5, so r_2 = 3 - 0.5 = 2.5 and its square 6.25 dominates the sum, while the first residual keeps its size 0.5.</p></details></article><article class="exploration"><h3>2. Exact fit through both observations</h3><p class="prediction" id="prediction-1"><strong>Predict:</strong> slope m is set to 1 and intercept b to 1 while xs = [0, 2] and ys = [1, 3] keep their default values. What do the residuals and SSE become?</p><div class="exploration-actions"><button type="button" class="preset" data-preset="1" aria-describedby="prediction-1">Apply preset</button> <a href="#results">View updated results</a></div><div class="preset-result" id="preset-result-1" role="status" aria-live="polite"></div><details class="exploration-feedback" id="feedback-1"><summary>Compare your prediction</summary><p><strong>Observe:</strong> Both predictions equal the labels, so resid is [0, 0], sq is [0, 0] and the SSE readout is 0.</p><p><strong>Explain:</strong> The line p_i = 1 + 1 x_i passes through (0, 1) and (2, 3), so each residual is 0 and each squared residual is 0, and their sum is 0.</p></details></article></section><section class="verification"><h2>Self-check</h2><p id="check-status" role="status">Not run.</p><p>These checks test the specified examples and identities; they do not verify every claim in the explanation.</p><details><summary>Inspect measured values, expectations and tolerances</summary><ul id="checks"></ul></details></section><section class="limitation"><h2>Limitation</h2><p>This page only evaluates SSE = sum over i of (y_i - b - m x_i)^2 at coefficients the learner fixes; it does not solve the paper&#x27;s minimization beta* = argmin ||X beta - y||_2^2, and the line sweep shows the evaluated value, not an optimizer&#x27;s path. The paper&#x27;s norm is taken over n rows and d = 2 columns (intercept and one feature); here n = 2 is fixed, all observations carry equal weight, and no distribution D over the domain enters, so SSE is an unweighted two-row instance of that norm.</p></section><section><h2>Source and grounding</h2><ul class="grounding-list"><li><span class="badge" data-support="excerpt">FROM PAPER</span> <strong>Chen and Price (2017), Active Regression via Linear-Sample Sparsification</strong> — Section 1, Active Linear Regression on a Finite Domain, displayed least-squares definition<p>The least-squares solution is defined as beta* = argmin ||X beta - y||_2^2, the squared residual norm over the labeled data.</p></li><li><span class="badge" data-support="simplification">SIMPLIFICATION</span> <strong>Chen and Price (2017), Active Regression via Linear-Sample Sparsification</strong> — Section 1, Active Linear Regression on a Finite Domain<p>The page fixes n = 2 observations and d = 2 columns (intercept plus one feature), so ||X beta - y||_2^2 reduces to q_1 + q_2 with q_i = (y_i - b - m x_i)^2, evaluated rather than minimized.</p></li><li><span class="badge" data-support="example">TOY EXAMPLE</span> <strong>Chen and Price (2017), Active Regression via Linear-Sample Sparsification</strong> — Section 1, Active Linear Regression on a Finite Domain<p>The numbers xs = [0, 2], ys = [1, 3], m = 0.5, b = 0.5 giving SSE = 2.5 are illustrative values chosen for this page and are not reported in the paper.</p></li></ul></section></main><script type="application/json" id="runtime-data">{"spec":{"controls":[{"id":"xs","label":"Observation input coordinates x_1, x_2","help":"Input coordinate of each of the two observations; each entry changes the matching prediction p_i, residual r_i, squared residual q_i and SSE.","units":"unitless","kind":"vector","default":[0,2],"min":-10,"max":10,"step":0.1,"shape":[2]},{"id":"ys","label":"Observation labels y_1, y_2","help":"Observed label of each of the two observations; each entry changes the matching residual r_i, squared residual q_i and SSE.","units":"unitless","kind":"vector","default":[1,3],"min":-10,"max":10,"step":0.1,"shape":[2]},{"id":"slope","label":"Slope m","help":"Slope of the candidate line; it shifts prediction p_i by m times x_i, so it changes r_i, q_i and SSE.","units":"unitless","kind":"slider","default":0.5,"min":-5,"max":5,"step":0.1},{"id":"intercept","label":"Intercept b","help":"Intercept of the candidate line; it shifts both predictions equally, so it changes r_i, q_i and SSE.","units":"unitless","kind":"slider","default":0.5,"min":-10,"max":10,"step":0.1}],"outputs":[{"id":"yhat","label":"Predicted values p_i","units":"unitless","role":"intermediate"},{"id":"resid","label":"Residuals r_i = y_i - p_i","units":"unitless","role":"intermediate"},{"id":"sq","label":"Squared residuals q_i = r_i r_i","units":"unitless","role":"intermediate"},{"id":"sse","label":"Sum of squared residuals SSE","units":"unitless","role":"result"}],"visuals":[{"id":"sq_bar","kind":"bar","title":"Squared residual of each observation","output":"sq","x_label":"observation index i","y_label":"squared residual q_i","labels":["i = 1","i = 2"]},{"id":"sse_line","kind":"line","title":"Evaluated loss across the slope","output":"sse","x_label":"slope m","y_label":"sum of squared residuals SSE","sweep":{"control":"slope","min":-5,"max":5,"points":31}}],"explorations":[{"title":"Zero slope: one constant prediction","instruction":"slope m is set to 0 while xs = [0, 2], ys = [1, 3] and intercept b = 0.5 keep their default values, so both predictions equal 0.5. What are the two squared residuals and SSE?","observe":"q_1 falls to 0.25 and q_2 rises to 6.25, and the SSE readout moves from 2.5 to 6.5; the residual r_2 becomes 2.5.","why":"With m = 0 every prediction is p_i = b = 0.5, so r_2 = 3 - 0.5 = 2.5 and its square 6.25 dominates the sum, while the first residual keeps its size 0.5.","preset":{"slope":0}},{"title":"Exact fit through both observations","instruction":"slope m is set to 1 and intercept b to 1 while xs = [0, 2] and ys = [1, 3] keep their default values. What do the residuals and SSE become?","observe":"Both predictions equal the labels, so resid is [0, 0], sq is [0, 0] and the SSE readout is 0.","why":"The line p_i = 1 + 1 x_i passes through (0, 1) and (2, 3), so each residual is 0 and each squared residual is 0, and their sum is 0.","preset":{"slope":1,"intercept":1}}],"tests":[{"name":"default two-point line","inputs":{"xs":[0,2],"ys":[1,3],"slope":0.5,"intercept":0.5},"expected":{"yhat":[0.5,1.5],"resid":[0.5,1.5],"sq":[0.25,2.25],"sse":2.5},"atol":1e-09,"rtol":1e-09},{"name":"constant prediction from zero slope","inputs":{"xs":[0,2],"ys":[1,3],"slope":0,"intercept":0.5},"expected":{"yhat":[0.5,0.5],"resid":[0.5,2.5],"sq":[0.25,6.25],"sse":6.5},"atol":1e-09,"rtol":1e-09},{"name":"line through both observations","inputs":{"xs":[0,2],"ys":[1,3],"slope":1,"intercept":1},"expected":{"yhat":[1,3],"resid":[0,0],"sq":[0,0],"sse":0},"atol":1e-09,"rtol":1e-09}],"invariants":[{"name":"every value of Sum of squared residuals SSE is finite","output":"sse","kind":"finite","atol":1e-09,"rtol":1e-09},{"name":"every value of Squared residuals q_i = r_i r_i is between 0 and 10000","output":"sq","kind":"range","min":0,"max":10000,"atol":1e-09,"rtol":1e-09},{"name":"every value of Predicted values p_i is between -60 and 60","output":"yhat","kind":"range","min":-60,"max":60,"atol":1e-09,"rtol":1e-09}]},"ast":["fn",["inputs"],["block",[["decl",[["xs",["get",["id","inputs"],["lit","xs"]]]],"const"],["decl",[["ys",["get",["id","inputs"],["lit","ys"]]]],"const"],["decl",[["m",["get",["id","inputs"],["lit","slope"]]]],"const"],["decl",[["b",["get",["id","inputs"],["lit","intercept"]]]],"const"],["decl",[["yhat",["array",[]]]],"const"],["decl",[["resid",["array",[]]]],"const"],["decl",[["sq",["array",[]]]],"const"],["decl",[["total",["lit",0.0]]],"let"],["for",["decl",[["i",["lit",0.0]]],"let"],["bin","\u003c",["id","i"],["get",["id","xs"],["lit","length"]]],["update","++",["id","i"]],["block",[["decl",[["p",["bin","+",["id","b"],["bin","*",["id","m"],["get",["id","xs"],["id","i"]]]]]],"const"],["decl",[["r",["bin","-",["get",["id","ys"],["id","i"]],["id","p"]]]],"const"],["expr",["call",["get",["id","yhat"],["lit","push"]],[["id","p"]]]],["expr",["call",["get",["id","resid"],["lit","push"]],[["id","r"]]]],["expr",["call",["get",["id","sq"],["lit","push"]],[["bin","*",["id","r"],["id","r"]]]]],["expr",["assign","=",["id","total"],["bin","+",["id","total"],["bin","*",["id","r"],["id","r"]]]]]]]],["return",["object",[["yhat",["id","yhat"]],["resid",["id","resid"]],["sq",["id","sq"]],["sse",["id","total"]]]]]]]],"error":""}</script><script>"use strict";
+/* Supplied source never reaches the host JS engine. All values live in this
+   interpreter; host objects/functions cannot be obtained through properties. */
+const NumericRuntime = (() => {
+  const brand = Symbol('interpreter callable');
+  const forbidden = new Set(['__proto__','prototype','constructor','caller','callee','arguments']);
+  const mathNames = ['abs','sqrt','exp','log','log2','log10','pow','min','max','floor','ceil','round','trunc','sign','sin','cos','tan','tanh','expm1','log1p'];
+  const own = (o,k) => Object.prototype.hasOwnProperty.call(o,k);
+  const fail = message => { throw new Error(message); };
+  const number = v => typeof v === 'number' && Number.isFinite(v) ? v : fail('Expected a finite number');
+  function budget(limit=100000) {
+    return {left:limit, allocated:0, depth:0,
+      tick(n=1){this.left-=n;if(this.left<0)fail('Computation instruction limit exceeded');},
+      alloc(n){this.allocated+=n;if(this.allocated>16384)fail('Computation allocation limit exceeded');}};
+  }
+  function boundedArray(a,b) {
+    if(a.length>128)fail('Intermediate array length limit is 128');
+    b.alloc(a.length+1);return a;
+  }
+  const callable = run => ({[brand]:run});
+  function invoke(fn,args,b) {
+    b.tick();if(!fn || !own(fn,brand))fail('Only local or approved numeric functions may be called');
+    if(++b.depth>32)fail('Computation call depth exceeded');
+    try{return fn[brand](args,b);}finally{b.depth--;}
+  }
+  function environment(parent=null) {
+    return {vars:Object.create(null),constants:new Set(),parent,
+      get(k){if(own(this.vars,k))return this.vars[k];if(this.parent)return this.parent.get(k);fail('Unknown local: '+k);},
+      set(k,v){if(own(this.vars,k)){if(this.constants.has(k))fail('Cannot reassign const: '+k);this.vars[k]=v;return v;}if(this.parent)return this.parent.set(k,v);fail('Unknown assignment: '+k);},
+      declare(k,v,constant=false){if(own(this.vars,k))fail('Duplicate local: '+k);this.vars[k]=v;if(constant)this.constants.add(k);}};
+  }
+  function keyValue(key) {
+    if(typeof key!=='string' && !(typeof key==='number' && Number.isInteger(key)))fail('Invalid property key');
+    if(forbidden.has(String(key)))fail('Unsafe property access');return key;
+  }
+  function get(obj,key,b) {
+    key=keyValue(key);b.tick();
+    if(obj && own(obj,brand)){
+      if(key==='apply'||key==='call')fail('Function .apply/.call is unsupported; call the function directly. For a numeric array use Math.max(...values), Math.min(...values), or a bounded loop.');
+      fail('Functions have no accessible properties');
+    }
+    if(Array.isArray(obj)) {
+      if(key==='length')return obj.length;
+      if(Number.isInteger(key) && key>=0 && key<obj.length)return obj[key];
+      const methods={
+        map(args,b){if(args.length!==1)fail('map requires one callback');return boundedArray(obj.map((v,i)=>{b.tick();return invoke(args[0],[v,i],b);}),b);},
+        forEach(args,b){if(args.length!==1)fail('forEach requires one callback');obj.forEach((v,i)=>{b.tick();invoke(args[0],[v,i],b);});return null;},
+        reduce(args,b){if(args.length<1||args.length>2)fail('Invalid reduce arguments');if(!obj.length&&args.length===1)fail('Empty reduce without initial value');let acc=args.length===2?args[1]:obj[0];for(let i=args.length===2?0:1;i<obj.length;i++){b.tick();acc=invoke(args[0],[acc,obj[i],i],b);}return acc;},
+        slice(args,b){if(args.length>2)fail('Invalid slice arguments');args.forEach(number);return boundedArray(obj.slice(...args),b);},
+        fill(args,b){if(args.length!==1)fail('fill requires one value');b.tick(obj.length);obj.fill(args[0]);return obj;},
+        push(args,b){if(obj.length+args.length>128)fail('Intermediate array length limit is 128');b.alloc(args.length);return obj.push(...args);},
+        concat(args,b){const n=obj.length+args.reduce((s,x)=>s+(Array.isArray(x)?x.length:1),0);if(n>128)fail('Intermediate array length limit is 128');return boundedArray(obj.concat(...args),b);}
+      };
+      if(own(methods,key))return callable(methods[key]);
+      fail('Unsupported array property: '+String(key));
+    }
+    if(obj && typeof obj==='object' && Object.getPrototypeOf(obj)===null && own(obj,key))return obj[key];
+    fail('Missing or unsupported property: '+String(key));
+  }
+  function set(obj,key,value,b) {
+    key=keyValue(key);b.tick();
+    if(Array.isArray(obj) && Number.isInteger(key) && key>=0 && key<obj.length){obj[key]=value;return value;}
+    if(obj && typeof obj==='object' && Object.getPrototypeOf(obj)===null && own(obj,key)){obj[key]=value;return value;}
+    fail('Assignment may only replace an existing local value');
+  }
+  function binary(op,a,c) {
+    if(op==='==='||op==='!==')return op==='==='?a===c:a!==c;
+    a=number(a);c=number(c);
+    switch(op){case '+':return number(a+c);case '-':return number(a-c);case '*':return number(a*c);
+      case '/':return number(a/c);case '%':return number(a%c);case '**':return number(a**c);
+      case '<':return a<c;case '>':return a>c;case '<=':return a<=c;case '>=':return a>=c;}
+    fail('Unsupported operator');
+  }
+  function truth(v){if(typeof v==='boolean')return v;if(typeof v==='number')return number(v)!==0;if(v===null)return false;fail('Conditions must be numeric or boolean');}
+  function expression(n,e,b) {
+    b.tick();const k=n[0];
+    if(k==='lit')return n[1];
+    if(k==='id')return e.get(n[1]);
+    if(k==='array')return boundedArray(n[1].map(v=>expression(v,e,b)),b);
+    if(k==='object'){b.alloc(n[1].length+1);const o=Object.create(null);for(const [key,v] of n[1])o[key]=expression(v,e,b);return o;}
+    if(k==='get')return get(expression(n[1],e,b),expression(n[2],e,b),b);
+    if(k==='fn')return callable((args,b)=>{if(args.length<n[1].length)fail('Missing function argument');const local=environment(e);n[1].forEach((p,i)=>local.declare(p,args[i]));const r=statement(n[2],local,b);if(r&&r.type!=='return')fail('Loop control escaped function');return r?r.value:null;});
+    if(k==='call') {
+      const fn=expression(n[1],e,b),args=[];
+      if(n[1][0]==='id'&&n[1][1]==='Number'&&(!fn||!own(fn,brand)))fail('Number(...) conversion is unsupported. Select inputs are strings: compare each option with === and return its numeric literal, or use a numeric control. Number.isFinite and Number.isInteger are supported.');
+      for(const a of n[2]){if(a[0]==='spread'){const v=expression(a[1],e,b);if(!Array.isArray(v))fail('Spread requires array');args.push(...v);}else args.push(expression(a,e,b));if(args.length>128)fail('Argument limit exceeded');}
+      return invoke(fn,args,b);
+    }
+    if(k==='un'){const v=expression(n[2],e,b);if(n[1]==='!')return !truth(v);return n[1]==='-'?-number(v):number(v);}
+    if(k==='cond')return expression(truth(expression(n[1],e,b))?n[2]:n[3],e,b);
+    if(k==='bin') {
+      const a=expression(n[2],e,b);
+      if(n[1]==='&&')return truth(a)?expression(n[3],e,b):a;
+      if(n[1]==='||')return truth(a)?a:expression(n[3],e,b);
+      return binary(n[1],a,expression(n[3],e,b));
+    }
+    if(k==='assign'||k==='update') {
+      const target=n[2];let read,write;
+      if(target[0]==='id'){read=()=>e.get(target[1]);write=v=>e.set(target[1],v);}
+      else{const obj=expression(target[1],e,b),key=expression(target[2],e,b);read=()=>get(obj,key,b);write=v=>set(obj,key,v,b);}
+      if(k==='update'){const old=number(read());write(number(old+(n[1]==='++'?1:-1)));return old;}
+      const old=n[1]==='='?null:read(),value=expression(n[3],e,b);return write(n[1]==='='?value:binary(n[1][0],old,value));
+    }
+    fail('Unsupported AST expression');
+  }
+  function statement(n,e,b) {
+    b.tick();const k=n[0];
+    if(k==='block'){const local=environment(e);for(const s of n[1]){const r=statement(s,local,b);if(r)return r;}return null;}
+    if(k==='decl'){for(const [name,v] of n[1])e.declare(name,expression(v,e,b),n[2]==='const');return null;}
+    if(k==='expr'){expression(n[1],e,b);return null;}
+    if(k==='return')return {type:'return',value:expression(n[1],e,b)};
+    if(k==='throw'){
+      const value=expression(n[1],e,b);
+      // Never coerce a compound value: shared/cyclic arrays can expand without
+      // bound inside native String(), outside the interpreter's work budget.
+      const message=value===null?'null':typeof value==='string'?value.slice(0,1024):
+        typeof value==='number'||typeof value==='boolean'?String(value):'non-scalar error value';
+      fail('Compute reported: '+message);
+    }
+    if(k==='if')return statement(truth(expression(n[1],e,b))?n[2]:n[3],e,b);
+    if(k==='break'||k==='continue')return {type:k};
+    if(k==='for') {
+      let local=environment(e);statement(n[1],local,b);let loops=0;
+      while(truth(expression(n[2],local,b))){
+        if(++loops>256)fail('Loop iteration limit exceeded');const r=statement(n[4],local,b);
+        if(r&&r.type==='return')return r;if(r&&r.type==='break')break;
+        // Lexical loop bindings are fresh for each iteration. Closures keep
+        // the completed iteration's bindings, before the next increment.
+        const next=environment(e),keys=Object.keys(local.vars);b.alloc(keys.length);
+        for(const key of keys)next.declare(key,local.vars[key],local.constants.has(key));
+        local=next;expression(n[3],local,b);
+      }return null;
+    }
+    if(k==='each') {
+      const seq=expression(n[2],e,b);if(!Array.isArray(seq)||seq.length>128)fail('for-of requires a bounded array');
+      for(const value of seq){b.tick();const local=environment(e);local.declare(n[1],value,n[4]==='const');const r=statement(n[3],local,b);if(r&&r.type==='return')return r;if(r&&r.type==='break')break;}return null;
+    }
+    fail('Unsupported AST statement');
+  }
+  function copy(v,b,seen=new Set(),depth=0) {
+    b.tick();if(depth>16)fail('Value nesting limit exceeded');
+    if(v===null||['number','boolean','string'].includes(typeof v))return v;
+    if(!v||typeof v!=='object'||own(v,brand)||seen.has(v))fail('Invalid or cyclic computation value');seen.add(v);
+    let result;
+    if(Array.isArray(v))result=boundedArray(v.map(x=>copy(x,b,seen,depth+1)),b);
+    else {const keys=Object.keys(v);if(keys.length>128)fail('Object size limit exceeded');b.alloc(keys.length+1);result=Object.create(null);for(const k of keys){keyValue(k);result[k]=copy(v[k],b,seen,depth+1);}}
+    seen.delete(v);return result;
+  }
+  function run(ast,inputs,shared=null) {
+    const b=budget();
+    if(shared){const tick=b.tick.bind(b);b.tick=function(n=1){tick(n);shared.tick(n);};}
+    const root=environment(),math=Object.create(null),num=Object.create(null);
+    for(const name of mathNames)math[name]=callable(args=>{if(args.length>128)fail('Math argument limit exceeded');args.forEach(number);return number(Math[name](...args));});
+    math.PI=Math.PI;math.E=Math.E;
+    num.isFinite=callable(args=>typeof args[0]==='number'&&Number.isFinite(args[0]));
+    num.isInteger=callable(args=>typeof args[0]==='number'&&Number.isInteger(args[0]));
+    const arr=callable((args,b)=>{if(args.length!==1)fail('Array requires one length');const n=number(args[0]);if(!Number.isInteger(n)||n<0||n>128)fail('Array length limit exceeded');return boundedArray(Array(n).fill(null),b);});
+    root.declare('Math',math);root.declare('Number',num);root.declare('Array',arr);
+    return copy(invoke(expression(ast,root,b),[copy(inputs,b)],b),b);
+  }
+  return Object.freeze({run,budget});
+})();
+
+(() => {
+  const data=JSON.parse(document.getElementById('runtime-data').textContent);
+  const spec=data.spec, own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+  const el=id=>document.getElementById(id);
+  const create=(tag,text,parent)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(parent)parent.append(n);return n;};
+  const fail=m=>{throw new Error(m);};
+  const clone=v=>JSON.parse(JSON.stringify(v));
+  const finite=v=>typeof v==='number'&&Number.isFinite(v);
+  const format=n=>finite(n)?Number(n.toPrecision(7)).toString():String(n);
+  const displayValue=v=>Array.isArray(v)?'['+v.map(displayValue).join(', ')+']':format(v);
+  const tickNumber=n=>finite(n)?Number(n.toPrecision(3)).toString():String(n);
+  const unit=u=>u||'units not specified';
+  const shortLabel=label=>label.length>10?label.slice(0,9)+'…':label;
+  const leavesOf=v=>Array.isArray(v)?v.reduce((xs,x)=>xs.concat(leavesOf(x)),[]):[v];
+  function shape(v,depth=0) {
+    if(finite(v))return {dims:[],leaves:1};
+    if(!Array.isArray(v)||v.length<1||v.length>8||depth>=8)fail('Numeric values must be finite and dimensions must be 1–8');
+    const children=v.map(x=>shape(x,depth+1)),dims=children[0].dims;
+    if(children.some(x=>JSON.stringify(x.dims)!==JSON.stringify(dims)))fail('Numeric arrays must be rectangular');
+    const leaves=children.reduce((s,x)=>s+x.leaves,0);if(leaves>128)fail('Numeric leaf limit is 128');
+    return {dims:[v.length,...dims],leaves};
+  }
+  function validate(values,clamp=false) {
+    const keys=spec.controls.map(c=>c.id);if(Object.keys(values).length!==keys.length||Object.keys(values).some(k=>!keys.includes(k)))fail('Unknown or missing control');
+    const result=Object.create(null);let leaves=0;
+    for(const c of spec.controls) {
+      let value=values[c.id];
+      if(c.kind==='toggle'){if(typeof value!=='boolean')fail(c.label+': expected a boolean');}
+      else if(c.kind==='select'){if(typeof value!=='string'||!c.options.some(o=>o.value===value))fail(c.label+': unavailable option');}
+      else {
+        const s=shape(value);if(JSON.stringify(s.dims)!==JSON.stringify(c.shape||[]))fail(c.label+': wrong shape');leaves+=s.leaves;
+        const bounded=v=>{if(Array.isArray(v))return v.map(bounded);if(clamp)return Math.min(c.max,Math.max(c.min,v));if(v<c.min||v>c.max)fail(c.label+': out of bounds');return v;};value=bounded(value);
+      }
+      result[c.id]=clone(value);
+    }
+    if(leaves>128)fail('Total input numeric leaf limit is 128');return result;
+  }
+  function merge(patch) {
+    if(!patch||Array.isArray(patch)||typeof patch!=='object')fail('Preset must be an input dictionary');
+    const defaults=Object.create(null);for(const c of spec.controls)defaults[c.id]=clone(c.default);
+    for(const key of Object.keys(patch)){if(!own(defaults,key))fail('Unknown preset control');defaults[key]=clone(patch[key]);}
+    return validate(defaults);
+  }
+  function outputs(value) {
+    if(!value||typeof value!=='object'||Array.isArray(value))fail('Compute must return an output dictionary');
+    const keys=spec.outputs.map(o=>o.id);if(Object.keys(value).length!==keys.length||Object.keys(value).some(k=>!keys.includes(k)))fail('Compute returned missing or extra output keys');
+    let leaves=0;for(const o of spec.outputs){if(!own(value,o.id))fail('Missing output: '+o.id);leaves+=shape(value[o.id]).leaves;}
+    if(leaves>128)fail('Total output numeric leaf limit is 128');return value;
+  }
+  const compute=(inputs,b)=>outputs(NumericRuntime.run(data.ast,inputs,b));
+  let state,last=null,previous=null,lastInputs=null;const widgets=new Map();
+  // Display tolerance only: scientific calculations/check tolerances are unchanged.
+  const changed=(current,before)=>finite(before)&&Math.abs(current-before)>1e-9+1e-7*Math.abs(before);
+  function scalarReadout(value,before,units,parent){
+    const current=create('p',format(value),parent);current.className='output-value';
+    create('span',' '+unit(units)+' · Current',current).className='units';
+    create('p',finite(before)?'Previous: '+String(before)+' '+unit(units)+(changed(value,before)?' · Changed':' · No meaningful change'):'Previous: none — initial calculation',parent).className='previous-value';
+  }
+  function status(message,error=false){el('status').textContent=message;el('status').className=error?'error':'';}
+  function sync(){for(const c of spec.controls){const ws=widgets.get(c.id);if(!ws)continue;const value=state[c.id];for(const w of ws){const v=w.path.reduce((x,i)=>x[i],value);if(c.kind==='toggle')w.node.checked=v;else w.node.value=String(v);w.node.removeAttribute('aria-invalid');}const read=el('read-'+c.id);if(read)read.textContent=format(value)+' '+c.units;const error=el('error-'+c.id);if(error)error.textContent='';}}
+  function edit(c,w) {
+    try {
+      let value;if(c.kind==='toggle')value=w.node.checked;else if(c.kind==='select')value=w.node.value;
+      else {if(w.node.value.trim()===''||w.node.validity.badInput)fail(c.label+': enter a finite number');value=Number(w.node.value);if(!finite(value))fail(c.label+': enter a finite number');}
+      const proposed=clone(state);if(!w.path.length)proposed[c.id]=value;else{let target=proposed[c.id];for(const i of w.path.slice(0,-1))target=target[i];target[w.path[w.path.length-1]]=value;}
+      state=validate(proposed,true);sync();recalculate();
+    }catch(error){sync();w.node.setAttribute('aria-invalid','true');el('error-'+c.id).textContent='Invalid edit; previous value restored. '+error.message;status('Invalid edit; last valid inputs retained. '+error.message,true);}
+  }
+  function controls() {
+    for(const c of spec.controls) {
+      const field=create('fieldset',undefined,el('controls'));create('legend',c.label+(c.units?' ('+c.units+')':''),field);
+      const help=create('small',c.help,field);help.id='help-'+c.id;const ws=[];widgets.set(c.id,ws);
+      const add=(path,type,parent,label)=>{
+        const box=create('div',undefined,parent),id='input-'+c.id+'-'+(path.join('-')||'scalar');
+        box.className=path.length?'cell':type==='checkbox'?'toggle-control':'scalar-control';
+        const lab=create('label',label,box);lab.htmlFor=id;
+        if(!path.length&&type!=='checkbox')lab.className='sr-only';
+        const node=create(type==='select'?'select':'input',undefined,box);node.id=id;node.setAttribute('aria-describedby',help.id+' error-'+c.id);
+        if(type==='select')for(const o of c.options){const option=create('option',o.label,node);option.value=o.value;}
+        else{node.type=type;if(type==='number'||type==='range'){node.min=String(c.min);node.max=String(c.max);node.step=String(c.step);}}
+        const w={node,path};ws.push(w);node.addEventListener(type==='range'?'input':'change',()=>edit(c,w));return node;
+      };
+      if(c.kind==='vector'||c.kind==='matrix') {
+        const scroll=create('div',undefined,field);scroll.className='scroll';const grid=create('div',undefined,scroll);grid.className='grid';
+        if(c.kind==='matrix'){grid.style.gridTemplateColumns='repeat('+c.shape[1]+', minmax(110px,1fr))';grid.style.minWidth=(110*c.shape[1])+'px';}
+        for(let row=0;row<c.shape[0];row++)for(let col=0;col<(c.kind==='matrix'?c.shape[1]:1);col++){
+          const path=c.kind==='matrix'?[row,col]:[row];add(path,'number',grid,c.kind==='matrix'?'Row '+(row+1)+', column '+(col+1):'Element '+(row+1));}
+      }else{
+        let read;
+        if(c.kind==='slider'){const heading=create('div',undefined,field);heading.className='control-heading';create('span','Current value',heading);read=create('output','',heading);read.id='read-'+c.id;}
+        add([],c.kind==='toggle'?'checkbox':c.kind==='select'?'select':c.kind==='slider'?'range':'number',field,c.label);
+        if(read)read.htmlFor=ws[0].node.id;
+      }
+      const error=create('small','',field);error.id='error-'+c.id;error.className='field-error';
+    }
+  }
+  function renderOutputs(result) {
+    el('outputs').replaceChildren();
+    const containers=new Map();
+    let step=0;
+    for(const o of spec.outputs){
+      const box=create('div',undefined,el('outputs'));box.className='output';box.id='output-'+o.id;box.setAttribute('data-role',o.role);containers.set(o.id,box);
+      create('h4',o.label+' — '+o.role+' ('+unit(o.units)+')',box);
+      create('p',o.role==='result'?'Final result':'Step '+(++step)+' · Intermediate',box).className='readout-label';
+      if(!Array.isArray(result[o.id]))scalarReadout(result[o.id],previous&&previous[o.id],o.units,box);
+      else {
+        const visual=spec.visuals.find(v=>v.output===o.id);
+        numericTable(result[o.id],o.label+' · Current ('+unit(o.units)+')',box,visual&&visual.labels,{x:visual&&visual.x_label,y:visual&&visual.y_label,value:o.label+' ('+unit(o.units)+')'},previous&&previous[o.id],o.units);
+      }
+    }
+    return containers;
+  }
+  function resultReadout(result,parent,snapshot=false) {
+    parent.replaceChildren();parent.className=snapshot?'preset-result':'result-preview';
+    if(snapshot)create('p','Result when this preset was applied',parent).className='readout-label';
+    for(const o of spec.outputs.filter(o=>o.role==='result')){
+      const link=create('a',o.label,parent);link.href='#output-'+o.id;
+      if(Array.isArray(result[o.id])){
+        const visual=spec.visuals.find(v=>v.output===o.id);
+        numericTable(result[o.id],o.units||'Numeric values',parent,visual&&visual.labels,{x:visual&&visual.x_label,y:visual&&visual.y_label},snapshot?null:previous&&previous[o.id],o.units);
+      }else if(snapshot){const value=create('p',format(result[o.id])+' '+unit(o.units),parent);value.className='output-value';}
+      else scalarReadout(result[o.id],previous&&previous[o.id],o.units,parent);
+    }
+  }
+  const ns='http://www.w3.org/2000/svg';
+  function svgNode(tag,attrs,parent,text){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(text!==undefined)n.textContent=text;if(parent)parent.append(n);return n;}
+  function chart(v,parent){const svg=svgNode('svg',{viewBox:'0 0 640 360',role:'img','aria-label':v.title},parent);svgNode('title',{},svg,v.title);return svg;}
+  function axis(svg,v,xmin,xmax,ymin,ymax,xUnits,yUnits,categories=false) {
+    svgNode('path',{d:'M 88 30 V 284 H 608',fill:'none',stroke:'#425e70'},svg);
+    for(let i=0;i<=4;i++){const y=284-i*60;svgNode('line',{x1:88,x2:608,y1:y,y2:y,stroke:'#dae3e9'},svg);svgNode('text',{x:80,y:y+4,'text-anchor':'end'},svg,tickNumber(ymin+(ymax-ymin)*i/4));}
+    if(!categories)for(let i=0;i<=4;i++)svgNode('text',{x:88+i*130,y:306,'text-anchor':'middle'},svg,tickNumber(xmin+(xmax-xmin)*i/4));
+    svgNode('text',{x:348,y:340,'text-anchor':'middle'},svg,v.x_label+(xUnits?' ('+xUnits+')':''));
+    svgNode('text',{transform:'translate(18 160) rotate(-90)','text-anchor':'middle'},svg,v.y_label+' ('+unit(yUnits)+')');
+  }
+  function domain(values,zero=false){let min=Math.min(...values),max=Math.max(...values);if(zero){min=Math.min(0,min);max=Math.max(0,max);}if(min===max){const d=Math.max(1,Math.abs(min)*.1);min-=d;max+=d;}if(!finite(max-min))fail('Chart numeric range is too large');return [min,max];}
+  function heatmapScale(output,values) {
+    if(spec.invariants.some(t=>t.output===output&&t.kind==='range'&&t.min===0&&t.max===1))
+      return {domain:[0,1],fixed:true,diverging:false};
+    const min=Math.min(...values),max=Math.max(...values);
+    if(min<0&&max>0){const extent=Math.max(Math.abs(min),Math.abs(max));if(!finite(2*extent))fail('Chart numeric range is too large');return {domain:[-extent,extent],fixed:false,diverging:true};}
+    // Include zero for constant one-sided data without suggesting the other sign.
+    return {domain:min===max?(min<0?[min,0]:[0,max||1]):domain(values),fixed:false,diverging:false};
+  }
+  function heatmapColor(t,diverging) {
+    const neutral=[245,246,246],end=diverging&&t<.5?[185,140,105]:[110,157,166];
+    const strength=diverging?Math.abs(2*t-1):t;
+    return 'rgb('+neutral.map((n,i)=>Math.round(n+(end[i]-n)*strength)).join(',')+')';
+  }
+  function numericTable(value,title,parent,labels,axes={},before=null,units='') {
+    if(before!==null&&before!==undefined&&JSON.stringify(shape(value).dims)!==JSON.stringify(shape(before).dims)){
+      const prior=create('details',undefined,parent);create('summary','Shape changed · inspect previous values ('+unit(units)+')',prior);create('pre',displayValue(before),prior);
+    }
+    const div=create('div',undefined,parent);div.className='scroll';div.tabIndex=0;div.setAttribute('role','region');div.setAttribute('aria-label',title);const table=create('table',undefined,div);create('caption',title,table);
+    const rows=Array.isArray(value)?(Array.isArray(value[0])?value:value.map(x=>[x])):[[value]];
+    if(rows.some(r=>r.some(Array.isArray))){create('pre',displayValue(value),parent);return;}
+    const matrix=Array.isArray(value)&&Array.isArray(value[0]);
+    const rowAxis=axes.columns?'Sample':matrix?(axes.y||'Row'):(axes.x||'Index');
+    const head=create('tr',undefined,create('thead',undefined,table));create('th',rowAxis,head).scope='col';
+    for(let i=0;i<rows[0].length;i++){const label=axes.columns?axes.columns[i]:matrix?(axes.x||'Column')+' '+((labels&&labels[i])||(i+1)):(axes.value||'Value');const th=create('th',label,head);th.scope='col';}
+    const priorRows=Array.isArray(before)?(Array.isArray(before[0])?before:before.map(x=>[x])):[[before]];
+    const body=create('tbody',undefined,table);rows.forEach((r,i)=>{const tr=create('tr',undefined,body);const th=create('th',(labels&&labels[i])||rowAxis+' '+(i+1),tr);th.scope='row';r.forEach((x,j)=>{const old=priorRows[i]&&priorRows[i][j],different=before!==null&&before!==undefined&&(!finite(old)||changed(x,old));const cell=create('td',String(x),tr);cell.className='numeric-value'+(different?' changed-cell':'');if(different){cell.setAttribute('data-changed','true');create('span',finite(old)?'Changed · previous: '+String(old)+' '+unit(units):'Added · previous: not present',cell).className='cell-previous';}});});
+  }
+  function renderVisual(v,result,inputs,b,parent) {
+    const output=spec.outputs.find(o=>o.id===v.output),value=result[v.output],s=shape(value);
+    const tableAxes={x:v.x_label,y:v.y_label,value:output.label+' ('+unit(output.units)+')'};
+    create('h5',v.title,parent);
+    if(v.kind==='values'){numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels,tableAxes);return;}
+    create('small','Scroll horizontally to see the full plot.',parent).className='plot-hint';
+    if(v.kind==='heatmap') {
+      if(s.dims.length!==2)fail('Heatmap requires a matrix');
+      create('p',v.x_label+' × '+v.y_label+'; '+output.label+(output.units?' ('+output.units+')':''),parent);
+      const svg=chart(v,parent),flat=leavesOf(value),scale=heatmapScale(v.output,flat),[lo,hi]=scale.domain,rows=value.length,cols=value[0].length;
+      for(let r=0;r<rows;r++){const label=(v.labels&&v.labels[r])||String(r+1);const tick=svgNode('text',{x:80,y:55+r*220/rows,'text-anchor':'end'},svg,shortLabel(label));svgNode('title',{},tick,label);for(let c=0;c<cols;c++){
+        const t=Math.max(0,Math.min(1,(value[r][c]-lo)/(hi-lo))),x=90+c*510/cols,y=32+r*220/rows;
+        const old=previous&&previous[v.output]&&previous[v.output][r]&&previous[v.output][r][c],different=previous&&(!finite(old)||changed(value[r][c],old));
+        const cell=svgNode('rect',{x,y,width:510/cols-2,height:220/rows-2,fill:heatmapColor(t,scale.diverging),stroke:different?'#785514':'none','stroke-width':different?3:0},svg);svgNode('title',{},cell,'Row '+(r+1)+', column '+(c+1)+': '+format(value[r][c])+' '+unit(output.units));
+        if(cols<=4)svgNode('text',{x:x+255/cols,y:y+110/rows+5,'text-anchor':'middle'},svg,tickNumber(value[r][c]));}}
+      for(let c=0;c<cols;c++){const label=(v.labels&&v.labels[c])||String(c+1);const tick=svgNode('text',{x:90+(c+.5)*510/cols,y:276,'text-anchor':'middle'},svg,shortLabel(label));svgNode('title',{},tick,label);}
+      svgNode('text',{x:350,y:310,'text-anchor':'middle'},svg,v.x_label);create('p',(scale.fixed?'Fixed scale: ':'Current scale: ')+format(lo)+' to '+format(hi)+' '+unit(output.units),parent).className='scale-caption';
+      svgNode('text',{transform:'translate(18 150) rotate(-90)','text-anchor':'middle'},svg,v.y_label);numericTable(value,output.label+' ('+unit(output.units)+')',tableDisclosure(parent),v.labels,tableAxes);return;
+    }
+    if(v.kind==='bar') {
+      if(s.dims.length!==1)fail('Bar chart requires a vector');
+      const svg=chart(v,parent),[lo,hi]=domain(value,true);axis(svg,v,1,value.length,lo,hi,'',output.units,true);
+      const y=x=>284-(x-lo)/(hi-lo)*240,zero=y(0),width=510/value.length;
+      value.forEach((x,i)=>{svgNode('rect',{x:92+i*width,y:Math.min(zero,y(x)),width:Math.max(1,width-8),height:Math.abs(y(x)-zero),fill:'#207a96'},svg);svgNode('text',{x:92+(i+.5)*width,y:Math.max(38,Math.min(280,y(x)+(x<0?18:-7))),'text-anchor':'middle'},svg,format(x));const label=(v.labels&&v.labels[i])||String(i+1);const tick=svgNode('text',{x:92+(i+.5)*width,y:306,'text-anchor':'middle'},svg,label.length>10?label.slice(0,9)+'…':label);svgNode('title',{},tick,label);});
+      numericTable(value,output.label+' ('+unit(output.units)+')',tableDisclosure(parent),v.labels,tableAxes);return;
+    }
+    if(v.kind==='line') {
+      if(s.dims.length!==0)fail('Line chart requires a scalar output');
+      const sw=v.sweep,control=spec.controls.find(c=>c.id===sw.control),points=[];
+      for(let i=0;i<sw.points;i++){const x=i===sw.points-1?sw.max:sw.min+(sw.max-sw.min)*i/(sw.points-1),next=clone(inputs);next[sw.control]=x;const value=compute(validate(next),b)[v.output];if(!finite(value))fail('Sweep output must be scalar');points.push([x,value]);}
+      const inSweep=inputs[sw.control]>=sw.min&&inputs[sw.control]<=sw.max;
+      const svg=chart(v,parent),[lo,hi]=domain(points.map(p=>p[1]).concat(inSweep?[result[v.output]]:[]));axis(svg,v,sw.min,sw.max,lo,hi,control.units,output.units);
+      svgNode('polyline',{points:points.map(([x,y])=>(88+(x-sw.min)/(sw.max-sw.min)*520)+','+(284-(y-lo)/(hi-lo)*240)).join(' '),fill:'none',stroke:'#207a96','stroke-width':3},svg);
+      const currentX=inputs[sw.control],currentY=result[v.output];
+      create('p','Sweep holds the other inputs fixed. Moving '+control.label+' selects a position on this curve; changing other inputs can change the curve.',parent).className='section-note';
+      if(currentX<sw.min||currentX>sw.max)create('p','Current position hidden: '+control.label+' = '+format(currentX)+' '+unit(control.units)+' is outside the plotted sweep ('+format(sw.min)+' to '+format(sw.max)+' '+unit(control.units)+').',parent).className='line-position';
+      else if(currentY<lo||currentY>hi)create('p','Current position hidden: current output '+format(currentY)+' '+unit(output.units)+' is outside the plotted vertical domain.',parent).className='line-position';
+      else{
+        const cx=88+(currentX-sw.min)/(sw.max-sw.min)*520,cy=284-(currentY-lo)/(hi-lo)*240;
+        const label='Current: '+control.label+' = '+format(currentX)+' '+unit(control.units)+'; '+output.label+' = '+format(currentY)+' '+unit(output.units);
+        svgNode('line',{x1:cx,x2:cx,y1:cy,y2:284,stroke:'#785514','stroke-dasharray':'4 3'},svg);
+        const marker=svgNode('circle',{cx,cy,r:6,fill:'#fff',stroke:'#785514','stroke-width':3,'data-current-position':'true'},svg);svgNode('title',{},marker,label);
+        svgNode('text',{x:cx+(cx>348?-10:10),y:cy+(cy<55?22:-12),'text-anchor':cx>348?'end':'start'},svg,'Current');
+        create('p',label,parent).className='line-position';
+      }
+      numericTable(points,'Sweep: '+v.x_label+' ('+unit(control.units)+'), '+output.label+' ('+unit(output.units)+')',tableDisclosure(parent),undefined,{columns:[v.x_label+' ('+unit(control.units)+')',output.label+' ('+unit(output.units)+')']});return;
+    }
+    fail('Unsupported visual');
+  }
+  function tableDisclosure(parent){const details=create('details',undefined,parent);create('summary','Inspect numeric values',details);return details;}
+  function compare(a,e,t) {
+    if(Array.isArray(e))return Array.isArray(a)&&a.length===e.length&&e.every((v,i)=>compare(a[i],v,t));
+    return finite(a)&&finite(e)&&Math.abs(a-e)<=t.atol+t.rtol*Math.abs(e);
+  }
+  function invariant(t,result) {
+    const value=result[t.output],s=shape(value),leaves=leavesOf(value);
+    if(t.kind==='finite')return leaves.every(finite);
+    if(t.kind==='range')return leaves.every(x=>x>=t.min-(t.atol+t.rtol*Math.abs(t.min))&&x<=t.max+(t.atol+t.rtol*Math.abs(t.max)));
+    if(t.kind==='sum'){if(s.dims.length!==1)fail('Sum invariant requires vector');return compare(value.reduce((a,c)=>a+c,0),t.expected,t);}
+    if(t.kind==='row_sum'){if(s.dims.length!==2)fail('Row sum invariant requires matrix');return value.every(row=>compare(row.reduce((a,c)=>a+c,0),t.expected,t));}
+    if(t.kind==='nondecreasing'){if(s.dims.length!==1)fail('Nondecreasing invariant requires vector');return value.every((x,i)=>i===0||x+t.atol+t.rtol*Math.abs(value[i-1])>=value[i-1]);}
+    fail('Unknown invariant');
+  }
+  function selfChecks(result,b) {
+    const list=el('checks');list.replaceChildren();let passed=0,failed=0,skipped=0;
+    const check=(name,fn)=>{let kind,detail;try{const result=fn(),ok=typeof result==='boolean'?result:result.ok;kind=ok?'pass':'fail';detail=ok?'pass':'fail: expectation not met';if(typeof result==='object')detail+='; '+result.detail;if(ok)passed++;else failed++;}catch(error){kind='fail';detail='fail: '+error.message;failed++;}const li=create('li',name+' — '+detail,list);li.className=kind;};
+    for(const t of spec.tests)check(t.name,()=>{const actual=compute(merge(t.inputs),b),measured=Object.create(null);for(const key of Object.keys(t.expected))measured[key]=actual[key];return {ok:Object.keys(t.expected).every(k=>compare(actual[k],t.expected[k],t)),detail:'Measured '+JSON.stringify(measured)+'; expected '+JSON.stringify(t.expected)+'; atol '+t.atol+', rtol '+t.rtol};});
+    const cases=[['Current',result]];
+    for(const e of spec.explorations){try{cases.push([e.title,compute(merge(e.preset),b)]);}catch(error){check(e.title+' preset',()=>{throw error;});}}
+    for(const [name,actual] of cases)for(const t of spec.invariants)check(name+': '+t.name,()=>{const value=actual[t.output];let measured=value,expected=t.kind;if(t.kind==='sum'){measured=value.reduce((a,c)=>a+c,0);expected=t.expected;}if(t.kind==='row_sum'){if(shape(value).dims.length!==2)fail('Row sum invariant requires matrix');measured=value.map(row=>row.reduce((a,c)=>a+c,0));expected='each row '+t.expected;}if(t.kind==='range')expected='['+t.min+', '+t.max+']';const output=spec.outputs.find(o=>o.id===t.output);return {ok:invariant(t,actual),detail:'Measured '+JSON.stringify(measured)+' ('+unit(output.units)+'); expected '+expected+'; atol '+t.atol+', rtol '+t.rtol};});
+    el('check-status').textContent=passed+' passed; '+failed+' failed; '+skipped+' skipped.';
+    el('check-status').className=failed?'fail':'pass';
+    return failed;
+  }
+  function recalculate() {
+    const b=NumericRuntime.budget(2000000);let result,containers;
+    try{result=compute(state,NumericRuntime.budget());if(JSON.stringify(state)!==JSON.stringify(lastInputs)){previous=last;last=result;lastInputs=clone(state);}containers=renderOutputs(result);resultReadout(result,el('principal-result'));el('principal-result').removeAttribute('data-stale');el('outputs').removeAttribute('data-stale');el('result-status').textContent='';}
+    catch(error){status('Calculation failed. '+error.message,true);el('principal-result').setAttribute('data-stale','true');el('outputs').setAttribute('data-stale','true');el('result-status').textContent=last?'Last valid result retained — stale for current inputs. Values, comparisons and plots below belong to the last successful inputs.':'No valid result available.';el('check-status').textContent='Degraded: current calculation failed; checks not run.';el('check-status').className='skip';el('checks').replaceChildren();return;}
+    el('visuals').replaceChildren(el('outputs'));let visualFailures=0;
+    for(const v of spec.visuals){const box=create('div',undefined,containers.get(v.output));box.className='chart';box.tabIndex=0;box.setAttribute('role','region');box.setAttribute('aria-label',v.title);try{renderVisual(v,result,state,b,box);}catch(error){visualFailures++;box.replaceChildren();create('h3',v.title,box);create('p','Visual unavailable: '+error.message,box).className='error';}}
+    status(visualFailures?'Calculation valid; '+visualFailures+' visual(s) unavailable.':'',visualFailures>0);
+    try{const failed=selfChecks(result,b);if(failed){status('Calculation completed; '+failed+' scientific check(s) failed.'+(visualFailures?' '+visualFailures+' visual(s) unavailable.':''));el('status').className='caution';}}
+    catch(error){el('check-status').textContent='Degraded: '+error.message;el('check-status').className='skip';status('Calculation completed; scientific checks unavailable.'+(visualFailures?' '+visualFailures+' visual(s) unavailable.':''));el('status').className='caution';}
+  }
+  if(data.error||!data.ast){status('Degraded: '+(data.error||'Compute unavailable'),true);el('check-status').textContent='Skipped: compute was not admitted.';document.querySelectorAll('.preset').forEach(button=>button.disabled=true);return;}
+  try {
+    state=merge({});controls();sync();
+    document.querySelectorAll('.preset').forEach(button=>button.addEventListener('click',()=>{try{
+      const index=Number(button.dataset.preset),next=merge(spec.explorations[index].preset);state=next;sync();recalculate();
+      const readout=el('preset-result-'+index),feedback=el('feedback-'+index);
+      if(feedback)feedback.open=false;
+      if(readout){if(last&&el('result-status').textContent==='')resultReadout(last,readout,true);else readout.textContent='Preset applied, but calculation failed. See the workbench status.';}
+    }catch(error){status('Invalid preset; last valid inputs retained. '+error.message,true);}}));
+    recalculate();
+  }catch(error){status('Degraded: '+error.message,true);el('check-status').textContent='Skipped: initialization failed.';}
+})();
+
+</script></body></html>
