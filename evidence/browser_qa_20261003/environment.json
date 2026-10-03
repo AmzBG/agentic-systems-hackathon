@@ -1,0 +1,63 @@
+{
+  "tested_head": "Historical artifact hashes below; main advanced concurrently, not current-HEAD generation proof",
+  "browser": "Codex In-app Browser (Chromium)",
+  "reported_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "binary_version_verified": false,
+  "viewports": [
+    [
+      1440,
+      1000
+    ],
+    [
+      768,
+      1024
+    ],
+    [
+      390,
+      844
+    ]
+  ],
+  "full_network_disabled": "UNVERIFIED; user explicitly selected keep full offline check unverified",
+  "servers_after_stop": {
+    "8765": {
+      "listening": false,
+      "error": "timed out"
+    },
+    "8766": {
+      "listening": false,
+      "error": "timed out"
+    }
+  },
+  "observed_heads": [
+    "5f3cddc28ee82ce85929e28b0efb45cc1bf88c42",
+    "fad2a2450357c573e9bc39c889bc831a170290f3",
+    "5bcd4e3786d7199a8e21cff45630c6966b09b4d0"
+  ],
+  "original_artifact_html_hashes": {
+    "examples/entropy/index.html": "ed4d813f62cb0d1fc2199803a5144cf89a8dc4902415b140a8a6591851d1723d",
+    "evidence/u1-runs/stage2/T-attention-4/index.html": "0bb9adee3e1a45b4cab2049d5395a7d91a5b9f2fba3ba1ba16a460deafdb064b"
+  },
+  "original_runtime_hashes": {
+    "runtime.py": "6d7accd8a29166ace53f136486915d9dfd8f0526a58081fead7bfcf8240ea9ed",
+    "templates/runtime.js": "8a365ccd8358f5b5d169936ab58c07ed611ac4164593714f332bc243412692e4",
+    "templates/runtime.css": "966642b193834786c174dbae0bc9196a939648e178ac5a365a7b2953fe25c1bc",
+    "templates/interpreter.js": "17106fe66595acc7064426406e4d81b482070e529d5bed3313f5e85b2ebb4bbf",
+    "examples/entropy/index.html": "ed4d813f62cb0d1fc2199803a5144cf89a8dc4902415b140a8a6591851d1723d",
+    "evidence/u1-runs/stage2/T-attention-4/index.html": "0bb9adee3e1a45b4cab2049d5395a7d91a5b9f2fba3ba1ba16a460deafdb064b"
+  },
+  "current_css_retest": {
+    "commit": "ea0b76b6ec25848eacbb6d9aaea4ade77dc4c305",
+    "scope": "Stylesheet-only copies; original metadata/AST/script/teaching unchanged. Not fresh model generations or full latest-runtime rerenders.",
+    "copy_hashes": {
+      "entropy": "8eceb45ba80ecfe6bb056df37c1ce38526eb8962d8e669e75629dc27faeaf8e3",
+      "attention": "2bd09196c20a7c422d7681d8e9c11a86e090384a53bed37f27ddbdbb01ad639d"
+    }
+  },
+  "main_advanced_after_retest": "56ff71c1c48465798646f4d720aefe878032a46e",
+  "main_latest_renderer_not_frozen": true,
+  "source_server_stop_observation": "No LISTENING entry for 8765/8766 after stopping only QA-owned Python processes; attempted TCP connections timed out.",
+  "embedded_scripts_match_templates_before_ui_redesign": {
+    "examples/entropy/index.html": true,
+    "evidence/u1-runs/stage2/T-attention-4/index.html": true
+  }
+}
