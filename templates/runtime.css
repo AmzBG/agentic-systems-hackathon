@@ -173,3 +173,9 @@ ul { padding-left: var(--space-5); }
 .numeric-value { text-align: right; }
 
 .scale-caption { margin: var(--space-2) 0; color: var(--muted); font-size: .8125rem; font-variant-numeric: tabular-nums; }
+.previous-value, .cell-previous { font-size: .75rem; color: var(--muted); }
+.cell-previous { display: block; white-space: normal; font-family: system-ui, sans-serif; }
+.changed-cell { background: var(--amber-soft); border-left: 3px solid var(--amber); }
+.line-position { font-size: .8125rem; font-variant-numeric: tabular-nums; }
+#outputs[data-stale=true] { border-left: 3px solid var(--amber); padding-left: var(--space-3); }
+.output[data-role=result] { border-top: 2px solid var(--accent); }

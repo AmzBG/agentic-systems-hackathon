@@ -618,7 +618,7 @@ def render(spec: dict) -> str:
             '<noscript>Degraded: JavaScript is disabled. Teaching content remains available; calculations and self-checks have not run.</noscript>'
             '<div class="workbench-grid"><section class="control-panel" aria-labelledby="input-heading"><h3 id="input-heading">Inputs</h3><a class="mobile-result-link" href="#principal-result">View current result</a><div id="controls"></div><a href="#explorations">Experiments</a></section><section class="live-panel" aria-labelledby="results"><h3 id="results" tabindex="-1">Calculation</h3><p id="result-status">No valid result yet.</p>'
             f'<p class="mechanism-note">{_escape(mechanism)}</p><div id="principal-result" tabindex="-1"></div>'
-            '<div id="visuals"><div id="outputs"></div></div><p class="section-note">Plot labels are rounded; numeric tables show full precision.</p></section></div></section>'
+            '<p class="section-note">Comparisons use the preceding successful input change. Changed cells include their previous values; differences within 1e-9 + 1e-7 × |previous| are treated as unchanged.</p><div id="visuals"><div id="outputs"></div></div><p class="section-note">Plot labels are rounded; numeric tables show full precision.</p></section></div></section>'
             f'{explorations}'
             '<section class="verification"><h2>Self-check</h2><p id="check-status" role="status">Not run.</p><p>These checks test the specified examples and identities; they do not verify every claim in the explanation.</p><details><summary>Inspect measured values, expectations and tolerances</summary><ul id="checks"></ul></details></section>'
             f'{grounding}</main>'

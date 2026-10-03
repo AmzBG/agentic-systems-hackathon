@@ -647,8 +647,8 @@ class InteractionTests(unittest.TestCase):
         self.assertIn("2", result["outputs"])
         self.assertEqual(result["checkStatus"], "9 passed; 0 failed; 0 skipped.")
         result = page_result(entropy_spec(), "preset(0);const first=text('outputs');preset(1);", "{first,second:text('outputs')}")
-        self.assertIn("Total entropy — result (bits) 0", result["first"])
-        self.assertIn("Total entropy — result (bits) 2", result["second"])
+        self.assertIn("Total entropy — result (bits) Final result 0", result["first"])
+        self.assertIn("Total entropy — result (bits) Final result 2", result["second"])
 
     def test_invalid_edit_retains_previous_inputs_and_result(self):
         result = page_result(entropy_spec(), "const before=text('outputs');change('input-count-scalar','');", "{before,after:text('outputs'),value:document.getElementById('input-count-scalar').value,status:text('status')}")
@@ -708,6 +708,57 @@ class InteractionTests(unittest.TestCase):
         self.assertIn("Calculation failed", result["status"])
         self.assertIn("stale", result["resultStatus"])
         self.assertIn("Degraded", result["checkStatus"])
+
+
+class ComparisonAndPositionTests(unittest.TestCase):
+    def test_scalar_previous_units_and_ordered_steps(self):
+        result = page_result(entropy_spec(), "preset(0);")
+        self.assertIn("Previous: 2 bits", result["outputs"])
+        self.assertIn("0 bits · Current", result["outputs"])
+        self.assertIn("Step 1 · Intermediate", result["outputs"])
+        self.assertIn("Step 2 · Intermediate", result["outputs"])
+        self.assertIn("Final result", result["outputs"])
+
+    def test_matrix_change_is_textual_and_only_changed_cells_marked(self):
+        result = page_result(all_kinds_spec(), "change('input-field-0-0','2');",
+            "{text:text('outputs'),cells:document.getElementById('outputs').children.find(n=>n.id==='output-scaled_field').children[2].children[0].children[2].children.map(r=>r.children.slice(1).map(c=>c.attrs['data-changed']||''))}")
+        self.assertIn("Changed · previous: 1 V", result["text"])
+        self.assertEqual(result["cells"], [["true", ""], ["", ""]])
+
+    def test_display_tolerance_suppresses_roundoff(self):
+        result = page_result(all_kinds_spec(), "change('input-field-0-0','1.00000000001');",
+            "text('output-scaled_field')")
+        self.assertNotIn("Changed", result)
+
+    def test_failed_computation_does_not_replace_comparison_and_recovery_uses_last_success(self):
+        spec = entropy_spec()
+        spec["compute_js"] = spec["compute_js"].replace("const n =", "if(inputs.count === 2) throw 'failure'; const n =")
+        result = page_result(spec,
+            "change('input-count-scalar','3');const before=text('outputs');change('input-count-scalar','2');const retained=text('outputs');const stale=text('result-status');change('input-count-scalar','4');",
+            "{before,retained,stale,recovered:text('outputs')}")
+        self.assertEqual(result["before"], result["retained"])
+        self.assertIn("stale", result["stale"])
+        self.assertIn("Previous: 1.584962500721156", result["recovered"])
+
+    def test_noop_edit_preserves_useful_comparison(self):
+        result = page_result(entropy_spec(), "preset(0);const before=text('outputs');change('input-count-scalar','4');", "{before,after:text('outputs')}")
+        self.assertEqual(result["before"], result["after"])
+
+    def test_marker_matches_actual_chart_coordinates_and_curve_is_unchanged(self):
+        result = page_result(all_kinds_spec(),
+            "const curve=nodes.filter(n=>n.tag==='polyline').slice(-1)[0].attrs.points;const input=document.getElementById('input-amplitude-scalar');input.value='0.5';input.events.input();",
+            "{curve,after:nodes.filter(n=>n.tag==='polyline').slice(-1)[0].attrs.points,marker:nodes.filter(n=>n.attrs['data-current-position']).slice(-1)[0].attrs,text:text('outputs')}")
+        self.assertEqual(result["curve"], result["after"])
+        self.assertAlmostEqual(float(result["marker"]["cx"]), 413)
+        self.assertAlmostEqual(float(result["marker"]["cy"]), 269)
+        self.assertIn("Amplitude = 0.5 V; Squared amplitude = 0.25 V²", result["text"])
+
+    def test_current_position_outside_sweep_has_explanation_and_no_marker(self):
+        spec = all_kinds_spec()
+        spec["visuals"][1]["sweep"].update(min=-0.5, max=0.5)
+        result = page_result(spec, inspection="{text:text('outputs'),markers:nodes.filter(n=>n.attrs['data-current-position']).length}")
+        self.assertEqual(result["markers"], 0)
+        self.assertIn("outside the plotted sweep", result["text"])
 
 
 class SafetyTests(unittest.TestCase):
