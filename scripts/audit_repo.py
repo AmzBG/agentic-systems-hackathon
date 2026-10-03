@@ -47,6 +47,20 @@ def audit(root: Path = ROOT) -> dict:
             failures.append(f"requirements line {line_number} is not exactly pinned")
     if not any("quickjs==" in line.lower() for line in requirements):
         failures.append("QuickJS engine pin missing")
+    review_template = root / "evidence" / "REVIEW_TEMPLATE.md"
+    if not review_template.is_file():
+        failures.append("evidence review template is missing")
+    else:
+        template = review_template.read_text(encoding="utf-8").lower()
+        for label, marker in {
+            "repeat-run outcomes": "repeat-run comparison",
+            "repair outcomes": "repair outcomes",
+            "flow-selection evidence": "effective flow",
+            "verified scored tokens": "scored tokens",
+            "run exit status": "process exit",
+        }.items():
+            if marker not in template:
+                failures.append(f"evidence template missing {label}")
     example_inputs = list((root / "examples").glob("*/case.json"))
     if not example_inputs:
         failures.append("no public example input")

@@ -68,6 +68,12 @@ The pipeline validates the input and source, asks the command-line-selected Open
 
 The shared contract sets hard guards at 10 API calls, 30,000 completion tokens, and 10 minutes. The normal strategy targets one generation call and at most two targeted repairs.
 
+## Evidence status
+
+Offline contract tests and a fresh Python 3.11 wheel-only installation have passed; the install check also confirmed that the pinned QuickJS engine interrupts an infinite loop. All six practice URLs yielded extractable source text through the real fetch path. These are development checks, not generated-page results.
+
+No live repeated-run results, repair rates, API token totals, or end-to-end timings have been measured yet, so no single-vs-planned flow quality claim is made. The single flow is only the provisional low-call baseline. The User 2 renderer and a validated public example output pair are still required before final clean-clone and browser verification.
+
 ## Open specification questions
 
 See `docs/QUESTIONS_FOR_INSTRUCTOR.md`. The current loader requires the three named fields (`source_url`, `focus`, and `audience`), accepts additional string fields, and can use an optional `excerpt`, `source_text`, or `paper_excerpt` field if paper downloads are unavailable.

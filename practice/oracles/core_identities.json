@@ -1,6 +1,16 @@
 {
   "description": "Hand-calculated reference identities independent of any generated page tests.",
   "cases": {
+    "attention": {
+      "identity": "With 2x2 identity Q, K and V and scaling on, each diagonal score is 1/sqrt(2), each off-diagonal score is 0, and the matching key weight is exp(1/sqrt(2))/(1+exp(1/sqrt(2))). The output equals the weight matrix because V is the identity.",
+      "inputs": {"queries": [[1, 0], [0, 1]], "keys": [[1, 0], [0, 1]], "values": [[1, 0], [0, 1]], "scale": true},
+      "expected": {"score_matrix": [[0.7071067811865475, 0], [0, 0.7071067811865475]], "attention_weights": [[0.6697615493266569, 0.3302384506733431], [0.3302384506733431, 0.6697615493266569]], "attended_values": [[0.6697615493266569, 0.3302384506733431], [0.3302384506733431, 0.6697615493266569]]}
+    },
+    "entropy": {
+      "identity": "A certain event has zero bits of entropy; four equal outcomes each contribute 0.5 bit and sum to 2 bits. A zero-probability outcome contributes zero by continuity.",
+      "inputs": {"count": 4, "weights": [1, 1, 1, 1]},
+      "expected": {"probabilities": [0.25, 0.25, 0.25, 0.25], "contributions": [0.5, 0.5, 0.5, 0.5], "entropy_bits": 2}
+    },
     "bayes_updating": {
       "identity": "Beta(2,2) prior plus 3 successes and 1 failure gives Beta(5,3), posterior mean 5/8.",
       "inputs": {"alpha": 2, "beta": 2, "successes": 3, "failures": 1},

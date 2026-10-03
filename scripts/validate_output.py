@@ -66,6 +66,41 @@ def _usage_from_event(event: dict) -> dict:
             "reasoning_tokens": reasoning, "verified": verified}
 
 
+def _repair_outcomes(events: list[dict]) -> list[dict]:
+    """Return the agent's final per-repair records without inferring success."""
+    final = next((event for event in reversed(events) if event.get("stage") == "final"), {})
+    records = final.get("revisions", [])
+    if not isinstance(records, list):
+        return []
+    outcomes = []
+    for record in records:
+        if not isinstance(record, dict) or type(record.get("number")) is not int:
+            continue
+        if record.get("accepted") is True:
+            outcome = "accepted"
+        elif record.get("call_failed") is True:
+            outcome = "call_failed"
+        elif record.get("errors"):
+            outcome = "parse_failed"
+        else:
+            outcome = "rejected"
+        outcomes.append({"number": record["number"], "mode": record.get("mode"),
+                         "requested": record.get("requested", []), "outcome": outcome})
+    return outcomes
+
+
+def _flow_evidence(events: list[dict]) -> dict:
+    plan_calls = [event for event in events if event.get("stage") == "plan"
+                  and isinstance(event.get("details"), dict)
+                  and type(event["details"].get("request_number")) is int
+                  and event["details"]["request_number"] > 0]
+    plan_used = any(event.get("stage") == "plan" and event.get("action") == "teaching_plan"
+                    and event.get("result") in {"pass", "info"} for event in events)
+    return {"planning_attempts": len({event["details"]["request_number"] for event in plan_calls}),
+            "planning_response_received": plan_used,
+            "effective_flow": "planned" if plan_used else "single"}
+
+
 def validate_output(output: Path, *, expected_model: str | None = None) -> dict:
     failures: list[str] = []
     html_path = output / "index.html"
@@ -83,6 +118,7 @@ def validate_output(output: Path, *, expected_model: str | None = None) -> dict:
         if ACTIVE_REMOTE.search(html) or CSS_REMOTE.search(html):
             failures.append("page contains a remote-capable request or CSS asset")
     events: list[dict] = []
+    previous_elapsed = -1.0
     if not trace_path.is_file():
         failures.append("trace.jsonl is missing")
     else:
@@ -104,6 +140,10 @@ def validate_output(output: Path, *, expected_model: str | None = None) -> dict:
             elapsed = event.get("elapsed_seconds")
             if type(elapsed) not in {float, int} or not math.isfinite(elapsed) or elapsed < 0:
                 failures.append(f"trace line {line_number} has invalid elapsed_seconds")
+            elif elapsed < previous_elapsed:
+                failures.append(f"trace line {line_number} elapsed_seconds moved backwards")
+            else:
+                previous_elapsed = elapsed
             for field in ("checks", "failures", "revisions"):
                 if not isinstance(event.get(field), list):
                     failures.append(f"trace line {line_number} has invalid {field}")
@@ -128,37 +168,63 @@ def validate_output(output: Path, *, expected_model: str | None = None) -> dict:
         failures.append("final check records a failed required check")
     if finals and finals[-1].get("failures"):
         failures.append("final event records failures")
+    if finals and finals[-1].get("result") == "fail" and not finals[-1].get("failures"):
+        failures.append("failed final event has no recorded failure reason")
+    if finals:
+        exit_code = finals[-1].get("details", {}).get("exit_code") if isinstance(finals[-1].get("details"), dict) else None
+        final_pass = finals[-1].get("result") == "pass"
+        if type(exit_code) is not int:
+            failures.append("final event has no integer exit_code")
+        elif (exit_code == 0) != final_pass:
+            failures.append("final event result disagrees with exit_code")
     call_events = []
     for event in events:
         details = event.get("details")
         if not isinstance(details, dict):
             continue
-        if "request_number" in details and ("usage" in details or event.get("stage") in {"generate", "revision"}):
+        if "request_number" in details:
+            number = details["request_number"]
+            if type(number) is not int or number < 1:
+                failures.append("trace API attempt has an invalid request_number")
+                continue
             if expected_model and details.get("model_id") != expected_model:
                 failures.append("trace API model differs from requested model")
-            call_events.append({"request_number": details["request_number"], "model_id": details.get("model_id"),
+            call_events.append({"request_number": number, "model_id": details.get("model_id"),
                                 "usage": _usage_from_event(event), "result": event.get("result")})
+        else:
+            action = event.get("action")
+            if event.get("result") != "skip" and event.get("stage") in {"plan", "generate", "revision"} and isinstance(action, str) and (
+                action == "request" or action.endswith(":request")
+            ):
+                failures.append("trace model call has no numbered API attempt")
     # A request can have start and completion events. Count it once and use only
     # the completion event for its usage.
     calls_by_number: dict[str, dict] = {}
     for call in call_events:
         key = str(call["request_number"])
-        if key not in calls_by_number or call["result"] == "pass":
+        current = calls_by_number.get(key)
+        if current and current["model_id"] != call["model_id"]:
+            failures.append(f"request {key} has conflicting model IDs")
+        if current is None or (call["usage"]["verified"] and not current["usage"]["verified"]):
             calls_by_number[key] = call
     attempts = len(calls_by_number)
     if attempts == 0:
         failures.append("trace records no numbered API attempts")
-    completed = [call for call in calls_by_number.values() if call["result"] == "pass"]
-    usage = {key: sum(call["usage"][key] for call in completed if call["usage"][key] is not None)
+    measured = list(calls_by_number.values())
+    usage = {key: sum(call["usage"][key] for call in measured if call["usage"][key] is not None)
              for key in ("prompt_tokens", "completion_tokens", "total_tokens", "reasoning_tokens")}
     for key in usage:
-        if not any(call["usage"][key] is not None for call in completed):
+        if not any(call["usage"][key] is not None for call in measured):
             usage[key] = None
-    usage["verified"] = bool(completed) and all(call["usage"]["verified"] for call in completed)
-    usage["unknown_calls"] = attempts - sum(call["usage"]["verified"] for call in completed)
+    usage["unknown_calls"] = attempts - sum(call["usage"]["verified"] for call in measured)
+    usage["verified"] = attempts > 0 and usage["unknown_calls"] == 0
+    # Reasoning tokens are a subset of completion tokens; score the latter once.
+    usage["scored_tokens"] = (usage["prompt_tokens"] + usage["completion_tokens"]
+                              if usage["verified"] else None)
     return {"ok": not failures, "failures": failures, "html": str(html_path), "trace": str(trace_path),
             "events": len(events), "attempts": attempts, "usage": usage,
-            "elapsed_seconds": events[-1].get("elapsed_seconds") if events else None}
+            "elapsed_seconds": events[-1].get("elapsed_seconds") if events else None,
+            "repairs": _repair_outcomes(events), "flow_evidence": _flow_evidence(events)}
 
 
 def main() -> int:

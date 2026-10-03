@@ -1,7 +1,7 @@
 {
-  "source_url": "https://rss.onlinelibrary.wiley.com/doi/abs/10.1111/j.2517-6161.1958.tb00292.x",
+  "source_url": "https://arxiv.org/pdf/2406.13427v1",
   "focus": "Explain binary-response logistic probability from a linear score z = intercept + weight times input and p = 1/(1+exp(-z)). Let learners change the score components and compare z, odds exp(z), and the resulting probability, emphasizing that the probability remains between zero and one.",
   "audience": "A second-year engineering undergraduate familiar with linear functions, exponentials, and probability.",
-  "excerpt": "Paraphrase, not a quotation: the case illustrates a modern logistic sigmoid mapping a real-valued score to probability. Cox's abstract supports modeling binary outcomes as a function of explanatory variables; the full article and this exact displayed equation were not verified in the accessible abstract.",
-  "section": "Cox (1958), The Regression Analysis of Binary Sequences, Journal of the Royal Statistical Society: Series B 20(2), pp. 215–232, summary/abstract. Publisher page and abstract accessible; full text may require subscription."
+  "excerpt": "Paraphrase, not a quotation: the paper defines sigmoid sigma(z)=1/(1+exp(-z)) and a logistic binary-probability model. This case uses the one-feature linear-score specialization and displays odds as a derived intermediate, not as a claim quoted from the paper.",
+  "section": "Are Logistic Models Really Interpretable? (2024), PDF p. 2, Notation and Definition 2.1: sigmoid sigma(z)=1/(1+exp(-z)) and logistic additive model. The linked primary PDF is openly readable."
 }

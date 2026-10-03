@@ -12,6 +12,23 @@ Copy this page for each case and model after a real generator run. This is a tea
 | Run number / elapsed seconds | |
 | API attempts / prompt tokens / completion tokens | |
 | Usage verified against trace? | |
+| Process exit / final trace result | |
+| First failed check or run error | |
+| Repair outcomes (accepted / rejected / call failed / parse failed) | |
+| Requested flow / `--flow` passed? | |
+| Planning attempts / plan response used / effective flow | |
+| Scored tokens (prompt + completion; reasoning already inside completion) | |
+
+## Repeat-run comparison
+
+Fill one row per fresh output directory. Keep failures visible even when another repeat passes.
+
+| Repeat | Exit | Status | Elapsed seconds | Attempts | Scored tokens or unknown | Repairs and outcomes | Effective flow | Failure(s) |
+|---:|---:|---|---:|---:|---:|---|---|---|
+| 1 | | | | | | | | |
+| 2 | | | | | | | | |
+
+Do not calculate an efficiency winner from an unverified token total. If a requested planned flow did not receive/use a planning response, record the effective flow as single and retain the planning failure/skip reason from the trace.
 
 ## Browser checks
 

@@ -41,7 +41,25 @@ class NumericalTests(unittest.TestCase):
         spec["tests"][1]["expected"]["entropy_bits"] = 3
         report = run_checks(spec, self.html)
         self.assertFalse(report["ok"])
-        self.assertTrue(any("expected entropy_bits failed" in failure for failure in report["failures"]))
+        self.assertTrue(any(
+            "expected entropy_bits failed" in failure
+            and "measured=2" in failure
+            and "expected=3" in failure
+            and "atol=1e-09" in failure
+            for failure in report["failures"]
+        ))
+
+    def test_failed_invariant_reports_measured_and_expected_sum(self) -> None:
+        spec = copy.deepcopy(self.spec)
+        spec["invariants"][0]["expected"] = 2
+        report = run_checks(spec, self.html)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any(
+            "invariant probabilities sum to one failed" in failure
+            and "measured=1.0" in failure
+            and "expected=2" in failure
+            for failure in report["failures"]
+        ))
 
     def test_ambient_api_is_rejected_before_execution(self) -> None:
         spec = copy.deepcopy(self.spec)
@@ -58,6 +76,29 @@ class NumericalTests(unittest.TestCase):
         report = run_checks(spec, self.html)
         self.assertFalse(report["ok"])
         self.assertTrue(any("mutated its inputs" in failure for failure in report["failures"]))
+
+    def test_compute_cannot_return_undeclared_metadata(self) -> None:
+        spec = copy.deepcopy(self.spec)
+        spec["compute_js"] = spec["compute_js"].replace(
+            "return { probabilities, contributions, entropy_bits };",
+            "return { probabilities, contributions, entropy_bits, note: 42 };",
+        )
+        report = run_checks(spec, self.html)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("undeclared outputs note" in failure for failure in report["failures"]))
+
+    def test_stateful_compute_cannot_mimic_control_influence(self) -> None:
+        spec = copy.deepcopy(self.spec)
+        spec["compute_js"] = (
+            "function compute(inputs) { const count=inputs.count; const weights=inputs.weights; "
+            "compute.calls=(compute.calls||0)+1; return {probabilities:[1,0,0,0], "
+            "contributions:[0,0,0,0], entropy_bits:compute.calls}; }"
+        )
+        report = run_checks(spec, self.html)
+        self.assertFalse(report["ok"])
+        influence = next(check for check in report["checks"] if check["id"] == "two_meaningful_controls")
+        self.assertEqual(influence["status"], "fail")
+        self.assertIn("0 distinct controls", influence["detail"])
 
     def test_remote_asset_is_not_an_offline_page(self) -> None:
         html = self.html.replace("<script>", '<script src="https://cdn.example/x.js"></script><script>')

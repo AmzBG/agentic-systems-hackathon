@@ -41,6 +41,36 @@ def _supports_flow(agent: Path) -> bool:
     return help_result.returncode == 0 and "--flow" in help_result.stdout
 
 
+def summarize_repeats(rows: list[dict]) -> list[dict]:
+    """Keep each repeated run's outcome visible in the group summary."""
+    groups: dict[tuple[str, str, str], list[dict]] = {}
+    for row in rows:
+        key = (row["case"], row["model_id"], row["flow"])
+        groups.setdefault(key, []).append(row)
+    summaries = []
+    for (case, model, flow), group in sorted(groups.items()):
+        summaries.append({
+            "case": case,
+            "model_id": model,
+            "flow_requested": flow,
+            "runs": [{
+                "repeat": row["repeat"],
+                "status": row["status"],
+                "exit_code": row.get("exit_code"),
+                "elapsed_seconds": row.get("elapsed_seconds"),
+                "trace_elapsed_seconds": row.get("trace_elapsed_seconds"),
+                "attempts": row.get("attempts"),
+                "scored_tokens": row.get("usage", {}).get("scored_tokens"),
+                "failures": row.get("failures", []),
+                "repairs": row.get("repairs", []),
+                "flow_evidence": row.get("flow_evidence"),
+            } for row in sorted(group, key=lambda item: item["repeat"])],
+            "passed": sum(row["status"] == "pass" for row in group),
+            "failed": sum(row["status"] != "pass" for row in group),
+        })
+    return summaries
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models", required=True, nargs="+", help="Real OpenRouter model IDs")
@@ -83,7 +113,8 @@ def main() -> int:
                 for repeat in range(1, args.repeats + 1):
                     run_dir = output / "runs" / _slug(case.stem if case.stem != "case" else case.parent.name) / _slug(model) / flow / str(repeat)
                     row = {"case": str(case.resolve()), "model_id": model, "flow": flow,
-                           "repeat": repeat, "output": str(run_dir)}
+                           "repeat": repeat, "output": str(run_dir),
+                           "flow_evidence": {"requested": flow, "cli_flag_sent": supports_flow}}
                     if run_dir.exists() and any(run_dir.iterdir()):
                         row.update({"exit_code": None, "elapsed_seconds": 0, "status": "output_exists",
                                     "failures": ["run directory already contains files; choose a fresh --output"],
@@ -118,7 +149,10 @@ def main() -> int:
                         row.update({"exit_code": exit_code, "elapsed_seconds": elapsed,
                                     "status": "pass" if not failures else "fail", "failures": failures,
                                     "attempts": report["attempts"], "usage": report["usage"],
-                                    "events": report["events"], "stderr_tail": stderr_tail})
+                                    "events": report["events"], "repairs": report["repairs"],
+                                    "trace_elapsed_seconds": report["elapsed_seconds"],
+                                    "flow_evidence": {**row["flow_evidence"], **report["flow_evidence"]},
+                                    "stderr_tail": stderr_tail})
                     rows.append(row)
                     print(f"{row['status']}: {case.name} {model} {flow} #{repeat}", flush=True)
     with (output / "runs.jsonl").open("w", encoding="utf-8") as stream:
@@ -128,6 +162,7 @@ def main() -> int:
                "failed": sum(row["status"] != "pass" for row in rows),
                "models": args.models, "flows": args.flows,
                "cases": [str(case.resolve()) for case in cases],
+               "repeated_runs": summarize_repeats(rows),
                "report": str(output / "runs.jsonl")}
     (output / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary, indent=2))

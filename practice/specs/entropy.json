@@ -27,8 +27,8 @@
     {"id": "contribution_bars", "kind": "bar", "title": "Contribution to entropy", "output": "contributions", "x_label": "Outcome", "y_label": "Bits"}
   ],
   "explorations": [
-    {"title": "Make one outcome certain", "instruction": "Apply this preset, then inspect the bars and H.", "observe": "One probability is one and total entropy is zero bits.", "why": "A guaranteed outcome carries no surprise.", "preset": {"count": 4, "weights": [1, 0, 0, 0]}},
-    {"title": "Make four outcomes equally likely", "instruction": "Apply this preset, then compare the four contributions and H.", "observe": "Each outcome contributes half a bit; total entropy is two bits.", "why": "Four equally likely outcomes require two binary choices to identify one.", "preset": {"count": 4, "weights": [1, 1, 1, 1]}}
+    {"title": "Make one outcome certain", "instruction": "Predict what happens to entropy when only one outcome can occur. Then apply the preset and inspect probabilities, contributions, and H.", "observe": "One probability is one, every contribution is zero, and total entropy is zero bits.", "why": "A guaranteed outcome carries no surprise.", "preset": {"count": 4, "weights": [1, 0, 0, 0]}},
+    {"title": "Make four outcomes equally likely", "instruction": "Predict whether spreading weight equally increases or decreases uncertainty. Then apply the preset and compare probabilities, contributions, and H.", "observe": "Every probability is one quarter, each outcome contributes half a bit, and total entropy is two bits.", "why": "Four equally likely outcomes require two binary choices to identify one.", "preset": {"count": 4, "weights": [1, 1, 1, 1]}}
   ],
   "limitation": "The weights are teaching controls, not frequencies measured from Shannon's paper. When all active weights are zero, this toy model chooses a uniform distribution so the calculation remains defined.",
   "grounding": [

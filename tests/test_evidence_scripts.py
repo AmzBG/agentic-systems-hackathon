@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+from run_all import summarize_repeats  # noqa: E402
 from validate_output import validate_output  # noqa: E402
 
 
@@ -33,13 +34,79 @@ class EvidenceScriptTests(unittest.TestCase):
             events.append(_event("generate", details={"request_number": 1, "model_id": "test/model",
                 "usage": {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30,
                           "reasoning_tokens": 5, "verified": True}}))
-            events.extend([_event("check", result="fail"), _event("revision"), _event("check"), _event("final")])
+            events.extend([_event("check", result="fail"), _event("revision"), _event("check"),
+                           _event("final", details={"exit_code": 0})])
+            events[-1]["revisions"] = [
+                {"number": 1, "accepted": True, "mode": "targeted", "requested": ["compute_js"]}
+            ]
             (output / "trace.jsonl").write_text("".join(json.dumps(event) + "\n" for event in events), encoding="utf-8")
             report = validate_output(output, expected_model="test/model")
             self.assertTrue(report["ok"], report["failures"])
             self.assertEqual(report["attempts"], 1)
             self.assertEqual(report["usage"]["completion_tokens"], 20)
             self.assertEqual(report["usage"]["reasoning_tokens"], 5)
+            self.assertEqual(report["usage"]["scored_tokens"], 30)
+            self.assertEqual(report["repairs"][0]["outcome"], "accepted")
+
+    def test_failed_planning_attempt_is_counted_as_unknown_usage(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp)
+            (output / "index.html").write_text(
+                "<html><body><script>const x=1;</script></body></html>", encoding="utf-8")
+            events = [_event(stage) for stage in ("read_input", "fetch", "identify")]
+            events.append(_event("plan", result="fail", details={
+                "request_number": 1, "model_id": "test/model",
+                "usage": {"verified": False},
+            }))
+            events.append(_event("generate", details={
+                "request_number": 2, "model_id": "test/model",
+                "usage": {"prompt_tokens": 7, "completion_tokens": 11,
+                          "total_tokens": 18, "reasoning_tokens": 3, "verified": True},
+            }))
+            events.extend([_event("check"), _event("final", details={"exit_code": 0})])
+            (output / "trace.jsonl").write_text(
+                "".join(json.dumps(event) + "\n" for event in events), encoding="utf-8")
+            report = validate_output(output, expected_model="test/model")
+            self.assertEqual(report["attempts"], 2)
+            self.assertEqual(report["usage"]["unknown_calls"], 1)
+            self.assertFalse(report["usage"]["verified"])
+            self.assertIsNone(report["usage"]["scored_tokens"])
+            self.assertEqual(report["flow_evidence"]["planning_attempts"], 1)
+            self.assertFalse(report["flow_evidence"]["planning_response_received"])
+            self.assertEqual(report["flow_evidence"]["effective_flow"], "single")
+
+    def test_final_result_must_agree_with_exit_code(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp)
+            (output / "index.html").write_text(
+                "<html><body><script>const x=1;</script></body></html>", encoding="utf-8")
+            events = [_event(stage) for stage in ("read_input", "fetch", "identify", "plan", "generate", "check")]
+            events.append(_event("generate", details={"request_number": 1, "model_id": "test/model",
+                "usage": {"prompt_tokens": 1, "completion_tokens": 2, "verified": True}}))
+            events.append(_event("final", details={"exit_code": 1}))
+            (output / "trace.jsonl").write_text(
+                "".join(json.dumps(event) + "\n" for event in events), encoding="utf-8")
+            report = validate_output(output)
+            self.assertFalse(report["ok"])
+            self.assertIn("final event result disagrees with exit_code", report["failures"])
+
+    def test_repeat_summary_preserves_each_failure_repair_and_flow(self) -> None:
+        rows = [
+            {"case": "case.json", "model_id": "test/model", "flow": "planned", "repeat": 1,
+             "status": "pass", "exit_code": 0, "elapsed_seconds": 12.5, "attempts": 3,
+             "usage": {"scored_tokens": 42}, "failures": [],
+             "repairs": [{"number": 1, "outcome": "accepted"}],
+             "flow_evidence": {"effective_flow": "planned"}},
+            {"case": "case.json", "model_id": "test/model", "flow": "planned", "repeat": 2,
+             "status": "fail", "exit_code": 1, "elapsed_seconds": 8.25, "attempts": 1,
+             "usage": {"scored_tokens": None}, "failures": ["check failed"],
+             "repairs": [], "flow_evidence": {"effective_flow": "single"}},
+        ]
+        summary = summarize_repeats(rows)
+        self.assertEqual((summary[0]["passed"], summary[0]["failed"]), (1, 1))
+        self.assertEqual(summary[0]["runs"][1]["failures"], ["check failed"])
+        self.assertEqual(summary[0]["runs"][0]["repairs"][0]["outcome"], "accepted")
+        self.assertEqual(summary[0]["runs"][1]["flow_evidence"]["effective_flow"], "single")
 
     def test_remote_asset_and_missing_trace_fail(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

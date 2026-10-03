@@ -36,14 +36,14 @@
   "explorations": [
     {
       "title": "Make all scores equal",
-      "instruction": "Apply the preset. Compare the score and weight matrices, then inspect the mixed values.",
+      "instruction": "Predict how equal scores will split attention between keys. Then apply the preset, compare the score and weight matrices, and inspect the mixed values.",
       "observe": "Every score is zero, so each query assigns one half of its weight to each key and receives the average of the two value rows.",
       "why": "Softmax maps equal scores to equal probabilities; the output is therefore the uniform weighted average.",
       "preset": {"queries": [[0, 0], [0, 0]], "keys": [[1, 0], [0, 1]], "values": [[2, 0], [0, 4]], "scale": true}
     },
     {
       "title": "Make one key dominate",
-      "instruction": "Apply the preset. Compare the two score columns and see how strongly each query favors the first value.",
+      "instruction": "Predict which key will receive more weight when its score dominates. Then apply the preset and compare the score, weight, and mixed-value matrices.",
       "observe": "Each query scores the first key 4/sqrt(2) and the second key zero, so most of its output comes from the first value row.",
       "why": "A larger score receives a larger share after softmax; scaling reduces the score gap before normalization.",
       "preset": {"queries": [[1, 0], [1, 0]], "keys": [[4, 0], [0, 0]], "values": [[1, 0], [0, 1]], "scale": true}

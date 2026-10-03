@@ -345,13 +345,15 @@ def _worker(code: str, probes: list[tuple[str, dict, str | None, dict | None]], 
     try:
         import quickjs
 
-        ctx = quickjs.Context()
-        ctx.set_memory_limit(16 * 1024 * 1024)
-        ctx.set_max_stack_size(512 * 1024)
-        ctx.set_time_limit(0.08)
-        ctx.eval(code)
         results = []
         for name, inputs, _, _ in probes:
+            # A fresh context makes each probe independent. Otherwise a function
+            # property retained across calls can imitate control influence.
+            ctx = quickjs.Context()
+            ctx.set_memory_limit(16 * 1024 * 1024)
+            ctx.set_max_stack_size(512 * 1024)
+            ctx.set_time_limit(0.08)
+            ctx.eval(code)
             source = """(() => {
               const reads=[];
               const data=INPUTS;
@@ -424,6 +426,27 @@ def _invariant(item: dict, value: Any) -> bool:
     return False
 
 
+def _invariant_evidence(item: dict, value: Any) -> str:
+    kind = item["kind"]
+    if kind == "range":
+        leaves = _leaves(value) if _shape(value) is not None else []
+        measured = [min(leaves), max(leaves)] if leaves else value
+        expected: Any = [item["min"], item["max"]]
+    elif kind == "sum":
+        measured = sum(value) if _shape(value) and len(_shape(value)) == 1 else value
+        expected = item["expected"]
+    elif kind == "row_sum":
+        measured = [sum(row) for row in value] if _shape(value) and len(_shape(value)) == 2 else value
+        expected = item["expected"]
+    else:
+        measured = value
+        expected = "finite" if kind == "finite" else "nondecreasing"
+    return (
+        f"measured={str(measured)[:160]} expected={str(expected)[:80]} "
+        f"atol={item['atol']} rtol={item['rtol']}"
+    )
+
+
 def run_checks(spec: dict, html: str) -> dict:
     """Return the frozen CheckReport shape with genuine failures and skips."""
     checks: list[dict[str, Any]] = []
@@ -472,6 +495,9 @@ def run_checks(spec: dict, html: str) -> dict:
         values = record["value"]
         if record.get("mutated") is True:
             probe_errors.append(f"{name}: compute mutated its inputs")
+        extra_outputs = set(values) - output_ids
+        if extra_outputs:
+            probe_errors.append(f"{name}: undeclared outputs {', '.join(sorted(extra_outputs))}")
         for output_id in output_ids:
             if output_id not in values or _shape(values[output_id]) is None:
                 probe_errors.append(f"{name}: {output_id} missing or nonfinite")
@@ -484,11 +510,18 @@ def run_checks(spec: dict, html: str) -> dict:
         for invariant in spec["invariants"]:
             target = values.get(invariant["output"])
             if target is None or not _invariant(invariant, target):
-                probe_errors.append(f"{name}: invariant {invariant['name']} failed")
+                probe_errors.append(
+                    f"{name}: invariant {invariant['name']} failed "
+                    f"({_invariant_evidence(invariant, target)})"
+                )
         if test:
             for output_id, expected in test["expected"].items():
                 if output_id not in values or not _close(values[output_id], expected, test["atol"], test["rtol"]):
-                    probe_errors.append(f"{name}: expected {output_id} failed")
+                    probe_errors.append(
+                        f"{name}: expected {output_id} failed "
+                        f"(measured={str(values.get(output_id))[:160]} expected={str(expected)[:160]} "
+                        f"atol={test['atol']} rtol={test['rtol']})"
+                    )
         if changed_control and changed_control in record.get("reads", []) and isinstance(default, dict):
             if any(
                 output_id in values and output_id in default
