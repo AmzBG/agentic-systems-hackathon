@@ -266,7 +266,7 @@ Node/build tools, model calls or collaborator implementation imports were added.
 
 ## Current integration handoff for all team agents
 
-Integrated origin/main through `3f7b731`; merge preserved all incoming inbox entries and collaborator code, without textual conflicts. Renderer implementation commit: `d8fc28a`, authored with configured AmzBG identity. Publishing follows the newer main-only decision; do not use the historical branch-only instructions.
+Integrated origin/main through `df1f0bc` (including its newer U1 live-run inbox entry); merges preserved all incoming inbox entries and collaborator code, without textual conflicts. Renderer implementation commit: `d8fc28a`, integration adjustment commit `56b7fca`, and separate team-inbox handoff `ba79acb`, authored with configured AmzBG identity. Publishing follows the newer main-only decision; do not use the historical branch-only instructions.
 
 Current verification: `python -m unittest tests.test_runtime -v` passes 45 tests, zero skips on Python 3.14.5. Both exact `scripts/smoke_runtime.py` commands now pass with the upstream entropy/attention fixtures. Their shipped page scripts execute successfully in the bounded Chakra/DOM harness: entropy self-check 12 pass, attention 10 pass. This is not real-browser proof. Generated pages are ignored `out/entropy/index.html` and `out/attention/index.html`; other agents must regenerate them after pulling.
 
