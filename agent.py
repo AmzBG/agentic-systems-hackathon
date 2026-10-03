@@ -132,6 +132,10 @@ def fallback_page(reason: str) -> str:
 
 # ------------------------------------------------------------------ source fetch
 
+class FetchFailure(ValueError):
+    """A specific, safe-to-trace reason the source text could not be used."""
+
+
 class _TextExtractor(HTMLParser):
     SKIP = {"script", "style", "noscript", "svg", "head", "nav", "footer"}
 
@@ -168,6 +172,8 @@ def _extract_pdf(data: bytes, deadline: float, clock: Callable[[], float]) -> tu
     reader = PdfReader(io.BytesIO(data))
     for page in reader.pages:
         if clock() > deadline or size > EXTRACT_MAX_CHARS:
+            if not parts:
+                raise FetchFailure("fetch deadline reached after download, before any PDF page was extracted")
             return "\n".join(parts), True
         text = page.extract_text() or ""
         parts.append(text)
@@ -213,7 +219,7 @@ def fetch_source(url: str, focus: str, *, opener: Callable = urllib.request.urlo
         if data.lstrip()[:5] == b"%PDF-" or "pdf" in ctype.lower():
             result["kind"] = "pdf"
             if capped:
-                raise ValueError("PDF exceeded the byte cap")
+                raise FetchFailure("PDF exceeded the byte cap")
             text, truncated = _extract_pdf(data, started + FETCH_SECONDS, clock)
         else:
             decoded = data.decode("utf-8", errors="replace")
@@ -228,12 +234,16 @@ def fetch_source(url: str, focus: str, *, opener: Callable = urllib.request.urlo
             truncated = capped
         text = _normalize(text)
         if not text:
-            raise ValueError("no extractable text")
+            raise FetchFailure(f"no extractable text in the {result['kind']} source")
         selected = select_passages(text, focus)
         result.update(status="ok", text=selected, chars=len(text),
                       truncated=truncated or len(selected) < len(text))
     except ImportError:
         result["error"] = "PDF text extraction unavailable"
+    except FetchFailure as exc:
+        result["error"] = str(exc)
+    except TimeoutError:
+        result["error"] = f"download did not finish within {FETCH_SECONDS:g} s"
     except Exception as exc:  # any fetch failure is traced, then generation proceeds
         result["error"] = type(exc).__name__
     result["seconds"] = round(clock() - started, 3)

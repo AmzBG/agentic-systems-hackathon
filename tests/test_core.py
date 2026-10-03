@@ -509,6 +509,29 @@ class InputTests(unittest.TestCase):
         self.assertEqual((failed["status"], failed["error"]), ("failed", "URLError"))
         self.assertEqual(agent.fetch_source("file:///etc/passwd", "f")["status"], "skipped")
 
+    def test_fetch_failures_report_specific_reasons(self):
+        try:
+            from pypdf import PdfWriter
+        except ImportError:
+            self.skipTest("pypdf not installed")
+        writer = PdfWriter()
+        writer.add_blank_page(width=72, height=72)
+        buffer = io.BytesIO()
+        writer.write(buffer)
+        pdf = FakeResponse(buffer.getvalue(), {"Content-Type": "application/pdf"})
+        clock = FakeClock()
+
+        class LateOpener(FakeOpener):  # the download used the whole 3 s fetch budget
+            def __call__(self, request, timeout=None):
+                clock.now += 3.2
+                return pdf
+        late = agent.fetch_source("https://x/p.pdf", "f", opener=LateOpener(), clock=clock)
+        self.assertEqual((late["status"], late["error"]),
+                         ("failed", "fetch deadline reached after download, before any PDF page was extracted"))
+        blank = agent.fetch_source("https://x/p.pdf", "f", opener=FakeOpener(
+            FakeResponse(buffer.getvalue(), {"Content-Type": "application/pdf"})))
+        self.assertEqual(blank["error"], "no extractable text in the pdf source")
+
     def test_fetch_failure_still_generates(self):
         h = Harness(api_reply(wire()))
         self.assertEqual(h.run(), 0)
