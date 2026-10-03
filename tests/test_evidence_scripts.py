@@ -36,6 +36,16 @@ class EvidenceScriptTests(unittest.TestCase):
         self.assertTrue(report['ok'], report)
         self.assertEqual(len(report['trials']), 6)
 
+    def test_attention_oracle_infers_key_width_without_dk_control(self) -> None:
+        inputs = {'q': [[1, 0], [0, 1]], 'k': [[1, 0], [0, 1]],
+                  'v': [[2, 0], [0, 4]], 'scale_on': True}
+        self.assertAlmostEqual(expected_attention(inputs)['scores'][0][0], 1 / math.sqrt(2))
+        report = verify_attention_page(ROOT / 'evidence/u1-runs/final-93f7521/attention/index.html')
+        self.assertTrue(report['ok'], report)
+        self.assertEqual(len(report['trials']), 6)
+        self.assertEqual(set(report['trials']['default']['checks']),
+                         {'scores', 'weights', 'row_sums', 'output'})
+
     def test_page_oracle_rejects_wrong_independent_expectation(self) -> None:
         from runtime import render
         spec = json.loads((ROOT / 'practice/specs/entropy.json').read_text(encoding='utf-8'))

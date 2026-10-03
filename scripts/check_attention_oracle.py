@@ -1,4 +1,4 @@
-"""Independent 2x2 Attention review for the supplied T-attention-4 page (no API calls)."""
+"""Independent matrix Attention review for supplied pages (no API calls)."""
 from __future__ import annotations
 
 import argparse
@@ -12,7 +12,7 @@ from check_practice_oracles import verify_page
 
 def expected_attention(inputs: dict) -> dict:
     q, k, v = inputs['q'], inputs['k'], inputs['v']
-    divisor = math.sqrt(inputs['dk']) if inputs['scale_on'] else 1
+    divisor = math.sqrt(inputs.get('dk', len(q[0]))) if inputs['scale_on'] else 1
     scores = [[sum(a * b for a, b in zip(query, key)) / divisor for key in k] for query in q]
     weights = []
     for row in scores:
@@ -32,11 +32,20 @@ def verify_attention_page(page: Path) -> dict:
                for i, item in enumerate(spec['explorations'])]
     identity = {'q': [[1, 0], [0, 1]], 'k': [[1, 0], [0, 1]],
                 'v': [[2, 0], [0, 4]], 'dk': 2, 'scale_on': True}
+    if 'dk' not in defaults:
+        identity.pop('dk')
     trials += [('identity_scaled', identity), ('identity_unscaled', {**identity, 'scale_on': False}),
                ('zero_scores_value_average', {**identity, 'q': [[0, 0], [0, 0]]})]
-    results = {name: verify_page(page, values, expected_attention(values)) for name, values in trials}
+    output_ids = [output['id'] for output in spec['outputs']]
+    results = {}
+    for name, values in trials:
+        expected = expected_attention(values)
+        expected['row_sums'] = expected['rowsums']
+        # Explicit mathematical aliases for the two supplied matrix-page schemas.
+        # Unknown IDs fail rather than silently omit an output comparison.
+        results[name] = verify_page(page, values, {key: expected[key] for key in output_ids})
     return {'ok': all(result['ok'] for result in results.values()), 'page': str(page),
-            'mapping': 'T-attention-4 q/k/v/dk/scale_on → scores/weights/rowsums/top_weight/output',
+            'mapping': 'q/k/v + scale_on; divisor from dk control or key width; rowsums/row_sums aliases',
             'trials': results}
 
 
