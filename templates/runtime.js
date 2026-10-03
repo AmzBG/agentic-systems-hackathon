@@ -149,11 +149,11 @@
   }
   function selfChecks(result,b) {
     const list=el('checks');list.replaceChildren();let passed=0,failed=0,skipped=0;
-    const check=(name,fn)=>{let kind,detail;try{const ok=fn();kind=ok?'pass':'fail';detail=ok?'pass':'fail: expectation not met';if(ok)passed++;else failed++;}catch(error){kind='fail';detail='fail: '+error.message;failed++;}const li=create('li',name+' — '+detail,list);li.className=kind;};
-    for(const t of spec.tests)check(t.name,()=>{const actual=compute(merge(t.inputs),b);return Object.keys(t.expected).every(k=>compare(actual[k],t.expected[k],t));});
+    const check=(name,fn)=>{let kind,detail;try{const result=fn(),ok=typeof result==='boolean'?result:result.ok;kind=ok?'pass':'fail';detail=ok?'pass':'fail: expectation not met';if(typeof result==='object')detail+='; '+result.detail;if(ok)passed++;else failed++;}catch(error){kind='fail';detail='fail: '+error.message;failed++;}const li=create('li',name+' — '+detail,list);li.className=kind;};
+    for(const t of spec.tests)check(t.name,()=>{const actual=compute(merge(t.inputs),b),measured=Object.create(null);for(const key of Object.keys(t.expected))measured[key]=actual[key];return {ok:Object.keys(t.expected).every(k=>compare(actual[k],t.expected[k],t)),detail:'Measured '+JSON.stringify(measured)+'; expected '+JSON.stringify(t.expected)+'; atol '+t.atol+', rtol '+t.rtol};});
     const cases=[['Current',result]];
     for(const e of spec.explorations){try{cases.push([e.title,compute(merge(e.preset),b)]);}catch(error){check(e.title+' preset',()=>{throw error;});}}
-    for(const [name,actual] of cases)for(const t of spec.invariants)check(name+': '+t.name,()=>invariant(t,actual));
+    for(const [name,actual] of cases)for(const t of spec.invariants)check(name+': '+t.name,()=>{const value=actual[t.output];let measured=value,expected=t.kind;if(t.kind==='sum'){measured=value.reduce((a,c)=>a+c,0);expected=t.expected;}if(t.kind==='row_sum'){if(shape(value).dims.length!==2)fail('Row sum invariant requires matrix');measured=value.map(row=>row.reduce((a,c)=>a+c,0));expected='each row '+t.expected;}if(t.kind==='range')expected='['+t.min+', '+t.max+']';const output=spec.outputs.find(o=>o.id===t.output);return {ok:invariant(t,actual),detail:'Measured '+JSON.stringify(measured)+' ('+unit(output.units)+'); expected '+expected+'; atol '+t.atol+', rtol '+t.rtol};});
     el('check-status').textContent=passed+' passed; '+failed+' failed; '+skipped+' skipped.';
     el('check-status').className=failed?'fail':'pass';
   }

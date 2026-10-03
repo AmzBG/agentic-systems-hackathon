@@ -256,6 +256,12 @@ def page_result(spec, actions="", inspection=None):
 
 
 class ContractTests(unittest.TestCase):
+    def test_exploration_order_predict_apply_observe_explain(self):
+        page = render(entropy_spec())
+        self.assertLess(page.index('<strong>Predict:'), page.index('data-preset="0"'))
+        self.assertLess(page.index('data-preset="0"'), page.index('<strong>Observe:'))
+        self.assertLess(page.index('<strong>Observe:'), page.index('<strong>Explain:'))
+
     def test_standalone_teaching_page_and_presets(self):
         spec = entropy_spec()
         page = render(spec)
@@ -457,6 +463,22 @@ class CalculationTests(unittest.TestCase):
 
 
 class InteractionTests(unittest.TestCase):
+    def test_synced_public_fixtures_and_measured_expected_details(self):
+        root = Path(__file__).resolve().parents[1]
+        for name, count in (("entropy", 12), ("attention", 10)):
+            path = root / "practice/specs" / (name + ".json")
+            if not path.is_file():
+                self.skipTest("Collaborator reference fixture absent: " + str(path))
+            with self.subTest(name=name):
+                spec = json.loads(path.read_text(encoding="utf-8"))
+                result = page_result(spec)
+                self.assertEqual(result["status"], "Inputs and calculation valid.")
+                self.assertEqual(result["checkStatus"], f"{count} passed; 0 failed; 0 skipped.")
+                self.assertIn("Measured", result["checks"])
+                self.assertIn("expected", result["checks"])
+                self.assertIn("atol", result["checks"])
+                self.assertIn("rtol", result["checks"])
+
     def test_maximum_matrix_and_vector_with_full_sweep(self):
         spec = all_kinds_spec()
         spec["controls"][0].update(shape=[8], default=[1]*8)

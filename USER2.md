@@ -66,7 +66,7 @@ Actual known coding-account use: **0**. Maximum **6**: contract/security1, inter
 Cut animation, decorative polish, extra chart styles and convenience export first. Keep all contracted control/visual kinds unless all three agree a schema reduction before freeze; never cut two meaningful controls, numerical intermediates, two presets, grounding or error containment.
 
 ## Working rules and checkpoints
-Read AI.md first. Work only on your branch and owned paths; User 1 integrates pushed named commits. Only Team inbox appends are allowed in a collaborator's USER file; route code fixes to its owner. Before each checkpoint run your task checks, push, and report commit SHA and result. No later collaborator implementation is required for early work: use the frozen stubs and offline fixture dictionaries.
+Read AI.md first. Pull main with --ff-only before publishing; push small named owned-file commits to main without force. Only Team inbox appends are allowed in a collaborator's USER file; route code fixes to its owner. Before each checkpoint run your task checks, push, and report commit SHA and result. No later collaborator implementation is required for early work: use the frozen stubs and offline fixture dictionaries.
 
 Checkpoint pushes: **12:02** contracts/stubs/owned test entry points; **12:32** entropy fixture/runtime smoke evidence; **13:32** real owned modules and vertical-slice fixes; **14:32** six-case/two-model support; **15:32** flow decision and regressions; **16:02** feature freeze with no TODO on required paths; **16:32** final-review fixes; **17:02** all final artifacts pushed. **17:02–17:32** clean verification and submission only. Times are Beirut, 3 October 2026, under the stated six-hours-remaining assumption.
 
@@ -182,6 +182,8 @@ Revisions use the same three delimiter pairs: metadata contains only requested t
 
 ## Runtime implementation evidence — 3 October 2026
 
+Historical pre-integration snapshot below; the latest handoff at the end supersedes missing-file and commit-status statements.
+
 Branch: `user2-runtime`. No commit or push made. Only runtime.py,
 templates/runtime.css, templates/interpreter.js, templates/runtime.js,
 tests/test_runtime.py, and this progress section changed.
@@ -261,3 +263,19 @@ The in-app browser rejected file: navigation under its URL policy and prohibited
 workarounds; no browser verification is claimed. Only Python 3.14 is installed,
 so Python 3.11 compatibility remains unverified. No dependencies, network calls,
 Node/build tools, model calls or collaborator implementation imports were added.
+
+## Current integration handoff for all team agents
+
+Integrated origin/main through `3f7b731`; merge preserved all incoming inbox entries and collaborator code, without textual conflicts. Renderer implementation commit: `d8fc28a`, authored with configured AmzBG identity. Publishing follows the newer main-only decision; do not use the historical branch-only instructions.
+
+Current verification: `python -m unittest tests.test_runtime -v` passes 45 tests, zero skips on Python 3.14.5. Both exact `scripts/smoke_runtime.py` commands now pass with the upstream entropy/attention fixtures. Their shipped page scripts execute successfully in the bounded Chakra/DOM harness: entropy self-check 12 pass, attention 10 pass. This is not real-browser proof. Generated pages are ignored `out/entropy/index.html` and `out/attention/index.html`; other agents must regenerate them after pulling.
+
+Incoming renderer requests addressed: addEventListener only; output declaration order retained; grounding support badges visible; exploration order Predict → preset → Observe → Explain; self-checks now display measured/expected values and atol/rtol. The frozen `render(spec: dict) -> str` interface and v1 schema remain unchanged.
+
+U1 integration notes: render returns explanatory HTML even on rejected compute, with `Degraded:` status and skipped checks. Do not interpret a string return or smoke exit 0 as numerical success. Compute is an inert AST, not a raw function embedded in the page. No parser/client/checks import occurs in runtime. The language and resource limits above are authoritative for this implementation; unsupported constructs such as Array.from, destructuring declarations, while loops, coercive equality, or arbitrary global/member access will degrade. Use strict equality, local numeric helpers, counted for loops or bounded map/reduce/slice. An admitted compute can still fail visibly on malformed outputs/resource limits; retained output is labeled stale.
+
+U3 verification notes: actual browser keyboard/layout/CSP/network-disabled evidence and Python 3.11 execution remain outstanding on this host. `python scripts/audit_repo.py` currently fails only with `no public example output HTML`; User 3 owns examples and should publish a verified showcase. `python -m unittest discover -s tests -v` ran 108 tests and failed six tests plus one error, all in tests/test_checks.py numerical cases because QuickJS is unavailable in this Python environment. Reproduce with the pinned supported environment before changing checks; do not relabel skips as numerical passes. No collaborator implementation files were edited.
+
+Inbox ACKs: U1-U2-001 and U1-U2-002 implemented with owned test evidence above; U3-U2-001 renderer absence resolved and both smoke commands pass (public example remains U3-owned); U1-U2-003 supersedes old branch rule and is applied for publication. These ACKs preserve original entries and their history. Source SHA for published integration will be supplied in the user-facing push report; retrieve exact current state with git rev-parse HEAD.
+
+Account note: the second requested username has not been supplied. Do not fabricate a co-author or claim a push authenticated as a second account. Current author configuration is AmzBG; authentication identity must be checked independently when tooling permits.

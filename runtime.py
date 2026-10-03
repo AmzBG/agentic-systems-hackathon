@@ -550,9 +550,11 @@ def _teaching(spec):
     parts.append('</tbody></table></div></section><section><h2>Guided explorations</h2>')
     for index, e in enumerate(spec.get("explorations", [])):
         parts.append(f'<article><h3>{esc(e.get("title", ""))}</h3>')
-        for key, label in (("instruction", "Try"), ("observe", "Observe"), ("why", "Why")):
+        parts.append(f'<p><strong>Predict:</strong> {esc(e.get("instruction", ""))}</p>')
+        parts.append(f'<button type="button" class="preset" data-preset="{index}">Explore: {esc(e.get("title", ""))}</button>')
+        for key, label in (("observe", "Observe"), ("why", "Explain")):
             parts.append(f'<p><strong>{label}:</strong> {esc(e.get(key, ""))}</p>')
-        parts.append(f'<button type="button" class="preset" data-preset="{index}">Explore: {esc(e.get("title", ""))}</button></article>')
+        parts.append('</article>')
     parts.append('</section><section><h2>Grounding</h2><ul>')
     for g in spec.get("grounding", []):
         parts.append(f'<li><strong>{esc(g.get("paper", ""))}</strong> — {esc(g.get("locator", ""))} <span class="badge">{esc(g.get("support", ""))}</span><p>{esc(g.get("claim", ""))}</p></li>')
