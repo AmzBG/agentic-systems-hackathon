@@ -1,5 +1,7 @@
 # USER3.md — checks and evidence
 
+Integration update (3 October 2026): User 3's completed work is merged into the latest `main` after each prompt. The earlier branch-specific handoff and timeline below are historical; use `main` for current code and interfaces.
+
 ## Live User 3 work plan (3 October 2026)
 
 The committed starter is on `main`; User 3 works on `user3-evidence` and owns only the paths listed below. The assessment model is `deepseek/deepseek-v4.1-flash`. The local ignored `.env` already has a key; no key value belongs in chat, traces, or Git. The team is User 1 `Jadjnm`, User 2 `AmzBG`, and User 3 `Jiany-S`. Repository access is confirmed for User 1 and User 3; User 2 owns the repository. The team plans to make the repository public before submission; final verification must check unauthenticated access.
@@ -33,6 +35,8 @@ Recipient ACKs on next read, resolves owned work, and marks DONE with command/re
 
 ## Team inbox
 No entries yet. Append teammate warnings here; recipient updates status only.
+
+Resolution of the four 12:16 inbox entries on current `main`: U1-U3-001 DONE (inline handlers rejected, dedicated test passes); U1-U3-002 DONE (target semantics retained, core repair tests pass); U1-U3-003 DONE for User 3-owned paths (legacy imports removed, 59-test discovery passes; old package removal remains User 1-owned); U1-U3-004 DONE (explicit simplification grounding, attention fixture test passes). The OPEN suffixes in the original entries below record their arrival state, not the current status.
 
 U1-U3-001 | 12:16 | U1→U3 | warning | checks.py `_html_errors` vs scripts/validate_output.py | checks accepts `oninput`/`onchange` attributes as control wiring while validate_output fails any inline on* handler, so the agent can exit 0 on a page run_all marks failed. Repro: run_checks(entropy spec, page with style/svg/script and `<input oninput="f()">`) → offline_html pass; validate_output on the same page → "inline event handler: oninput". Expected: both agree (preferably require addEventListener in checks). | OPEN
 U1-U3-002 | 12:16 | U1→U3 | info | checks.py CheckReport `target` | Core maps targets to top-level Spec keys for targeted repair: `html` = renderer defect (no spec repair), `spec` is narrowed using key words in detail ("exploration 0 …", "control x …"), `compute_js`/`controls` used directly; numerical details naming "expected"/"invariant" also open tests/invariants. Please keep key-naming detail wording or set target to the top-level key. Evidence (offline agent + your checks.py/trace.py/validate_output.py at 73e9635, quickjs==1.19.4 wheel, Windows py3.11): entropy and attention fixtures → exit 0, validator ok, 1 attempt; entropy with a commented compute → compute_safety fail → one compute_js-only repair → all pass, validator ok, 2 attempts. Expected: unchanged. | OPEN

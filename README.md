@@ -2,7 +2,7 @@
 
 An agent for the EECE503P / EECE798S hackathon. It turns a focused research-paper source and learning brief into a single offline interactive HTML explanation, plus an auditable JSONL execution trace.
 
-The team is moving the preliminary generator to a compact specification that a shared offline runtime renders and checks. The frozen interface and ownership are in `AI.md`; the committed starter code is an earlier version until User 1 integrates the new modules.
+The current core generates a compact specification that a shared offline runtime will render and check. The frozen interface and ownership are in `AI.md`. The new core and User 3 checker are integrated on `main`; the User 2 renderer has not landed yet, so an end-to-end success claim would be premature.
 
 **Assessment model:** DeepSeek V4.1 Flash via OpenRouter, using the pinned model ID `deepseek/deepseek-v4.1-flash`.
 
@@ -64,7 +64,7 @@ python scripts/run_all.py --models deepseek/deepseek-v4.1-flash --repeats 1 --ou
 
 ## Preliminary architecture
 
-The target pipeline validates the input and source, asks the command-line-selected OpenRouter model for a compact teaching specification plus a pure calculation function, renders that through one reusable offline HTML runtime, runs structural and numerical checks, and requests a targeted repair if a check fails. It writes the best artifact atomically and records actual stage events without credentials or hidden reasoning. This is the integration target; the initial code in `paper_playground/` still implements the earlier direct-HTML path.
+The pipeline validates the input and source, asks the command-line-selected OpenRouter model for a compact teaching specification plus a pure calculation function, renders that through one reusable offline HTML runtime, runs structural and numerical checks, and requests a targeted repair if a check fails. It writes the best artifact atomically and records actual stage events without credentials or hidden reasoning. The new CLI is `agent.py`; `paper_playground/` is a legacy path awaiting User 1's cleanup.
 
 The shared contract sets hard guards at 10 API calls, 30,000 completion tokens, and 10 minutes. The normal strategy targets one generation call and at most two targeted repairs.
 
