@@ -1,0 +1,97 @@
+{
+ "case": "examples/attention/case.json",
+ "producing_commit": "8fd5c6b6844eed83ebded0cd6302622c8580e256",
+ "frozen_core_commit": "93f7521ba1e68c054b03122607ac20e1baefa455",
+ "source_tree": "shared checkout at 8fd5c6b, clean apart from untracked fullcontext.md/timeline.md; 93f7521..8fd5c6b changes only AI.md, USER1.md, USER3.md and evidence/browser_qa_20261003/",
+ "command": "python agent.py --input examples/attention/case.json --output out/attention-93f7521 --model deepseek/deepseek-v4.1-flash",
+ "flags_at_defaults": {
+  "--flow": "single",
+  "--reasoning": "auto",
+  "--provider-sort": "auto"
+ },
+ "python": "3.11.9 venv, pinned requirements (quickjs 1.19.4, pypdf 6.19.0)",
+ "started_beirut": "2026-10-03 15:33:00",
+ "finished_beirut": "2026-10-03 15:33:55",
+ "authorization": "user-approved single paid run; no other session ran Attention at this commit",
+ "model_id_requested": "deepseek/deepseek-v4.1-flash",
+ "model_id_served": "deepseek/deepseek-v4.1-flash",
+ "reasoning_setting_sent": {
+  "effort": "low"
+ },
+ "provider_preferences_sent": {
+  "require_parameters": true,
+  "sort": "throughput"
+ },
+ "served_provider": "Together",
+ "flow": "single (planning_attempts 0)",
+ "requests": 1,
+ "repairs_attempted": 0,
+ "finish_reasons": [
+  "stop"
+ ],
+ "usage": {
+  "prompt_tokens": 7070,
+  "completion_tokens": 14884,
+  "reasoning_tokens": 11502,
+  "total_tokens": 21954,
+  "unverified_attempts": 0
+ },
+ "call_seconds": 51.25,
+ "trace_elapsed_seconds": 53.39,
+ "exit_code": 0,
+ "degraded": false,
+ "checks_ok": true,
+ "final_checks": [
+  [
+   "spec_schema",
+   "pass"
+  ],
+  [
+   "offline_html",
+   "pass"
+  ],
+  [
+   "compute_safety",
+   "pass"
+  ],
+  [
+   "numerical_execution",
+   "pass"
+  ],
+  [
+   "two_meaningful_controls",
+   "pass"
+  ],
+  [
+   "page_interpreter",
+   "pass"
+  ]
+ ],
+ "validate_output": "ok=true, failures=[] (scripts/validate_output.py --model deepseek/deepseek-v4.1-flash)",
+ "oracle_u1": "PASS (oracle_u1.json: page AST in templates/interpreter.js vs Python QK^T/sqrt(d_k), row softmax, weights*V, scaling on and off)",
+ "oracle_u3_script": "scripts/check_attention_oracle.py exited 0 but returned ok=false with KeyError 'dk': this page has a scaling toggle and no dk control; a tooling mapping gap, not a numeric failure",
+ "invariant_names_renamed": [
+  {
+   "invariant": 0,
+   "from": "weights rows sum to one",
+   "to": "each row of Attention weight matrix (row-wise softmax of scores) adds up to 1"
+  },
+  {
+   "invariant": 1,
+   "from": "weights entries lie between zero and one",
+   "to": "every value of Attention weight matrix (row-wise softmax of scores) is between 0 and 1"
+  },
+  {
+   "invariant": 2,
+   "from": "row sums total two",
+   "to": "the values of Row sums of the attention weights add up to 2"
+  }
+ ],
+ "u3_u1_007_observations": {
+  "A3": "fixed: row_sum on the weight matrix; the remaining sum over the row-sums vector is now named 'add up to 2'",
+  "A1": "fixed: exploration 2 describes row 0 and row 1 separately",
+  "L3_class": "fixed: both preset instructions name Q, K, V and the scaling toggle",
+  "test_names": "situation-based ('equal dot products give uniform weights', ...)",
+  "A2_residual": "NOT fixed for Q: q help says changing Q changes the 'row sums', which always stay 1 (k, v and scale_on help are correct)"
+ }
+}

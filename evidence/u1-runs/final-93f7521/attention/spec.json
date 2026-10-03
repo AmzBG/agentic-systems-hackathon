@@ -1,0 +1,455 @@
+{
+ "controls": [
+  {
+   "id": "q",
+   "label": "Query matrix Q",
+   "help": "Changing an entry of Q changes the score matrix, and therefore changes the weights, row sums and output.",
+   "units": "unitless",
+   "kind": "matrix",
+   "shape": [
+    2,
+    2
+   ],
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.5
+  },
+  {
+   "id": "k",
+   "label": "Key matrix K",
+   "help": "Changing an entry of K changes the score matrix, which changes the weights and the output.",
+   "units": "unitless",
+   "kind": "matrix",
+   "shape": [
+    2,
+    2
+   ],
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.5
+  },
+  {
+   "id": "v",
+   "label": "Value matrix V",
+   "help": "Changing an entry of V changes the output directly and leaves the score matrix, weights and row sums unchanged.",
+   "units": "unitless",
+   "kind": "matrix",
+   "shape": [
+    2,
+    2
+   ],
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.5
+  },
+  {
+   "id": "scale_on",
+   "label": "Divide scores by sqrt(dk)",
+   "help": "Turning this off removes the 1/sqrt(dk) division, which changes the score matrix, the weights and the output; the row sums stay at 1.",
+   "units": "unitless",
+   "kind": "toggle",
+   "default": true
+  }
+ ],
+ "outputs": [
+  {
+   "id": "scores",
+   "label": "Score matrix QK^T / sqrt(dk)",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "weights",
+   "label": "Attention weight matrix (row-wise softmax of scores)",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "row_sums",
+   "label": "Row sums of the attention weights",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "output",
+   "label": "Attention output (weights times V)",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "scores_heat",
+   "kind": "heatmap",
+   "title": "Score matrix entries",
+   "output": "scores",
+   "x_label": "key index j",
+   "y_label": "query index i"
+  },
+  {
+   "id": "weights_heat",
+   "kind": "heatmap",
+   "title": "Attention weights from a row-wise softmax",
+   "output": "weights",
+   "x_label": "key index j",
+   "y_label": "query index i"
+  },
+  {
+   "id": "row_sums_vals",
+   "kind": "values",
+   "title": "Row sums of the attention weights",
+   "output": "row_sums",
+   "x_label": "query index i",
+   "y_label": "sum of weights"
+  },
+  {
+   "id": "output_heat",
+   "kind": "heatmap",
+   "title": "Attention output entries",
+   "output": "output",
+   "x_label": "value column t",
+   "y_label": "query index i"
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Equal scores give uniform attention",
+   "instruction": "Predict: when both scores in a row are equal, what will the two attention weights in that row be? Then apply the preset, which sets Q to [[1,0],[1,0]], K to [[1,0],[1,0]], V to [[1,0],[0,1]] and turns the 1/sqrt(dk) scaling on.",
+   "observe": "The weights heatmap shows 0.5 in all four cells. The row sums readouts show 1 and 1. The output heatmap shows 0.5 in all four cells.",
+   "why": "Every score is 1 before scaling and 1/sqrt(2) after, but all entries in a row are equal, and the softmax of equal values always gives 0.5 and 0.5. Each output row is therefore the average of value rows (1,0) and (0,1), which is (0.5,0.5).",
+   "preset": {
+    "q": [
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      0
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scale_on": true
+   }
+  },
+  {
+   "title": "A dominant score concentrates one row",
+   "instruction": "Predict: when scaling is off and query row 0 is (2,0), what weights will row 0 get? Then apply the preset, which sets Q to [[2,0],[0,1]], K to [[2,0],[0,1]], V to [[1,0],[0,1]] and turns the 1/sqrt(dk) scaling off.",
+   "observe": "The score matrix row 0 is 4 and 0, and row 1 is 0 and 1. The weights heatmap row 0 is about 0.982 and 0.018, while row 1 is about 0.269 and 0.731. The row sums readouts are 1 and 1. The output heatmap row 0 is about 0.982 and 0.018.",
+   "why": "Without the 1/sqrt(dk) division the score 4 stays large, so exp(4) dominates exp(0) in row 0 and the softmax places most of the weight on key 0. Row 1 has scores 0 and 1, so its weights stay closer to even, and both rows still sum to 1.",
+   "preset": {
+    "q": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scale_on": false
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "equal dot products give uniform weights",
+   "inputs": {
+    "q": [
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      0
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scale_on": true
+   },
+   "expected": {
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "row_sums": [
+     1,
+     1
+    ],
+    "output": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "zero query rows give zero scores",
+   "inputs": {
+    "q": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      2
+     ]
+    ],
+    "scale_on": true
+   },
+   "expected": {
+    "scores": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      0
+     ]
+    ],
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "row_sums": [
+     1,
+     1
+    ],
+    "output": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "one large score row without scaling",
+   "inputs": {
+    "q": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scale_on": false
+   },
+   "expected": {
+    "weights": [
+     [
+      0.9820137900379085,
+      0.01798620996209156
+     ],
+     [
+      0.2689414213699951,
+      0.7310585786300049
+     ]
+    ],
+    "row_sums": [
+     1,
+     1
+    ],
+    "output": [
+     [
+      0.9820137900379085,
+      0.01798620996209156
+     ],
+     [
+      0.2689414213699951,
+      0.7310585786300049
+     ]
+    ]
+   },
+   "atol": 1e-08,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "each row of Attention weight matrix (row-wise softmax of scores) adds up to 1",
+   "output": "weights",
+   "kind": "row_sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "every value of Attention weight matrix (row-wise softmax of scores) is between 0 and 1",
+   "output": "weights",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "the values of Row sums of the attention weights add up to 2",
+   "output": "row_sums",
+   "kind": "sum",
+   "expected": 2,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ]
+}
