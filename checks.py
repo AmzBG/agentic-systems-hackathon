@@ -15,7 +15,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
-from runtime import RuntimeSpecError, parse_compute
+from runtime import RuntimeSpecError, numeric_shape, parse_compute
 
 
 KINDS = {"slider", "number", "toggle", "select", "vector", "matrix"}
@@ -514,9 +514,15 @@ def run_checks(spec: dict, html: str) -> dict:
         extra_outputs = set(values) - output_ids
         if extra_outputs:
             probe_errors.append(f"{name}: undeclared outputs {', '.join(sorted(extra_outputs))}")
+        output_leaves = 0
         for output_id in output_ids:
-            if output_id not in values or _shape(values[output_id]) is None:
-                probe_errors.append(f"{name}: {output_id} missing or nonfinite")
+            try:
+                _, leaves = numeric_shape(values[output_id])
+                output_leaves += leaves
+            except (KeyError, RuntimeSpecError):
+                probe_errors.append(f"{name}: {output_id} missing, nonfinite or outside bounded numeric shape")
+        if output_leaves > 128:
+            probe_errors.append(f"{name}: total output numeric leaf limit is 128")
         for visual in spec["visuals"]:
             value = values.get(visual["output"])
             shape = _shape(value)

@@ -87,6 +87,41 @@ class NumericalTests(unittest.TestCase):
         self.assertFalse(report["ok"])
         self.assertTrue(any("mutated its inputs" in failure for failure in report["failures"]))
 
+    def _oversized_output_spec(self, aggregate: bool) -> dict:
+        spec = copy.deepcopy(self.spec)
+        spec["compute_js"] = (
+            "function compute(inputs) { const x=inputs.count+inputs.weights[0]; "
+            + ("const m=Array(8).fill(0).map(()=>Array(8).fill(x)); "
+               "return {probabilities:m,contributions:m,entropy_bits:m}; }"
+               if aggregate else
+               "return {probabilities:Array(9).fill(x),contributions:[x],entropy_bits:x}; }")
+        )
+        spec["visuals"] = [dict(spec["visuals"][0], kind="values")]
+        spec["invariants"] = [{"name": "finite result", "output": "entropy_bits", "kind": "finite",
+                               "atol": 1e-9, "rtol": 1e-9}]
+        defaults = {c["id"]: c["default"] for c in spec["controls"]}
+        default_x = defaults["count"] + defaults["weights"][0]
+        spec["tests"] = [
+            {"name": "default", "inputs": {}, "expected": {"entropy_bits":
+                [[default_x] * 8 for _ in range(8)] if aggregate else default_x}, "atol": 1e-9, "rtol": 1e-9},
+            {"name": "changed", "inputs": {"count": 2, "weights": [0, 0, 0, 0]},
+             "expected": {"entropy_bits": [[2] * 8 for _ in range(8)] if aggregate else 2},
+             "atol": 1e-9, "rtol": 1e-9},
+        ]
+        return spec
+
+    def test_output_axis_limit_matches_delivered_page(self) -> None:
+        report = run_checks(self._oversized_output_spec(False), self.html)
+        self.assertFalse(report["ok"])
+        self.assertFalse(report["degraded"])
+        self.assertTrue(any("outside bounded numeric shape" in failure for failure in report["failures"]))
+
+    def test_output_aggregate_leaf_limit_matches_delivered_page(self) -> None:
+        report = run_checks(self._oversized_output_spec(True), self.html)
+        self.assertFalse(report["ok"])
+        self.assertFalse(report["degraded"])
+        self.assertTrue(any("total output numeric leaf limit is 128" in failure for failure in report["failures"]))
+
     def test_renderer_unsupported_filter_fails_numerical_execution(self) -> None:
         spec = copy.deepcopy(self.spec)
         spec["compute_js"] = spec["compute_js"].replace(

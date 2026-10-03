@@ -1,6 +1,10 @@
 # Current-main reconciliation — 3 October 2026
 
-No production functions changed and no paid model calls made. U1-U3-007 is already closed by `ba4c462` and the core interpreter check; U1-U3-008 is already closed by `df66028`. Reasoning support in `scripts/run_all.py` already exists. These were inspected, not reimplemented. `agent.DEFAULT_REASONING` remains `low`; single is the submission flow per current AI.md.
+No paid model calls made. U1-U3-007 is already closed by `ba4c462` and the core interpreter check; U1-U3-008 is already closed by `df66028`. Reasoning support in `scripts/run_all.py` already exists. These were inspected, not reimplemented. `agent.DEFAULT_REASONING` remains `low`; single is the submission flow per current AI.md.
+
+Concurrent renderer changes were integrated, passing 138 tests in 29.788 s. A later U2-U3-004 warning exposed post-execution output-bound validation missing from `run_checks`: the checker now uses `runtime.numeric_shape` per output and caps summed output leaves at 128. Two new focused tests use real bounded QuickJS/interpreter execution and reject a nine-element axis and 192 total output leaves (2 pass, 0.953 s). The initial regression fixture lacked invariant tolerances and failed schema validation; this was corrected before claiming numerical verification. Core input-cap/axis issues are routed in U2-U1-003, not edited by User 3.
+
+After this correction, the complete Python 3.11 suite passes 140 tests in 34.789 s; showcase validator, independent entropy oracle, repository audit and `git diff --check` pass. The final checker correction was suite-tested in the working checkout, not re-certified by the earlier clean-clone install run.
 
 ## Command evidence
 
