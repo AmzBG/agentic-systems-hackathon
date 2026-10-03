@@ -1,0 +1,6 @@
+{
+  "source_url": "https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf",
+  "focus": "Explain discrete entropy from Section 6 with a small editable probability distribution. Show each probability, its contribution, and total entropy in bits. Let the learner change the distribution and number of outcomes, compare certainty with equally likely outcomes, and handle zero probabilities correctly.",
+  "audience": "A second-year engineering undergraduate comfortable with logarithms and elementary probability."
+}
+
