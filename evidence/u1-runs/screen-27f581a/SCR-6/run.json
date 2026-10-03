@@ -1,0 +1,85 @@
+{
+ "run_id": "SCR-6",
+ "reasoning_mode": "off",
+ "producing_commit": "27f581a",
+ "case": "practice/cases/least_squares_loss.json",
+ "input_sha256": "4ba0f81f9b3da5703ca75557ce9d5434c6332acc5f6885f2ce231d8302f02993",
+ "model": "deepseek/deepseek-v4.1-flash",
+ "provider": {
+  "require_parameters": true,
+  "sort": "throughput"
+ },
+ "calls": [
+  {
+   "request_number": 1,
+   "reasoning_setting": {
+    "enabled": false
+   },
+   "served_provider": "Together",
+   "finish_reason": "stop",
+   "duration_seconds": 10.703,
+   "usage": {
+    "prompt_tokens": 9967,
+    "completion_tokens": 2628,
+    "total_tokens": 12595,
+    "reasoning_tokens": 0,
+    "verified": true
+   },
+   "action": "request",
+   "result": "pass"
+  },
+  {
+   "request_number": 2,
+   "reasoning_setting": {
+    "enabled": false
+   },
+   "served_provider": "Together",
+   "finish_reason": "stop",
+   "duration_seconds": 1.594,
+   "usage": {
+    "prompt_tokens": 3926,
+    "completion_tokens": 425,
+    "total_tokens": 4351,
+    "reasoning_tokens": 0,
+    "verified": true
+   },
+   "action": "revision_1",
+   "result": "pass"
+  },
+  {
+   "request_number": null,
+   "reasoning_setting": null,
+   "served_provider": null,
+   "finish_reason": null,
+   "duration_seconds": null,
+   "usage": null,
+   "action": "revision_1",
+   "result": "pass"
+  }
+ ],
+ "usage_totals": {
+  "prompt_tokens": 13893,
+  "completion_tokens": 3053,
+  "reasoning_tokens": 0,
+  "total_tokens": 16946,
+  "unverified_attempts": 0
+ },
+ "attempts": 2,
+ "repairs": {
+  "attempted": 1,
+  "accepted": 1
+ },
+ "exit_code": 0,
+ "checks_ok": true,
+ "degraded": false,
+ "elapsed_seconds": 15.734,
+ "final_checks": {
+  "spec_schema": "pass",
+  "offline_html": "pass",
+  "compute_safety": "pass",
+  "numerical_execution": "pass",
+  "two_meaningful_controls": "pass",
+  "page_interpreter": "pass"
+ },
+ "skipped_checks": []
+}

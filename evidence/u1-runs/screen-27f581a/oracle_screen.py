@@ -32,10 +32,13 @@ def entropy(i):
     n = int(next(v for k, v in i.items() if k in ("n", "count", "n_active", "active") or (not isinstance(v, (list, bool)) and not (k[0] == "w" and k[1:].isdigit()))))
     a = w[:n]; t = sum(a); p = [x / t for x in a] if t > 0 else [1 / n] * n
     c = [-x * math.log2(x) if x > 0 else 0 for x in p]
-    return {"p": p, "contrib": c, "H": sum(c)}
+    pad = len(w) - n
+    return {"p": p, "contrib": c, "H": sum(c)} if False else {"p": p, "contrib": c, "H": sum(c), "_pad": pad}
 
 def lsq(i):
-    x1, y1, x2, y2 = (i[k] for k in ("x1", "y1", "x2", "y2"))
+    xs = next((v for k, v in i.items() if isinstance(v, list) and "x" in k), None)
+    ys = next((v for k, v in i.items() if isinstance(v, list) and "y" in k), None)
+    x1, y1, x2, y2 = (xs[0], ys[0], xs[1], ys[1]) if xs else (i[k] for k in ("x1", "y1", "x2", "y2"))
     a = next(v for k, v in i.items() if "intercept" in k or k in ("a", "b0")); b = next(v for k, v in i.items() if "slope" in k or k in ("m", "b1"))
     yh = [a + b * x1, a + b * x2]; r = [y1 - yh[0], y2 - yh[1]]; s = [v * v for v in r]
     return {"yhat": yh, "resid": r, "sq": s, "sse": sum(s)}
@@ -50,6 +53,10 @@ ok = True; out = {}
 for name, inp in trials:
     try:
         trial, obs = run_page(page, inp); exp = ref(trial)
+        pad = exp.pop("_pad", 0)
+        for q in ("p", "contrib"):
+            if q in exp and pad and not any(isinstance(o, list) and len(o) == len(exp[q]) for o in obs.values()):
+                exp[q] = exp[q] + [0] * pad
         miss = [q for q, v in exp.items() if not any(near(o, v) or near(o, [v]) or (isinstance(v, list) and near(o, [[x] for x in v])) for o in obs.values())]
     except Exception as e:
         miss = [f"error {type(e).__name__}: {str(e)[:120]}"]

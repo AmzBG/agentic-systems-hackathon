@@ -1,0 +1,233 @@
+{
+ "controls": [
+  {
+   "id": "x1",
+   "label": "x of point 1",
+   "help": "Input coordinate of point 1; it sets the prediction y_hat_1, the residual r_1, its square q_1 and sse.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 0,
+   "min": -4,
+   "max": 4,
+   "step": 0.5
+  },
+  {
+   "id": "y1",
+   "label": "y of point 1",
+   "help": "Observed target of point 1; it sets the residual r_1, its square q_1 and sse.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 1,
+   "min": -4,
+   "max": 4,
+   "step": 0.5
+  },
+  {
+   "id": "x2",
+   "label": "x of point 2",
+   "help": "Input coordinate of point 2; it sets the prediction y_hat_2, the residual r_2, its square q_2 and sse.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 2,
+   "min": -4,
+   "max": 4,
+   "step": 0.5
+  },
+  {
+   "id": "y2",
+   "label": "y of point 2",
+   "help": "Observed target of point 2; it sets the residual r_2, its square q_2 and sse.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 3,
+   "min": -4,
+   "max": 4,
+   "step": 0.5
+  },
+  {
+   "id": "intercept",
+   "label": "intercept",
+   "help": "Line value at x = 0; it shifts both predictions y_hat_i, hence both residuals, both squared residuals and sse.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 0,
+   "min": -4,
+   "max": 4,
+   "step": 0.5
+  },
+  {
+   "id": "slope",
+   "label": "slope",
+   "help": "Line change per unit x; it sets both predictions y_hat_i, hence both residuals, both squared residuals and sse in proportion to the x_i values.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 1,
+   "min": -4,
+   "max": 4,
+   "step": 0.5
+  }
+ ],
+ "outputs": [
+  {
+   "id": "yhat",
+   "label": "predictions y_hat_i = intercept + slope * x_i",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "resid",
+   "label": "residuals r_i = y_i - y_hat_i",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "sqresid",
+   "label": "squared residuals q_i = r_i^2",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "sse",
+   "label": "sum of squared residuals sse",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "viz_resid",
+   "kind": "bar",
+   "title": "Residuals r_1, r_2 for the two points",
+   "output": "resid",
+   "x_label": "point index",
+   "y_label": "residual r_i",
+   "labels": [
+    "point 1",
+    "point 2"
+   ]
+  },
+  {
+   "id": "viz_sq",
+   "kind": "bar",
+   "title": "Squared residuals q_1, q_2 and their contributions to sse",
+   "output": "sqresid",
+   "x_label": "point index",
+   "y_label": "squared residual q_i",
+   "labels": [
+    "point 1",
+    "point 2"
+   ]
+  },
+  {
+   "id": "viz_sse_sweep",
+   "kind": "line",
+   "title": "sse as slope varies, other quantities fixed at their current values",
+   "output": "sse",
+   "x_label": "slope",
+   "y_label": "sse",
+   "sweep": {
+    "control": "slope",
+    "min": -4,
+    "max": 4,
+    "points": 17
+   }
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Slope change alone",
+   "instruction": "slope is set to 2, all other controls at their defaults (x_1 = 0, y_1 = 1, x_2 = 2, y_2 = 3, intercept = 0).",
+   "observe": "sse rises from 0 at slope = 1 to 8 at slope = 2, with the second squared residual q_2 rising from 0 to 4 and the first squared residual q_1 staying at 1 ... which readouts change under the preset? predictions y_hat_2, residual r_2, squared residual q_2 and sse all change; y_hat_1, r_1 and q_1 do not, because x_1 = 0 removes slope from the first prediction.",
+   "why": "Only the second prediction depends on slope because x_1 equals zero, so residual r_2 = y_2 - slope*x_2 falls from 1 to -1 and its square q_2 = 1 grows to 4; sse = q_1 + q_2 therefore goes from 1 + 1 = 2 at the default slope 1 to 1 + 4 = 5 at slope 2, a rise that the sweep line shows as a parabola in slope.",
+   "preset": {
+    "slope": 2
+   }
+  },
+  {
+   "title": "Perfect fit at the two points",
+   "instruction": "intercept is set to 1.0 and slope is set to 1.0, with x_1 = 0, y_1 = 1, x_2 = 2, y_2 = 3.",
+   "observe": "Both squared residuals q_1 and q_2 become 0 and sse is 0; both bars in the squared-residual chart vanish and the sweep line touches 0 at slope 1.",
+   "why": "The line passes through both observations, so r_1 = 1 - (1 + 1*0) = 0 and r_2 = 3 - (1 + 1*2) = 0; the summed squares then vanish. This is the limiting case of a zero loss, not a fit produced by the page.",
+   "preset": {
+    "intercept": 1,
+    "slope": 1
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "default two-point evaluation",
+   "inputs": {
+    "x1": 0,
+    "y1": 1,
+    "x2": 2,
+    "y2": 3,
+    "intercept": 0,
+    "slope": 1
+   },
+   "expected": {
+    "yhat": [
+     0,
+     2
+    ],
+    "resid": [
+     1,
+     1
+    ],
+    "sqresid": [
+     1,
+     1
+    ],
+    "sse": 2
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "slope 2 at the default points",
+   "inputs": {
+    "x1": 0,
+    "y1": 1,
+    "x2": 2,
+    "y2": 3,
+    "intercept": 0,
+    "slope": 2
+   },
+   "expected": {
+    "yhat": [
+     0,
+     4
+    ],
+    "resid": [
+     1,
+     -1
+    ],
+    "sqresid": [
+     1,
+     1
+    ],
+    "sse": 2
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "every value of sum of squared residuals sse is finite",
+   "output": "sse",
+   "kind": "finite",
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "every value of sum of squared residuals sse is between 0 and 256",
+   "output": "sse",
+   "kind": "range",
+   "min": 0,
+   "max": 256,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ]
+}
