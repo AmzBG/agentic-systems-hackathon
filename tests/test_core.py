@@ -788,6 +788,45 @@ class EvidenceDrivenTests(unittest.TestCase):
             validate_spec(spec)  # 1 + 64 + 64 = 129 > 128, as runtime.validate_inputs counts
         self.assertTrue(any("all numeric inputs combined" in e for e in ctx.exception.errors))
 
+    def test_two_full_matrices_fit_and_one_more_scalar_fails_in_parser_and_runtime_alike(self):
+        ones = [[1] * 8 for _ in range(8)]
+        matrix = {"label": "M", "help": "h", "units": "1", "kind": "matrix", "min": 0, "max": 1, "step": 1,
+                  "shape": [8, 8], "default": [[0] * 8 for _ in range(8)]}
+        spec = toy_spec()
+        spec["controls"] = [dict(matrix, id="m1"), dict(matrix, id="m2"),
+                            {"id": "flag", "label": "Flag", "help": "h", "units": "", "kind": "toggle",
+                             "default": False},
+                            {"id": "mode", "label": "Mode", "help": "h", "units": "", "kind": "select", "default": "a",
+                             "options": [{"value": "a", "label": "A"}, {"value": "b", "label": "B"}]}]
+        spec["visuals"] = spec["visuals"][:1]
+        spec["explorations"][0]["preset"] = {"flag": True}
+        spec["explorations"][1]["preset"] = {"m1": ones}
+        spec["tests"] = [{"name": "zeros", "inputs": {}, "expected": {"total": 0}, "atol": 0, "rtol": 0},
+                         {"name": "ones", "inputs": {"m1": ones, "m2": ones}, "expected": {"total": 16},
+                          "atol": 0, "rtol": 0}]
+        spec["compute_js"] = ("function compute(inputs) { const scaled = inputs.m1[0].map((x, i) => x + inputs.m2[0][i]); "
+                              "return { scaled, total: scaled.reduce((a, b) => a + b, 0) }; }")
+        try:
+            import runtime
+        except Exception:
+            runtime = None
+        validate_spec(spec)  # 64 + 64 = 128 numeric leaves; the toggle and select count as none
+        if runtime is not None:
+            runtime.validate_spec(spec)
+        check = agent.page_compute_check(spec)
+        if check is not None:
+            self.assertEqual(check["status"], "pass", check["detail"])
+        spec["controls"].append({"id": "scale", "label": "Scale", "help": "h", "units": "1", "kind": "number",
+                                 "default": 1, "min": 0, "max": 2, "step": 0.5})
+        with self.assertRaises(SpecError) as ctx:
+            parse_spec(wire(spec))  # 129: rejected when the response is parsed, before anything is rendered
+        self.assertIn("controls: more than 128 numbers across all numeric inputs combined", ctx.exception.errors)
+        if runtime is not None:
+            with self.assertRaisesRegex(runtime.RuntimeSpecError, "Total input numeric leaf limit is 128"):
+                runtime.validate_spec(spec)
+        self.assertIn("across all numeric inputs combined, where each slider or number counts as one",
+                      " ".join(prompts.SYSTEM_PROMPT.split()))
+
     def test_page_probe_enforces_runtime_output_shape_and_exact_keys(self):  # U2-U1-003 repro 2
         if agent.page_compute_check(toy_spec()) is None:
             self.skipTest("QuickJS or User 2 runtime unavailable")

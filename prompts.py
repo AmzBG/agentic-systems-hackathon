@@ -74,7 +74,7 @@ number, add a test whose inputs equal that exploration's preset and whose expect
 compute(inputs): one pure, deterministic JavaScript function declaration. inputs maps every control ID to its value.
 Return an object with exactly the declared output IDs, each a finite number or a nonempty rectangular array of finite
 numbers (each axis <= {MAX_AXIS}; at most {MAX_LEAVES} numbers across all outputs combined, and across all
-vector/matrix inputs combined).
+numeric inputs combined, where each slider or number counts as one and toggles/selects count as none).
 The page runs compute in a small numeric language; use ONLY these constructs:
 - const/let, numbers, booleans, arrays, object literals; + - * / % **; === !== < <= > >= && || ! and c ? a : b
 - if/else, return; for (let i = 0; i < n; i++) with at most 256 iterations; for (const v of array)
