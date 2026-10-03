@@ -10,8 +10,10 @@ import inspect
 import io
 import json
 import tempfile
+import time
 import unittest
 import urllib.error
+from unittest import mock
 from pathlib import Path
 
 import agent
@@ -704,6 +706,92 @@ class FlowTests(unittest.TestCase):
         self.assertEqual(h.run("--flow", "planned"), 0)
         self.assertIn("Teach the scaling idea first.", h.sent_bodies()[1]["messages"][1]["content"])
         self.assertIn("plan", h.stages())
+
+
+class SlowResponse(FakeResponse):
+    """A response that keeps the connection busy (e.g. keep-alive trickle) longer than any socket timeout."""
+
+    def __init__(self, delay: float, body: bytes = b"{}") -> None:
+        super().__init__(body)
+        self.delay = delay
+
+    def read(self, *args):
+        time.sleep(self.delay)
+        return super().read(*args)
+
+
+class DeadlineTests(unittest.TestCase):
+    """Real-clock checks with shrunk deadlines: the run must stop inside its limits."""
+
+    def shrink(self, stop: float, finish: float) -> None:
+        import budget as budget_module
+        import model_client
+        for target, name, value in ((budget_module, "GENERATION_STOP_SECONDS", stop),
+                                    (budget_module, "FINISH_SECONDS", finish),
+                                    (budget_module, "MIN_ATTEMPT_SECONDS", 0.5),
+                                    (model_client, "WALL_GRACE_SECONDS", 0.2),
+                                    (agent, "FINISH_MARGIN_SECONDS", 0.3)):
+            patcher = mock.patch.object(target, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def test_trickling_response_is_cut_by_wall_clock(self):
+        self.shrink(stop=30, finish=40)
+        budget = Budget()
+        client = OpenRouterClient("m", KEY, budget, timeout=0.5, opener=FakeOpener(SlowResponse(5)))
+        started = time.monotonic()
+        with self.assertRaises(ModelCallError) as ctx:
+            client.call_model([], 10)
+        self.assertLess(time.monotonic() - started, 1.5)
+        self.assertTrue(ctx.exception.retryable)
+        self.assertEqual((budget.attempts, budget.charged_completion), (1, 10))
+
+    def test_stalled_model_run_ends_inside_deadlines(self):
+        self.shrink(stop=2.0, finish=3.0)
+        h = Harness(SlowResponse(30), SlowResponse(30), clock=time.monotonic)
+        started = time.monotonic()
+        self.assertEqual(h.run(), 1)
+        self.assertLess(time.monotonic() - started, 3.5)
+        self.assertIn("Generation incomplete", h.html)
+        self.assertEqual(h.stages()[-1], "final")
+
+    def test_hanging_checks_are_bounded_by_finish_deadline(self):
+        self.shrink(stop=2.0, finish=3.0)
+
+        def hang(spec, html):
+            time.sleep(30)
+        h = Harness(api_reply(wire()), checks=hang, clock=time.monotonic)
+        started = time.monotonic()
+        self.assertEqual(h.run(), 1)
+        self.assertLess(time.monotonic() - started, 3.5)
+        self.assertIn("Gain and offset", h.html)  # the rendered candidate is kept, run reported failed
+        self.assertEqual(h.final()["result"], "fail")
+
+
+class HardeningTests(unittest.TestCase):
+    def test_oversized_brief_field_is_bounded_to_relevant_passages(self):
+        excerpt = ("unrelated background text. " * 400 + "\n") * 6 + "The gain scales every input. " * 40
+        h = Harness(api_reply(wire()), case={"source_url": "https://x", "focus": "how the gain scales inputs",
+                                             "audience": "students", "excerpt": excerpt})
+        self.assertEqual(h.run(), 0)
+        read = h.events[0]["details"]
+        self.assertEqual(read["bounded_fields"]["excerpt"][0], len(excerpt))
+        self.assertLessEqual(read["chars"]["excerpt"], agent.MAX_FIELD_CHARS + 200)
+        user_message = h.sent_bodies()[0]["messages"][1]["content"]
+        self.assertIn("The gain scales every input.", user_message)
+        self.assertLess(len(user_message), agent.MAX_FIELD_CHARS + 6_000)
+
+    def test_final_event_reports_usage_and_repair_totals(self):
+        bad = toy_spec()
+        bad["title"] = "Bad"
+        checks = lambda spec, html: failing_report() if spec["title"] == "Bad" else ok_report()
+        h = Harness(api_reply(wire(bad)), api_reply(wire(metadata={"version": 1, "title": "Fixed"}, compute=""),
+                                                    usage=False), checks=checks)
+        self.assertEqual(h.run(), 0)
+        details = h.final()["details"]
+        self.assertEqual(details["usage_totals"], {"prompt_tokens": 100, "completion_tokens": 50, "reasoning_tokens": 0,
+                                                   "total_tokens": 150, "unverified_attempts": 1})
+        self.assertEqual(details["repairs"], {"attempted": 1, "accepted": 1})
 
 
 if __name__ == "__main__":

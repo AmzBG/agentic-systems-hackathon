@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import socket
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -20,6 +21,8 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_TIMEOUT_SECONDS = 240.0
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 RETRYABLE_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
+# Socket timeouts bound each read, not the exchange; a trickling response is cut at timeout + grace.
+WALL_GRACE_SECONDS = 2.0
 
 
 class ModelCallError(RuntimeError):
@@ -102,6 +105,26 @@ class OpenRouterClient:
     def __repr__(self) -> str:  # never expose the key
         return f"OpenRouterClient(model_id={self.model_id!r})"
 
+    def _exchange(self, request: urllib.request.Request, timeout: float) -> bytes:
+        """Open and read the response within a wall-clock deadline (daemon worker thread)."""
+        box: dict = {}
+
+        def work() -> None:
+            try:
+                with self._opener(request, timeout=timeout) as response:
+                    box["raw"] = response.read(MAX_RESPONSE_BYTES + 1)
+            except BaseException as exc:  # re-raised in the caller's thread
+                box["error"] = exc
+
+        worker = threading.Thread(target=work, daemon=True)
+        worker.start()
+        worker.join(timeout + WALL_GRACE_SECONDS)
+        if worker.is_alive():
+            raise TimeoutError("wall-clock deadline exceeded")
+        if "error" in box:
+            raise box["error"]
+        return box["raw"]
+
     def call_model(self, messages: list[dict[str, str]], max_tokens: int) -> tuple[str, dict]:
         self.budget.reserve(max_tokens)  # raises BudgetExceeded before any traffic
         request_number = self.budget.attempts
@@ -121,8 +144,7 @@ class OpenRouterClient:
                 "Content-Type": "application/json",
             })
             try:
-                with self._opener(request, timeout=timeout) as response:
-                    raw = response.read(MAX_RESPONSE_BYTES + 1)
+                raw = self._exchange(request, timeout)
             except urllib.error.HTTPError as exc:
                 retryable = exc.code in RETRYABLE_STATUS
                 self.last_call["http_status"] = exc.code

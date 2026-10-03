@@ -32,6 +32,7 @@ from prompts import (MAX_SOURCE_CHARS, build_generation_messages, build_plan_mes
 from spec_parser import SPEC_KEYS, REVISABLE_KEYS, SpecError, error_targets, merge_revision, parse_spec
 
 REQUIRED_FIELDS = ("source_url", "focus", "audience")
+MAX_FIELD_CHARS = 16_000  # per brief field; longer text keeps its focus-relevant passages
 # Reasoning models spend most completion tokens before visible text; caps leave room for it.
 # Worst case with unverified usage (16k + 7k) stays under the 24k soft cap.
 # OpenRouter unified reasoning settings; "model" sends no reasoning field at all.
@@ -375,6 +376,8 @@ class Runner:
         self.revisions: list[dict] = []
         self.identified = False
         self.calls_blocked = False
+        self.usage_totals = {"prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0,
+                             "total_tokens": 0, "unverified_attempts": 0}
         self.rejected: Candidate | None = None
         self.case: dict[str, str] = {}
         self._secret = ""
@@ -408,6 +411,14 @@ class Runner:
             print(f"trace write failed: {type(exc).__name__}", file=sys.stderr)
 
     # -- model calls
+    def tally(self, usage: dict) -> None:
+        """Add one attempt's API-reported usage; unreported usage is counted, never guessed."""
+        if not usage.get("verified"):
+            self.usage_totals["unverified_attempts"] += 1
+        for key in ("prompt_tokens", "completion_tokens", "reasoning_tokens", "total_tokens"):
+            if isinstance(usage.get(key), int):
+                self.usage_totals[key] += usage[key]
+
     def call(self, client: OpenRouterClient, stage: str, action: str,
              messages: list[dict[str, str]], max_tokens: int) -> str | None:
         for attempt in range(1 + MAX_RETRIES_PER_CALL):
@@ -425,6 +436,7 @@ class Runner:
                 return None
             except ModelCallError as exc:
                 usage = client.last_call.get("usage", {})
+                self.tally(usage)
                 self.emit(stage, action, "fail", prompt_tokens=usage.get("prompt_tokens"),
                           completion_tokens=usage.get("completion_tokens"), failures=[str(exc)],
                           details={**client.last_call, "retryable": exc.retryable, "attempt": attempt + 1})
@@ -437,6 +449,7 @@ class Runner:
                 self.emit(stage, action, "fail", failures=[f"client error: {type(exc).__name__}"],
                           details=dict(client.last_call))
                 return None
+            self.tally(usage)
             self.emit(stage, action, "pass" if text.strip() else "fail",
                       prompt_tokens=usage.get("prompt_tokens"), completion_tokens=usage.get("completion_tokens"),
                       failures=[] if text.strip() else ["empty visible response"],
@@ -514,9 +527,14 @@ class Runner:
         except InputError as exc:
             self.emit("read_input", "load_case", "fail", failures=[str(exc)])
             return self.finish(EXIT_USAGE, str(exc))
+        bounded = {}
+        for key, value in list(self.case.items()):
+            if key != "source_url" and len(value) > MAX_FIELD_CHARS:
+                self.case[key] = select_passages(value, self.case["focus"], MAX_FIELD_CHARS)
+                bounded[key] = [len(value), len(self.case[key])]
         self.emit("read_input", "load_case", "pass", details={
             "fields": sorted(self.case), "ignored_non_string_fields": ignored,
-            "chars": {k: len(v) for k, v in self.case.items()}})
+            "chars": {k: len(v) for k, v in self.case.items()}, "bounded_fields": bounded})
 
         source = self.fetcher(self.case["source_url"], self.case["focus"])
         self.emit("fetch", "source_url", "pass" if source.get("status") == "ok" else "fail",
@@ -642,7 +660,10 @@ class Runner:
                   failures=[reason] if reason else [], revisions=self.revisions, details={
                       "exit_code": code, "candidate": best.label if best else None,
                       "degraded": bool(best and best.report.get("degraded")),
-                      "checks_ok": bool(best and best.report["ok"]), **self.budget.snapshot()})
+                      "checks_ok": bool(best and best.report["ok"]), **self.budget.snapshot(),
+                      "usage_totals": dict(self.usage_totals),
+                      "repairs": {"attempted": len(self.revisions),
+                                  "accepted": sum(1 for r in self.revisions if r.get("accepted"))}})
         if code == EXIT_OK and best and best.report.get("degraded"):
             print("completed in degraded mode: execution checks were skipped", file=sys.stderr)
         elif code != EXIT_OK:
