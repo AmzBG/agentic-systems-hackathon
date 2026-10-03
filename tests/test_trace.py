@@ -35,6 +35,8 @@ class ContractTests(unittest.TestCase):
                             "model": "deepseek/deepseek-v4.1-flash",
                             "Authorization": "Bearer should-not-appear",
                             "note": "Bearer should-also-not-appear",
+                            "reasoning": "private reasoning should-not-appear",
+                            "prompt": "raw prompt should-not-appear",
                         },
                     },
                 )

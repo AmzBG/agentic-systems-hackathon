@@ -16,7 +16,7 @@ _BLOCKED_KEYS = re.compile(
     re.IGNORECASE,
 )
 _BEARER = re.compile(r"\bBearer\s+\S+", re.IGNORECASE)
-_KEY_LIKE = re.compile(r"\bsk-or-[A-Za-z0-9_-]+\b")
+_KEY_LIKE = re.compile(r"\bsk-[A-Za-z0-9_-]{12,}\b")
 _MAX_TEXT = 500
 _MAX_LIST = 80
 
@@ -40,6 +40,10 @@ def _clean(value: Any, depth: int = 0) -> Any:
             str(key)[:80]: _clean(item, depth + 1)
             for key, item in value.items()
             if not _BLOCKED_KEYS.search(str(key))
+            and str(key).lower() not in {
+                "prompt", "messages", "response", "completion", "reasoning",
+                "thoughts", "content",
+            }
         }
     return str(value)[:_MAX_TEXT]
 
