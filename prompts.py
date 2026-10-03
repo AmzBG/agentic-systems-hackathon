@@ -24,7 +24,8 @@ function compute(inputs) { ... }
 END_COMPUTE"""
 
 SCHEMA = f"""\
-Metadata JSON (all keys required unless marked optional; all strings plain text, no HTML/Markdown):
+Metadata JSON (all keys required unless marked optional; all strings nonblank plain text, no HTML/Markdown; write
+"unitless" where units do not apply, including toggle, select and count controls):
 {{
   "version": 1,
   "plan": "1-3 sentence public teaching plan for this page (not your reasoning)",
