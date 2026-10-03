@@ -286,6 +286,21 @@ def page_result(spec, actions="", inspection=None):
 
 
 class ContractTests(unittest.TestCase):
+    def test_workbench_groups_controls_and_feedback_before_supporting_sections(self):
+        page = render(entropy_spec())
+        parsed = PageInspection(page)
+        classes = [attrs.get("class") for _, attrs in parsed.tags]
+        self.assertIn("workbench-grid", classes)
+        self.assertIn("control-panel", classes)
+        self.assertIn("live-panel", classes)
+        self.assertLess(page.index('id="controls"'), page.index('id="principal-result"'))
+        self.assertLess(page.index('id="principal-result"'), page.index('id="outputs"'))
+        self.assertLess(page.index('class="verification"'), page.index('class="limitation"'))
+        self.assertLess(page.index('class="limitation"'), page.index('<h2>Grounding'))
+        feedback = [attrs for tag, attrs in parsed.tags if tag == "details" and attrs.get("class") == "exploration-feedback"]
+        self.assertEqual(len(feedback), 2)
+        self.assertTrue(all("open" not in attrs for attrs in feedback))
+
     def test_teaching_sequence_and_prediction_reveal(self):
         page = render(entropy_spec())
         self.assertLess(page.index('id="calculate"'), page.index('id="results"'))

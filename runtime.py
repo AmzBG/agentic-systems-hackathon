@@ -540,36 +540,41 @@ def _teaching(spec):
     """Static plain-text teaching content survives any compute failure."""
     esc = _escape
     start = spec.get("starting_point", {})
-    parts = [f'<header><p class="eyebrow">Offline scientific playground</p><h1>{esc(spec.get("title", "Teaching page"))}</h1>',
+    parts = [f'<header><p class="eyebrow">Paper to Playground · Scientific learning workbench</p><h1>{esc(spec.get("title", "Teaching page"))}</h1>',
+             f'<p class="lead">{esc(start.get("idea", ""))}</p>',
+             f'<p class="why"><strong>Why it matters:</strong> {esc(start.get("why", ""))}</p>',
+             f'<p class="section-note">{esc(start.get("explanation", ""))}</p>',
+             '<details class="lesson-notes"><summary>About this lesson</summary>',
              f'<p><strong>Audience:</strong> {esc(spec.get("audience", ""))}</p>',
-             f'<p><strong>Plan:</strong> {esc(spec.get("plan", ""))}</p></header>',
-             '<section aria-labelledby="starting"><h2 id="starting">Starting point</h2>']
-    for key, label in (("idea", "Idea"), ("why", "Why it matters"), ("explanation", "Explanation")):
-        parts.append(f'<p><strong>{label}:</strong> {esc(start.get(key, ""))}</p>')
-    parts.append('</section><section><h2>Symbols and units</h2><div class="scroll"><table><caption>Notation</caption><thead><tr><th>Symbol</th><th>Meaning</th><th>Units</th></tr></thead><tbody>')
+             f'<p><strong>Plan:</strong> {esc(spec.get("plan", ""))}</p></details></header>',
+             '<section class="notation" aria-label="Symbols and units"><details><summary>Symbols and units</summary><div class="scroll"><table><caption>Notation</caption><thead><tr><th scope="col">Symbol</th><th scope="col">Meaning</th><th scope="col">Units</th></tr></thead><tbody>']
     for s in spec.get("symbols", []):
         parts.append('<tr>' + ''.join(f'<td>{esc(s.get(k, ""))}</td>' for k in ("symbol", "meaning", "units")) + '</tr>')
-    parts.append('</tbody></table></div></section>')
+    parts.append('</tbody></table></div></details></section>')
     introduction = ''.join(parts)
     parts = ['<section aria-labelledby="explorations"><h2 id="explorations">Guided explorations</h2><p>Make a prediction, apply the example, then compare it with the calculated result.</p>']
     for index, e in enumerate(spec.get("explorations", [])):
-        parts.append(f'<article><h3>{esc(e.get("title", ""))}</h3>')
-        parts.append(f'<p><strong>Predict:</strong> {esc(e.get("instruction", ""))}</p>')
-        parts.append(f'<button type="button" class="preset" data-preset="{index}">Explore: {esc(e.get("title", ""))}</button>')
-        parts.append(' <a href="#results">View updated results</a><details><summary>Compare your prediction</summary>')
+        parts.append(f'<article class="exploration"><h3>{index + 1}. {esc(e.get("title", ""))}</h3>')
+        instruction = e.get("instruction", "").removeprefix("Predict:").lstrip()
+        parts.append(f'<p class="prediction" id="prediction-{index}"><strong>Predict:</strong> {esc(instruction)}</p>')
+        parts.append(f'<div class="exploration-actions"><button type="button" class="preset" data-preset="{index}" aria-describedby="prediction-{index}">Apply preset</button>')
+        parts.append(' <a href="#results">View updated results</a></div>')
+        parts.append(f'<p class="preset-result" id="preset-result-{index}" role="status" aria-live="polite">Apply the preset to compare the calculated result with your prediction.</p>')
+        parts.append(f'<details class="exploration-feedback" id="feedback-{index}"><summary>Compare your prediction</summary>')
         for key, label in (("observe", "Observe"), ("why", "Explain")):
             parts.append(f'<p><strong>{label}:</strong> {esc(e.get(key, ""))}</p>')
         parts.append('</details></article>')
     parts.append('</section>')
     explorations = ''.join(parts)
-    parts = ['<section><h2>Grounding</h2><ul>']
+    parts = [f'<section class="limitation"><h2>Limitation</h2><p>{esc(spec.get("limitation", ""))}</p></section>',
+             '<section><h2>Grounding</h2><ul class="grounding-list">']
     support_labels = {"excerpt": "FROM PAPER", "example": "TOY EXAMPLE",
                       "simplification": "SIMPLIFICATION", "unverified": "UNVERIFIED"}
     for g in spec.get("grounding", []):
         support = g.get("support", "")
         label = support_labels.get(support, support)
-        parts.append(f'<li><strong>{esc(g.get("paper", ""))}</strong> — {esc(g.get("locator", ""))} <span class="badge" data-support="{esc(support)}">{esc(label)}</span><p>{esc(g.get("claim", ""))}</p></li>')
-    parts.append(f'</ul><h3>Limitation</h3><p>{esc(spec.get("limitation", ""))}</p></section>')
+        parts.append(f'<li><span class="badge" data-support="{esc(support)}">{esc(label)}</span> <strong>{esc(g.get("paper", ""))}</strong> — {esc(g.get("locator", ""))}<p>{esc(g.get("claim", ""))}</p></li>')
+    parts.append('</ul></section>')
     return introduction, explorations, ''.join(parts)
 
 
@@ -608,9 +613,10 @@ def render(spec: dict) -> str:
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'sha256-{digest}\'; style-src \'unsafe-inline\'; img-src data:; connect-src \'none\'; object-src \'none\'; base-uri \'none\'; form-action \'none\'">'
             f'<title>{_escape(teaching_spec.get("title", "Teaching page"))}</title><style>{css}</style></head><body><main>{teaching}'
-            f'<section aria-labelledby="calculate"><h2 id="calculate">Calculate</h2><p>Change an input and follow the intermediate values to the result. Values update when an edit is committed.</p><p id="status" role="status" aria-live="polite">{_escape(status)}</p>'
+            f'<section class="workbench" aria-labelledby="calculate"><div class="workbench-heading"><h2 id="calculate">Interactive workbench</h2><p class="flow"><span>Change inputs</span><span aria-hidden="true">→</span><span>Follow the mechanism</span><span aria-hidden="true">→</span><span>Read the result</span></p></div><p id="status" role="status" aria-live="polite">{_escape(status)}</p>'
             '<noscript>Degraded: JavaScript is disabled. Teaching content remains available; calculations and self-checks have not run.</noscript>'
-            '<div id="controls"></div><a href="#explorations">Try the two guided explorations</a></section><section aria-labelledby="results"><h2 id="results" tabindex="-1">Intermediate and result outputs</h2><p>Chart and table numbers are rounded for readability; calculations use full precision.</p><p id="result-status">No valid result yet.</p><div id="visuals"><div id="outputs"></div></div></section>'
-            f'{explorations}{grounding}'
-            '<section><h2>Self-check</h2><p id="check-status" role="status">Not run.</p><p>These checks test the specified examples and identities; they do not verify every claim in the explanation.</p><details><summary>Inspect measured values, expectations and tolerances</summary><ul id="checks"></ul></details></section></main>'
+            '<div class="workbench-grid"><section class="control-panel" aria-labelledby="input-heading"><h3 id="input-heading">Inputs</h3><p class="section-note">Edit a value to recalculate. Sliders update as you move them.</p><div id="controls"></div><a href="#explorations">Try the two guided explorations</a></section><section class="live-panel" aria-labelledby="results"><h3 id="results" tabindex="-1">Mechanism and result</h3><p id="result-status">No valid result yet.</p><div id="principal-result"></div><div id="visuals"><div id="outputs"></div></div><p class="section-note">Displayed numbers are rounded; calculations use full precision.</p></section></div></section>'
+            f'{explorations}'
+            '<section class="verification"><h2>Self-check</h2><p id="check-status" role="status">Not run.</p><p>These checks test the specified examples and identities; they do not verify every claim in the explanation.</p><details><summary>Inspect measured values, expectations and tolerances</summary><ul id="checks"></ul></details></section>'
+            f'{grounding}</main>'
             f'<script type="application/json" id="runtime-data">{serialized}</script><script>{script}</script></body></html>')
