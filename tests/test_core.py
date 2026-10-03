@@ -226,7 +226,8 @@ class ContractTests(unittest.TestCase):
     def test_prompts_require_teaching_sequence_and_honest_grounding(self):
         system = " ".join(prompts.SYSTEM_PROMPT.split())
         for phrase in ("through each intermediate output to the result", "calculation order",
-                       "at least one visual shows an intermediate output", "Predict:", "Then apply the preset",
+                       "at least one visual shows an intermediate output", "Predict:",
+                       "naming every control it sets, including any it resets",
                        "naming the intermediate and result readouts", "explained through the mechanism",
                        "excerpt text in the brief", "never invent quotations",
                        "whose inputs equal that exploration's preset", "No comments, no template strings",
@@ -243,6 +244,43 @@ class ContractTests(unittest.TestCase):
             self.assertIn(phrase, system)
         repair = prompts.build_repair_messages({"focus": "f"}, toy_spec(), ["x: y"], ["grounding"])
         self.assertEqual(repair[0]["content"], prompts.SYSTEM_PROMPT)  # repairs keep the same rules
+
+    def test_prompts_isolate_the_defining_mechanism_and_write_it_symbolically(self):
+        system = " ".join(prompts.SYSTEM_PROMPT.split())
+        for phrase in ("the first isolates the operation, normalization or parameter that defines the focused mechanism",
+                       "Its preset changes only that control", "choose defaults at which the change visibly moves both",
+                       "ground it as a simplification", "The second shows a special, limiting or extreme case",
+                       "compact symbolic pipeline in this page's own symbols", "line breaks are not shown",
+                       "each step a defining equation or operation that the source supports",
+                       "here c = 4 because x has four entries",
+                       "state its value and the reason for it", "never leave a constant for the learner to infer",
+                       "each help is one short sentence",
+                       "omit labels on a heatmap whose rows and columns mean different things"):
+            self.assertIn(phrase, system)
+
+    def test_prompts_ban_filler_and_interface_directions_but_keep_qualifiers(self):
+        system = " ".join(prompts.SYSTEM_PROMPT.split())
+        self.assertIn("Write like a concise scientist, not a tutor", system)
+        for filler in ('"helps build intuition"', '"explore how"', '"see what happens"', '"provides insight"',
+                       '"makes the calculation inspectable"', '"this interactive visualization"'):
+            self.assertIn(filler, system)  # named as phrases to leave out
+        self.assertIn("leave out interface directions (clicking, applying, viewing, changing controls, comparing values)",
+                      system)
+        self.assertNotIn("Then apply the preset", system)  # the prompt no longer asks for button instructions
+        for kept in ("qualify relationships that depend on a sign, a zero value or an empty count",
+                     "never says a quantity the mechanism normalizes or holds fixed will change",
+                     "Keep provenance, locators and qualifiers when shortening",
+                     '"unverified" for paper claims you cannot see in the supplied text',
+                     "never invent quotations, sections or equation numbers"):
+            self.assertIn(kept, system)
+        plan_system = " ".join(prompts.build_plan_messages({"focus": "f"}, {})[0]["content"].split())
+        self.assertIn("Write like a concise scientist, not a tutor", plan_system)
+
+    def test_mechanism_rules_name_no_particular_topic(self):
+        text = (prompts.SYSTEM_PROMPT + prompts.build_plan_messages({"focus": "f"}, {})[0]["content"]).lower()
+        for word in ("query", "d_k", "sqrt(d", "bayes", "posterior", "logistic", "sigmoid", "half-life",
+                     "least squares", "kullback", "batch norm", "focal", "adam"):
+            self.assertNotIn(word, text)
 
 
 class ParserTests(unittest.TestCase):
