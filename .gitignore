@@ -1,0 +1,49 @@
+# Local secrets and credentials
+.env
+.env.*
+!.env.example
+secrets/
+credentials*.json
+*.pem
+*.key
+
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Packaging and build artifacts
+build/
+dist/
+*.egg-info/
+
+# Local inputs, downloaded papers, and temporary files
+/case.json
+/Paper to Playground - Agentic Systems Hackathon.pdf
+downloads/*
+!downloads/README.md
+tmp/
+.cache/
+
+# Generated assessment output
+/out/
+/runs/
+
+# Logs
+*.log
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
