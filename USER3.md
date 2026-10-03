@@ -1,5 +1,14 @@
 # USER3.md — checks and evidence
 
+Final five-minute submission pass17:15: sole-integrator authority remains active.
+Corrected actual prompt conflict (brief requirements were incorrectly lumped with
+untrusted source commands); no paper-specific branches, new model/dependency or
+paid call. Regression covers generation/plan/repair trust distinction. Added
+unchanged14a5eaa public Attention repeat as second example pair, with provenance;
+remaining prose limitations stay explicit, not hand-edited away. SUBMISSION.md
+is final entry point; finalSHA/tests returned after publication. Historical
+195/196-test boundaries below do not certify this new prompt until rerun.
+
 Final integrator override17:03: user explicitly superseded ownership and authorized
 five fresh paid CLI checks from one controlling session (no editing subagents).
 Production candidate14a5eaafc472a65b619e44db3db17016e57b0d0b frozen before17:02;

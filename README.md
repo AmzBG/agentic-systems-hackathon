@@ -82,8 +82,12 @@ These use OpenRouter's unified `reasoning` and `provider` fields; measured runs 
 
 `examples/entropy/` holds a public example pair: [`case.json`](examples/entropy/case.json) and its real generated
 [`index.html`](examples/entropy/index.html) and [`trace.jsonl`](examples/entropy/trace.jsonl) (1 request, no repairs,
-all six checks passed, 17,917 tokens). `examples/attention/case.json` is the second public input; its final generated
-latest retained page is in `evidence/u1-runs/screen-27f581a/SCR-1/`.
+all six checks passed, 17,917 tokens). The second public example pair is
+[`examples/attention/case.json`](examples/attention/case.json),
+[`index.html`](examples/attention/index.html) and [`trace.jsonl`](examples/attention/trace.jsonl).
+It is the unchanged public Attention repeat generated at `14a5eaa`: one request,
+23,686 total tokens, 65.2 seconds and 19 independent numerical trials passed.
+See its provenance.json; the latest prompt correction has no new live-run evidence.
 The six-run low/off comparison, failures and provenance are in
 [`evidence/SCREENING_RELEASE_REVIEW.md`](evidence/SCREENING_RELEASE_REVIEW.md).
 The exact-SHA clean install and five fresh CLI runs, including successful third
@@ -101,11 +105,17 @@ python -m unittest discover -s tests -q
 python scripts/verify_install.py
 python scripts/audit_repo.py
 python scripts/validate_output.py --output examples/entropy
+python scripts/validate_output.py --output examples/attention
 python scripts/check_entropy_oracle.py --output examples/entropy
 ```
 
 Generated pages for other mechanisms with independent numerical comparisons are in `evidence/release_84c31ac/`, and
 independent reviews are in `evidence/reviews/`. These are single-run results, not a guarantee for unseen papers.
+
+Submission status and exact verification boundaries: [SUBMISSION.md](SUBMISSION.md).
+Known limitation: numerical checks do not verify all generated prose or guarantee
+that every requested exploration survives generation. Retained reviews document
+remaining false explanations; no grade or hidden-case reliability is promised.
 
 ## Reuse credits
 

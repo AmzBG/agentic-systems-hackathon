@@ -1,0 +1,12 @@
+{
+  "label": "unchanged real public Attention repeat; not regenerated after final prompt correction",
+  "generating_sha": "14a5eaafc472a65b619e44db3db17016e57b0d0b",
+  "original_artifact": "evidence/final_14a5eaa/attention-2",
+  "original_manifest": "evidence/final_14a5eaa/attention-2/run.json",
+  "independent_review": "evidence/final_14a5eaa/attention-2/independent.json",
+  "browser_scope": "evidence/final_14a5eaa/browser.json",
+  "requests": 1,
+  "total_tokens": 23686,
+  "wall_seconds": 65.203,
+  "retained_prose_warning": "Equal-score why can imply general multiplicative-scale invariance; only constant-within-row scores preserve uniform weights. Original text is not patched."
+}
