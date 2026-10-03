@@ -57,8 +57,9 @@ FORBIDDEN_JS = re.compile(
 class SpecError(ValueError):
     """Wire or schema violation; errors are 'path: reason' strings."""
 
-    def __init__(self, errors: list[str]) -> None:
+    def __init__(self, errors: list[str], spec: dict | None = None) -> None:
         self.errors = errors
+        self.spec = spec  # wire and JSON were valid but the schema was not; never rendered or written
         super().__init__("; ".join(errors[:12]) + (" ..." if len(errors) > 12 else ""))
 
 
@@ -152,26 +153,33 @@ def parse_spec(text: str) -> dict:
     metadata, compute_text = split_wire(text, compute="required")
     spec = load_metadata(metadata)
     spec["compute_js"] = compute_text
-    validate_spec(spec)
+    try:
+        validate_spec(spec)
+    except SpecError as exc:
+        raise SpecError(exc.errors, spec=spec) from None
     return spec
 
 
 def merge_revision(base: dict, text: str, requested: list[str]) -> dict:
     """Apply a targeted revision on a copy of base and validate the result.
 
-    Metadata may contain only requested top-level keys plus version; the
-    compute block is allowed only when compute_js was requested. Each value
+    Metadata may contain only requested top-level keys plus an optional version
+    (which must be 1); a compute block is applied only when compute_js was
+    requested and is otherwise ignored. Each value
     replaces the base value wholesale; omitted requested keys keep the base.
     """
     wanted = set(requested)
     unknown = sorted(wanted - REVISABLE_KEYS)
     if not wanted or unknown:
         raise SpecError([f"revision: unsupported requested keys {unknown or '[]'}"])
-    metadata, compute_text = split_wire(
-        text, compute="optional" if "compute_js" in wanted else "forbidden")
+    # An unrequested compute block is ignored rather than failing the whole revision
+    # (a live repair was wasted on this); only requested keys can change.
+    metadata, compute_text = split_wire(text, compute="optional")
+    if "compute_js" not in wanted:
+        compute_text = None
     patch = load_metadata(metadata)
     errors = []
-    if patch.get("version") != 1 or isinstance(patch.get("version"), bool):
+    if "version" in patch and (patch["version"] != 1 or isinstance(patch["version"], bool)):
         errors.append("revision.version: must be 1")
     extra = sorted(key for key in patch if key != "version" and key not in wanted)
     if extra:
@@ -296,6 +304,12 @@ class _Validator:
         return self.errors
 
     def check_controls(self) -> None:
+        defaults = [c.get("default") for c in self.spec.get("controls", []) if isinstance(c, dict)]
+        if sum(_leaf_count(d) for d in defaults if isinstance(d, list)) > MAX_LEAVES:
+            self.err("controls", f"more than {MAX_LEAVES} numbers across all vector and matrix inputs")
+        self._check_controls()
+
+    def _check_controls(self) -> None:
         for index, control in enumerate(self.items("controls", 2)):
             path = f"controls[{index}]"
             cid = control.get("id")
