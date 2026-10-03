@@ -623,9 +623,10 @@ class FlowTests(unittest.TestCase):
     def test_exhaustion_keeps_best_page_and_fails(self):
         checks = lambda spec, html: failing_report()
         h = Harness(api_reply(wire()), api_reply(wire(metadata={"version": 1, "title": "Try 2"}, compute="")),
-                    api_reply(wire(metadata={"version": 1, "title": "Try 3"}, compute="")), checks=checks)
+                    api_reply(wire(metadata={"version": 1, "title": "Try 3"}, compute="")),
+                    api_reply(wire(metadata={"version": 1, "title": "Try 4"}, compute="")), checks=checks)
         self.assertEqual(h.run(), 1)
-        self.assertEqual(len(h.opener.requests), 3)  # 1 generation + 2 repairs max
+        self.assertEqual(len(h.opener.requests), 4)  # 1 generation + 3 bounded repairs max
         self.assertIn("Gain and offset", h.html)  # ties keep the earlier candidate
         self.assertEqual(h.final()["result"], "fail")
 
@@ -1166,6 +1167,203 @@ class HardeningTests(unittest.TestCase):
                                                    "total_tokens": 150, "unverified_attempts": 1})
         self.assertEqual(details["repairs"], {"attempted": 1, "accepted": 1})
 
+
+class RecoveryProposalTests(unittest.TestCase):
+    """Offline regressions for final, bounded field-level recovery."""
+
+    def replies(self, second_tokens=11_155, *, final_usage=1_000, second_wire=None):
+        cut = api_reply("BEGIN_SPEC\n{\"version\": 1,", usage={
+            "prompt_tokens": 7_070, "completion_tokens": 16_000,
+            "total_tokens": 23_070, "completion_tokens_details": {"reasoning_tokens": 13_954}})
+        cut["choices"][0]["finish_reason"] = "length"
+        spec = toy_spec()
+        spec["title"] = "Regenerated gain and offset"
+        spec["tests"][1]["inputs"] = {"xs": [9, 0, 0]}
+        bad = api_reply(second_wire if second_wire is not None else wire(spec), usage={
+            "prompt_tokens": 7_128, "completion_tokens": second_tokens,
+            "total_tokens": 7_128 + second_tokens,
+            "completion_tokens_details": {"reasoning_tokens": 7_706}})
+        corrected = api_reply(wire(metadata={"version": 1, "tests": toy_spec()["tests"]}, compute=""),
+                              usage=False if final_usage is False else {
+                                  "prompt_tokens": 1_000, "completion_tokens": final_usage,
+                                  "total_tokens": 1_000 + final_usage})
+        return cut, bad, corrected
+
+    def test_exact_truncated_then_field_invalid_regeneration_gets_bounded_tests_repair(self):
+        h = Harness(*self.replies())
+        original_factory = h.client_factory
+
+        def configured(model, key, budget):
+            client = original_factory(model, key, budget)
+            client.reasoning = {"effort": "low"}
+            client.provider = {"require_parameters": True, "sort": "throughput"}
+            return client
+        h.client_factory = configured
+        self.assertEqual(h.run("--reasoning", "low"), 0)
+        bodies = h.sent_bodies()
+        self.assertEqual([body["max_tokens"] for body in bodies], [16_000, 14_000, 2_845])
+        self.assertIn('top-level keys: ["tests"]', bodies[2]["messages"][1]["content"])
+        self.assertIn("Do not include a compute block", bodies[2]["messages"][1]["content"])
+        self.assertIn("tests[1].inputs.xs: every entry must be within [min, max]",
+                      bodies[2]["messages"][1]["content"])
+        self.assertIn("Regenerated gain and offset", h.html)
+        self.assertEqual(h.final()["details"]["candidate"], "revision_2")
+        self.assertEqual(h.final()["details"]["repairs"], {"attempted": 2, "accepted": 1})
+        self.assertEqual(h.final()["details"]["charged_completion_tokens"], 28_155)
+        self.assertTrue(all(body["reasoning"] == {"effort": "low"} for body in bodies))
+        self.assertTrue(all(body["provider"] == {"require_parameters": True, "sort": "throughput"}
+                            for body in bodies))
+        recovery = [event for event in h.events if event["action"] == "revision_2:budget"]
+        self.assertEqual(recovery[0]["details"]["max_tokens"], 2_845)
+
+    def test_no_extra_call_below_two_thousand_remaining_tokens(self):
+        h = Harness(*self.replies(second_tokens=12_001))
+        self.assertEqual(h.run(), 1)
+        self.assertEqual(len(h.sent_bodies()), 2)
+        self.assertEqual(h.final()["details"]["charged_completion_tokens"], 28_001)
+
+    def test_exact_two_thousand_remaining_tokens_allows_targeted_repair(self):
+        h = Harness(*self.replies(second_tokens=12_000))
+        self.assertEqual(h.run(), 0)
+        self.assertEqual(h.sent_bodies()[-1]["max_tokens"], 2_000)
+        self.assertLessEqual(h.final()["details"]["charged_completion_tokens"], HARD_COMPLETION_TOKENS)
+
+    def test_invalid_wire_has_no_targeted_emergency_recovery(self):
+        h = Harness(*self.replies(second_wire="BEGIN_SPEC\n{\"version\": 1,"))
+        self.assertEqual(h.run(), 1)
+        self.assertEqual(len(h.sent_bodies()), 2)
+        self.assertFalse(any(event["action"] == "revision_2:budget" for event in h.events))
+
+    def test_detected_candidate_failure_gets_bounded_last_repair(self):
+        bad = dict(toy_spec(), title="Bad")
+        first = api_reply(wire(bad), usage={"prompt_tokens": 100, "completion_tokens": 16_000})
+        second = api_reply(wire(metadata={"version": 1, "title": "Bad"}, compute=""), usage={
+            "prompt_tokens": 100, "completion_tokens": 7_000})
+        checks = lambda spec, html: failing_report() if spec["title"] == "Bad" else ok_report()
+        h = Harness(first, second, api_reply(wire(metadata={"version": 1, "title": "Corrected"}, compute="")), checks=checks)
+        self.assertEqual(h.run(), 0)
+        self.assertEqual(len(h.sent_bodies()), 3)
+        self.assertEqual(h.sent_bodies()[-1]["max_tokens"], 7_000)
+        self.assertTrue(any(event["action"] == "revision_2:budget" for event in h.events))
+        self.assertLessEqual(h.final()["details"]["charged_completion_tokens"], HARD_COMPLETION_TOKENS)
+
+    def test_less_than_two_thousand_tokens_after_recovery_blocks_an_extra_call(self):
+        replies = list(self.replies())
+        replies[2] = api_reply(wire(metadata={"version": 1, "tests": []}, compute=""), usage={
+            "prompt_tokens": 100, "completion_tokens": 1_000})
+        h = Harness(*replies, api_reply(wire()))
+        self.assertEqual(h.run(), 1)
+        self.assertEqual(len(h.sent_bodies()), 3)
+        self.assertEqual(h.final()["details"]["repairs"]["attempted"], 2)
+
+    def test_unverified_final_recovery_reserves_only_remaining_hard_allowance(self):
+        h = Harness(*self.replies(final_usage=False))
+        self.assertEqual(h.run(), 0)
+        self.assertEqual(h.sent_bodies()[-1]["max_tokens"], 2_845)
+        self.assertEqual(h.final()["details"]["charged_completion_tokens"], HARD_COMPLETION_TOKENS)
+        self.assertEqual(h.final()["details"]["unverified_attempts"], 1)
+
+    def test_exhausted_request_or_time_budget_blocks_final_recovery(self):
+        for exhausted in ("requests", "time"):
+            with self.subTest(exhausted=exhausted):
+                h = Harness(*self.replies())
+                original_factory = h.client_factory
+
+                def capped(model, key, budget):
+                    client = original_factory(model, key, budget)
+                    original_call = client.call_model
+
+                    def call(messages, max_tokens):
+                        result = original_call(messages, max_tokens)
+                        if budget.attempts == 2:
+                            if exhausted == "requests":
+                                budget.attempts = MAX_ATTEMPTS
+                            else:
+                                h.clock.now += 465
+                        return result
+                    client.call_model = call
+                    return client
+                h.client_factory = capped
+                self.assertEqual(h.run(), 1)
+                self.assertEqual(len(h.sent_bodies()), 2)
+                self.assertFalse(any(event["action"] == "revision_2:budget" for event in h.events))
+
+
+
+class TruncationRecoveryTests(unittest.TestCase):
+    def harness(self, *, first_finish="length", second_tokens=4_000):
+        first = api_reply('BEGIN_SPEC\n{"version":1,', usage={"prompt_tokens":100,"completion_tokens":16_000})
+        first["choices"][0]["finish_reason"] = first_finish
+        invalid = api_reply('BEGIN_SPEC\n{"version":1 "title":"broken"}\nEND_SPEC\nBEGIN_COMPUTE\nfunction compute(inputs){return {total:1};}\nEND_COMPUTE', usage={"prompt_tokens":100,"completion_tokens":second_tokens})
+        good = api_reply(wire(), usage={"prompt_tokens":100,"completion_tokens":4_000})
+        h = Harness(first, invalid, good)
+        original = h.client_factory
+        def configured(model,key,budget):
+            client=original(model,key,budget)
+            client.reasoning={"effort":"low"}
+            client.provider={"require_parameters":True,"sort":"throughput"}
+            return client
+        h.client_factory=configured
+        return h
+
+    def test_auto_truncation_switches_recovery_off_and_fixes_invalid_json_with_last_full_response(self):
+        h=self.harness()
+        self.assertEqual(h.run("--model","deepseek/deepseek-v4.1-flash"),0)
+        bodies=h.sent_bodies()
+        self.assertEqual([b["max_tokens"] for b in bodies],[16_000,14_000,10_000])
+        self.assertEqual([b["reasoning"] for b in bodies],[{"effort":"low"},{"enabled":False},{"enabled":False}])
+        self.assertTrue(all(b["provider"]=={"require_parameters":True,"sort":"throughput"} for b in bodies))
+        self.assertEqual(h.final()["details"]["charged_completion_tokens"],24_000)
+        budget_event=next(e for e in h.events if e["action"]=="revision_2:budget")
+        self.assertEqual(budget_event["details"]["max_tokens"],bodies[2]["max_tokens"])
+        self.assertEqual(h.final()["details"]["repairs"]["attempted"],2)
+        self.assertTrue(any(e["action"]=="revision_1:reasoning" for e in h.events))
+
+    def test_explicit_reasoning_setting_remains_authoritative(self):
+        h=self.harness()
+        self.assertEqual(h.run("--model","deepseek/deepseek-v4.1-flash","--reasoning","low"),0)
+        self.assertTrue(all(b["reasoning"]=={"effort":"low"} for b in h.sent_bodies()))
+        self.assertFalse(any(e["action"].endswith(":reasoning") for e in h.events))
+
+    def test_full_recovery_requires_at_least_eight_thousand_remaining_tokens(self):
+        h=self.harness(second_tokens=6_001)
+        self.assertEqual(h.run("--model","deepseek/deepseek-v4.1-flash"),1)
+        self.assertEqual(len(h.sent_bodies()),2)
+        self.assertEqual(h.final()["details"]["charged_completion_tokens"],22_001)
+
+    def test_nontruncated_invalid_json_does_not_change_reasoning(self):
+        h=self.harness(first_finish="stop")
+        self.assertEqual(h.run("--model","deepseek/deepseek-v4.1-flash"),0)
+        self.assertTrue(all(b["reasoning"]=={"effort":"low"} for b in h.sent_bodies()))
+
+
+class ThirdBoundedRepairTests(unittest.TestCase):
+    def test_truncated_schema_recovery_then_detected_calculation_failure_gets_one_more_repair(self):
+        cut=api_reply('BEGIN_SPEC\n{"version":1,',usage={"prompt_tokens":100,"completion_tokens":16_000})
+        cut["choices"][0]["finish_reason"]="length"
+        bad=toy_spec();bad["tests"][1]["inputs"]={"xs":[9,0,0]};bad["title"]="Bad"
+        invalid=api_reply(wire(bad),usage={"prompt_tokens":100,"completion_tokens":4_000})
+        fix_tests=api_reply(wire(metadata={"version":1,"tests":toy_spec()["tests"]},compute=""),usage={"prompt_tokens":100,"completion_tokens":600})
+        fix_failure=api_reply(wire(metadata={"version":1,"title":"Corrected"},compute=""),usage={"prompt_tokens":100,"completion_tokens":500})
+        h=Harness(cut,invalid,fix_tests,fix_failure,checks=lambda s,html:failing_report() if s["title"]=="Bad" else ok_report())
+        original=h.client_factory
+        def configured(model,key,budget):
+            c=original(model,key,budget);c.reasoning={"effort":"low"};return c
+        h.client_factory=configured
+        self.assertEqual(h.run("--model","deepseek/deepseek-v4.1-flash"),0)
+        self.assertEqual(h.final()["details"]["repairs"]["attempted"],3)
+        self.assertEqual(len(h.sent_bodies()),4)
+        self.assertEqual(h.final()["details"]["charged_completion_tokens"],21_100)
+        self.assertTrue(all(b["reasoning"]=={"enabled":False} for b in h.sent_bodies()[1:]))
+        self.assertTrue(any(e["action"]=="revision_3:budget" for e in h.events))
+
+    def test_failed_third_repair_does_not_make_a_fifth_request(self):
+        first=api_reply(wire(dict(toy_spec(),title="Bad")),usage={"prompt_tokens":100,"completion_tokens":16_000})
+        bad=api_reply(wire(metadata={"version":1,"title":"Bad"},compute=""),usage={"prompt_tokens":100,"completion_tokens":2_000})
+        h=Harness(first,bad,bad,bad,api_reply(wire()),checks=lambda s,html:failing_report())
+        self.assertEqual(h.run(),1)
+        self.assertEqual(h.final()["details"]["repairs"]["attempted"],3)
+        self.assertEqual(len(h.sent_bodies()),4)
 
 if __name__ == "__main__":
     unittest.main()

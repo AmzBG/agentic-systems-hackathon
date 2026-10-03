@@ -3,7 +3,7 @@
 python agent.py --input case.json --output out --model MODEL_ID
 
 Flow: read_input -> fetch -> [plan] -> generate -> parse -> render -> check ->
-up to two targeted revisions -> final. The best safe candidate is written
+up to three bounded revisions -> final. The best safe candidate is written
 atomically after every improvement; a known required failure exits nonzero.
 """
 
@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlparse
 
-from budget import Budget, BudgetExceeded
+from budget import Budget, BudgetExceeded, MAX_ATTEMPTS, MIN_ATTEMPT_SECONDS
 from model_client import ModelCallError, OpenRouterClient
 from prompts import (MAX_SOURCE_CHARS, build_generation_messages, build_plan_messages,
                      build_repair_messages, expand_requested)
@@ -75,7 +75,7 @@ def provider_preferences(reasoning: dict | None, sort: str | None) -> dict | Non
 GENERATION_MAX_TOKENS = 16_000
 REPAIR_MAX_TOKENS = 7_000
 PLAN_MAX_TOKENS = 3_000  # reasoning precedes the visible plan; 3k + 16k generation < 24k soft cap
-MAX_REPAIRS = 2
+MAX_REPAIRS = 3
 MAX_RETRIES_PER_CALL = 1
 MIN_RETRY_TOKENS = 2_000
 MIN_REGENERATION_TOKENS = 8_000
@@ -522,7 +522,7 @@ class Runner:
         self.usage_totals = {"prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0,
                              "total_tokens": 0, "unverified_attempts": 0}
         self.rejected: Candidate | None = None
-        self.repair_base: dict | None = None  # schema-invalid but parsed generation; base for targeted repair
+        self.repair_base: dict | None = None  # schema-invalid parsed response; base for targeted repair
         self.case: dict[str, str] = {}
         self._secret = ""
 
@@ -727,11 +727,30 @@ class Runner:
         for number in range(1, MAX_REPAIRS + 1):
             if (self.best is not None and self.best.report["ok"]) or self.calls_blocked:
                 break
+            targeted_max_tokens = REPAIR_MAX_TOKENS
             if not self.budget.allows_optional_call(REPAIR_MAX_TOKENS):
-                self.emit("revision", f"revision_{number}", "skip", details={
-                    "reason": "soft token, request or time budget", **self.budget.snapshot()})
-                break
-            if not self.repair(client, source, number, plan, errors):
+                recovery_tokens = min(REPAIR_MAX_TOKENS, self.budget.completion_left())
+                schema_recovery = self.repair_base is not None and bool(schema_targets(errors))
+                full_recovery = self.best is None and self.repair_base is None and bool(errors) and self.budget.completion_left() >= MIN_REGENERATION_TOKENS
+                candidate_recovery = self.best is not None and bool(repair_targets(self.best.report)[1])
+                if full_recovery:
+                    recovery_tokens = min(GENERATION_MAX_TOKENS, self.budget.completion_left())
+                final_schema_recovery = (
+                    number >= 2
+                    and (schema_recovery or full_recovery or candidate_recovery)
+                    and recovery_tokens >= MIN_RETRY_TOKENS
+                    and self.budget.attempts < MAX_ATTEMPTS
+                    and self.budget.remaining_seconds() >= MIN_ATTEMPT_SECONDS
+                )
+                if not final_schema_recovery:
+                    self.emit("revision", f"revision_{number}", "skip", details={
+                        "reason": "soft token, request or time budget", **self.budget.snapshot()})
+                    break
+                targeted_max_tokens = recovery_tokens
+                self.emit("revision", f"revision_{number}:budget", "info", details={
+                    "reason": "bounded recovery of detected failures within the remaining hard budget",
+                    "max_tokens": targeted_max_tokens, **self.budget.snapshot()})
+            if not self.repair(client, source, number, plan, errors, targeted_max_tokens):
                 break
             last = self.revisions[-1]
             errors = last.get("errors", errors if last.get("call_failed") else [])
@@ -743,7 +762,7 @@ class Runner:
         return self.finish(EXIT_OK, "")
 
     def repair(self, client: OpenRouterClient, source: dict, number: int,
-               plan: str | None, errors: list[str]) -> bool:
+               plan: str | None, errors: list[str], targeted_max_tokens: int = REPAIR_MAX_TOKENS) -> bool:
         """One repair request. Returns False when no actionable failure exists."""
         record: dict = {"number": number, "accepted": False}
         base = self.best.spec if self.best is not None else self.repair_base
@@ -752,7 +771,7 @@ class Runner:
             requested = schema_targets(errors)
             record.update(mode="targeted", requested=requested)
             messages = build_repair_messages(self.case, self.repair_base, errors, requested)
-            max_tokens = REPAIR_MAX_TOKENS
+            max_tokens = targeted_max_tokens
         elif self.best is None:
             if not errors and self.rejected is not None:
                 errors = [f"{c.get('id')}: {c.get('detail')}" for c in self.rejected.report["checks"]
@@ -781,7 +800,15 @@ class Runner:
                        [f"previous revision rejected: {e}" for e in errors]
             record.update(mode="targeted", requested=requested)
             messages = build_repair_messages(self.case, self.best.spec, failures, requested)
-            max_tokens = REPAIR_MAX_TOKENS
+            max_tokens = targeted_max_tokens
+        if (self.args.reasoning == "auto" and self.best is None
+                and model_profile(self.args.model)
+                and client.last_call.get("finish_reason") == "length"
+                and client.reasoning is not None and client.reasoning.get("enabled") is not False):
+            client.reasoning = {"enabled": False}
+            self.emit("revision", f"revision_{number}:reasoning", "info", details={
+                "reason": "automatic recovery after a truncated response; reserve completion tokens for visible output",
+                "reasoning_setting": client.reasoning})
         self.emit("revision", f"revision_{number}:targets", "info", revisions=[dict(record)])
         text = self.call(client, "revision", f"revision_{number}", messages, max_tokens)
         if text is None:
@@ -791,6 +818,8 @@ class Runner:
         try:
             spec = parse_spec(text) if record["mode"] == "full" else merge_revision(base, text, record["requested"])
         except SpecError as exc:
+            if record["mode"] == "full" and self.best is None and exc.spec is not None and error_targets(exc.errors):
+                self.repair_base = exc.spec
             record["errors"] = exc.errors[:40]
             self.revisions.append(record)
             self.emit("revision", f"revision_{number}:parse", "fail", failures=exc.errors[:40],
