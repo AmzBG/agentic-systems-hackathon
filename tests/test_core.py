@@ -234,6 +234,11 @@ class ContractTests(unittest.TestCase):
                        "filter, indexOf, includes", "== and !=", "Math.LN2 (use Math.log(2))",
                        "across all outputs combined", "instead of substituting sentinel numbers",
                        "Name each test by the situation it sets up", "at full precision",
+                       # U3-U1-007: statements true for every valid control value
+                       "varies linearly with x", "for every point with x not equal to zero",
+                       "once at least one observation exists", "never says a quantity the mechanism normalizes",
+                       "without generalising one row to all", "say which factors still remain",
+                       "including any it resets", "never with a sum of row totals",
                        "when that narrows a range the brief asks for, say so and why in the limitation"):
             self.assertIn(phrase, system)
         repair = prompts.build_repair_messages({"focus": "f"}, toy_spec(), ["x: y"], ["grounding"])
@@ -688,6 +693,33 @@ class FlowTests(unittest.TestCase):
         repair = h.sent_bodies()[1]["messages"][1]["content"]
         self.assertIn("Current compute function:", repair)  # compute-only repair
         self.assertIn("top-level keys: []", repair)
+
+    def test_invariant_names_describe_exactly_what_is_checked(self):  # U3-U1-007 A3
+        spec = toy_spec()
+        spec["invariants"] = [
+            {"name": "each row sums to one", "output": "total", "kind": "finite", "atol": 0, "rtol": 0},
+            {"name": "outputs stay sensible", "output": "scaled", "kind": "range", "min": -20, "max": 20,
+             "atol": 0, "rtol": 0}]
+        rendered = []
+
+        def render(candidate):
+            rendered.append(copy.deepcopy(candidate))
+            return "<!doctype html><title>t</title>"
+        h = Harness(api_reply(wire(spec)), render=render)
+        self.assertEqual(h.run(), 0)
+        invariants = rendered[-1]["invariants"]
+        self.assertEqual([i["name"] for i in invariants],
+                         ["every value of Total is finite", "every value of Scaled is between -20 and 20"])
+        self.assertEqual([(i["kind"], i.get("min"), i.get("max")) for i in invariants],
+                         [("finite", None, None), ("range", -20, 20)])  # checks themselves unchanged
+        event = [e for e in h.events if e["action"].endswith(":invariant_names")][0]
+        self.assertEqual(event["details"]["renamed"][0]["from"], "each row sums to one")
+        names = {"sum": "the values of Total add up to 1", "row_sum": "each row of Total adds up to 1",
+                 "nondecreasing": "Total never decreases from one entry to the next"}
+        for kind, expected in names.items():
+            item = {"name": "x", "output": "total", "kind": kind, "expected": 1, "atol": 0, "rtol": 0}
+            agent.name_invariants_by_check({"outputs": spec["outputs"], "invariants": [item]})
+            self.assertEqual(item["name"], expected)
 
     def test_degraded_ok_exits_zero_and_reports(self):
         report = ok_report()

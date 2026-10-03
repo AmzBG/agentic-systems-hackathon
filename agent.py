@@ -381,6 +381,40 @@ def name_tests_by_setting(spec: dict) -> list[dict]:
     return renamed
 
 
+def _number_text(value: Any) -> str:
+    return f"{value:.6g}" if isinstance(value, (int, float)) and not isinstance(value, bool) else str(value)
+
+
+def name_invariants_by_check(spec: dict) -> list[dict]:
+    """Name every invariant by what its kind actually checks, so a name can never claim more coverage.
+
+    Invariant names are display text only; kind, output and bounds are unchanged. Returns what was renamed.
+    """
+    labels = {o.get("id"): (o.get("label") or o.get("id")) for o in spec.get("outputs", []) if isinstance(o, dict)}
+    renamed = []
+    for index, item in enumerate(spec.get("invariants", [])):
+        if not isinstance(item, dict):
+            continue
+        label = labels.get(item.get("output"), item.get("output"))
+        kind = item.get("kind")
+        if kind == "finite":
+            name = f"every value of {label} is finite"
+        elif kind == "range":
+            name = f"every value of {label} is between {_number_text(item.get('min'))} and {_number_text(item.get('max'))}"
+        elif kind == "sum":
+            name = f"the values of {label} add up to {_number_text(item.get('expected'))}"
+        elif kind == "row_sum":
+            name = f"each row of {label} adds up to {_number_text(item.get('expected'))}"
+        elif kind == "nondecreasing":
+            name = f"{label} never decreases from one entry to the next"
+        else:
+            continue
+        if item.get("name") != name:
+            renamed.append({"invariant": index, "from": str(item.get("name"))[:240], "to": name[:240]})
+            item["name"] = name[:240]
+    return renamed
+
+
 # ------------------------------------------------------------------ candidates
 
 @dataclass
@@ -578,6 +612,9 @@ class Runner:
         renamed = name_tests_by_setting(spec)
         if renamed:
             self.emit(stage, f"{label}:test_names", "info", details={"renamed": renamed})
+        invariant_names = name_invariants_by_check(spec)
+        if invariant_names:
+            self.emit(stage, f"{label}:invariant_names", "info", details={"renamed": invariant_names})
         if self.render is None:
             self.emit(stage, f"{label}:render", "fail", failures=["renderer unavailable"])
             return None
