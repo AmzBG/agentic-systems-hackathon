@@ -29,7 +29,17 @@
     "exponential_decay": {
       "identity": "After one half-life t=ln(2)/lambda, the remaining amount is N0/2; with N0=80 and lambda=ln(2), N(1)=40.",
       "inputs": {"initial": 80, "lambda": 0.6931471805599453, "time": 1},
-      "expected": {"remaining_fraction": 0.5, "amount": 40}
+      "expected": {"remaining_fraction": 0.5, "amount": 40},
+      "finite_rate_reference": {
+        "identity": "At lambda=0.2, half-life is ln(2)/0.2; at t=5, the remaining fraction is exp(-1).",
+        "inputs": {"initial": 80, "lambda": 0.2, "time": 5},
+        "expected": {"half_life": 3.4657359027997265, "remaining_fraction": 0.36787944117144233, "amount": 29.430355293715387}
+      },
+      "zero_rate_reference": {
+        "identity": "At lambda=0, the physical half-life is infinite and the amount does not decay. The string infinity denotes this mathematical limit, not a numeric page output or a finite sentinel.",
+        "inputs": {"initial": 80, "lambda": 0, "time": 5},
+        "expected": {"half_life": "infinity", "remaining_fraction": 1, "amount": 80}
+      }
     }
   }
 }

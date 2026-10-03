@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import sys
 import tempfile
 import unittest
@@ -23,6 +24,26 @@ def _event(stage: str, *, result: str = "pass", details: dict | None = None) -> 
 
 
 class EvidenceScriptTests(unittest.TestCase):
+    def test_decay_oracle_uses_independent_finite_rate_math(self) -> None:
+        cases = json.loads((ROOT / "practice" / "oracles" / "core_identities.json").read_text(
+            encoding="utf-8"))["cases"]
+        self.assertEqual(len(cases), 6)
+        reference = cases["exponential_decay"]["finite_rate_reference"]
+        inputs = reference["inputs"]
+        expected = reference["expected"]
+        self.assertEqual((inputs["initial"], inputs["lambda"], inputs["time"]), (80, 0.2, 5))
+        self.assertAlmostEqual(expected["half_life"], math.log(2) / inputs["lambda"])
+        self.assertAlmostEqual(expected["remaining_fraction"], math.exp(-inputs["lambda"] * inputs["time"]))
+        self.assertAlmostEqual(expected["amount"], inputs["initial"] * expected["remaining_fraction"])
+
+    def test_decay_oracle_zero_rate_is_infinite_not_finite_sentinel(self) -> None:
+        reference = json.loads((ROOT / "practice" / "oracles" / "core_identities.json").read_text(
+            encoding="utf-8"))["cases"]["exponential_decay"]["zero_rate_reference"]
+        self.assertEqual(reference["inputs"]["lambda"], 0)
+        self.assertEqual(reference["expected"]["half_life"], "infinity")
+        self.assertEqual(reference["expected"]["remaining_fraction"], math.exp(0))
+        self.assertEqual(reference["expected"]["amount"], reference["inputs"]["initial"])
+
     def test_independent_oracle_allows_only_zero_inactive_slots(self) -> None:
         self.assertTrue(_near_active_vector([0.5, 0.5, 0, 0], [0.5, 0.5]))
         self.assertFalse(_near_active_vector([0.5, 0.5, 0.1], [0.5, 0.5]))
