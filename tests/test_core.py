@@ -779,6 +779,54 @@ class EvidenceDrivenTests(unittest.TestCase):
             validate_spec(spec)  # 3 + 64 + 64 > 128
         self.assertTrue(any("all numeric inputs combined" in e for e in ctx.exception.errors))
 
+    def test_change_claim_test_name_replaced_by_its_own_setting(self):  # U3-U1-006 exact generated test
+        spec = {"controls": [
+            {"id": "x2", "label": "x2", "kind": "number", "default": 2},
+            {"id": "intercept", "label": "a (intercept)", "kind": "slider", "default": 0},
+            {"id": "slope", "label": "b (slope)", "kind": "slider", "default": 1}],
+            "tests": [{"name": "doubling the slope doubles every residual for a zero intercept",
+                       "inputs": {"x2": 2, "intercept": 0, "slope": 2},
+                       "expected": {"resid": [1, 1]}, "atol": 1e-09, "rtol": 1e-09}]}
+        self.assertEqual(agent.name_tests_by_setting(spec), [{
+            "test": 0, "from": "doubling the slope doubles every residual for a zero intercept",
+            "to": "Expected outputs with b (slope) = 2, other inputs at defaults"}])
+        self.assertEqual(spec["tests"][0]["expected"], {"resid": [1, 1]})  # values untouched
+
+    def test_only_change_claims_are_renamed(self):
+        for name in ("scaling_halves_the_dot_product", "Doubled rate halves the half-life",
+                     "steep slope raises error", "larger gain lowers the share", "output grows with n",
+                     "increasing t", "total is proportional to gain"):
+            self.assertTrue(agent.CHANGE_CLAIM.search(name.replace("_", " ")), name)
+        for name in ("identity", "zero gain", "time at the half-life leaves half the amount",
+                     "nondecreasing cumulative totals", "zero growth rate keeps the amount",
+                     "lower bound of the range", "scaling divides each score by sqrt(dk)",
+                     "equal scores give uniform weights"):
+            self.assertIsNone(agent.CHANGE_CLAIM.search(name), name)
+        spec = {"controls": toy_spec()["controls"],
+                "tests": [{"name": "doubling inputs", "inputs": {}}, {"name": "tripled", "inputs": {"gain": 0.3}},
+                          {"name": "halving", "inputs": {"xs": [1, 1, 1]}}, {"name": "zero", "inputs": {}}]}
+        agent.name_tests_by_setting(spec)
+        self.assertEqual([t["name"] for t in spec["tests"]], [
+            "Expected outputs at the default inputs", "Expected outputs with Gain = 0.3, other inputs at defaults",
+            "Expected outputs with Inputs = [1, 1, 1], other inputs at defaults", "zero"])
+
+    def test_renamed_test_reaches_page_and_trace_without_extra_request(self):
+        spec = toy_spec()
+        spec["tests"].append({"name": "doubling the gain doubles every scaled value",
+                              "inputs": {"gain": 2, "xs": [1, 1, 1]}, "expected": {"scaled": [2, 2, 2]},
+                              "atol": 0, "rtol": 0})
+        rendered: list[dict] = []
+        h = Harness(api_reply(wire(spec)),
+                    render=lambda s: rendered.append(copy.deepcopy(s)) or "<!doctype html><title>t</title>")
+        self.assertEqual(h.run(), 0)
+        self.assertEqual(len(h.opener.requests), 1)
+        new = "Expected outputs with Gain = 2, Inputs = [1, 1, 1], other inputs at defaults"
+        self.assertEqual([t["name"] for t in rendered[0]["tests"]], ["identity", "zero", new])
+        event = [e for e in h.events if e["action"] == "generation:test_names"][0]
+        self.assertEqual((event["stage"], event["result"]), ("generate", "info"))
+        self.assertEqual(event["details"]["renamed"], [
+            {"test": 2, "from": "doubling the gain doubles every scaled value", "to": new}])
+
     def test_input_cap_counts_scalar_controls_like_the_runtime(self):  # U2-U1-003 repro 1
         spec = toy_spec()
         spec["controls"] = spec["controls"][:1]  # one slider = 1 numeric leaf

@@ -340,6 +340,47 @@ def page_compute_check(spec: dict, root: Path = Path(__file__).resolve().parent)
     return {**check, "detail": f"{len(probes)} probes ran in the page interpreter"}
 
 
+# ------------------------------------------------------------------ test names
+
+# A test checks one input setting, so its name can only state what holds at that setting. A name claiming a
+# change from another setting cannot be backed by the test's own values and was false in practice (U3-U1-006:
+# "doubling the slope doubles every residual" while the test's residuals were [1, 1] against [1, 3] at the
+# defaults). Such names are replaced by one built from the test's own inputs, which is true by construction.
+CHANGE_CLAIM = re.compile(r"\b(doubl|halv|tripl|quadrupl|increas|decreas|grow(s|ing|n)?\b|shrink|"
+                          r"rais(e|es|ed|ing)\b|lower(s|ed|ing)\b|proportional|inversely)", re.IGNORECASE)
+
+
+def _value_text(control: dict, value: Any) -> str:
+    if isinstance(value, bool):
+        return "on" if value else "off"
+    if isinstance(value, (int, float)):
+        text = f"{value:.6g}"
+        return text if float(text) == value else "about " + text
+    if isinstance(value, str):
+        labels = {o.get("value"): o.get("label") for o in control.get("options", []) if isinstance(o, dict)}
+        return str(labels.get(value) or value)
+    if isinstance(value, list) and _leaves(value) <= 8 and not any(isinstance(v, list) for v in value):
+        return "[" + ", ".join(_value_text(control, v) for v in value) + "]"
+    return "custom values"
+
+
+def name_tests_by_setting(spec: dict) -> list[dict]:
+    """Replace test names that claim a change between settings; returns what was renamed (spec is updated)."""
+    controls = {c.get("id"): c for c in spec.get("controls", []) if isinstance(c, dict)}
+    renamed = []
+    for index, test in enumerate(spec.get("tests", [])):
+        name = test.get("name") if isinstance(test, dict) else None
+        if not isinstance(name, str) or not CHANGE_CLAIM.search(name.replace("_", " ")):
+            continue
+        changed = [f"{controls[key].get('label') or key} = {_value_text(controls[key], value)}"
+                   for key, value in (test.get("inputs") or {}).items()
+                   if key in controls and value != controls[key].get("default")]
+        test["name"] = ("Expected outputs with " + ", ".join(changed) + ", other inputs at defaults"
+                        if changed else "Expected outputs at the default inputs")[:240]
+        renamed.append({"test": index, "from": name[:240], "to": test["name"]})
+    return renamed
+
+
 # ------------------------------------------------------------------ candidates
 
 @dataclass
@@ -534,6 +575,9 @@ class Runner:
         if self.collaborator_timeout() <= 0:
             self.emit("check", f"{label}:skipped", "skip", failures=["finish deadline reached"])
             return None
+        renamed = name_tests_by_setting(spec)
+        if renamed:
+            self.emit(stage, f"{label}:test_names", "info", details={"renamed": renamed})
         if self.render is None:
             self.emit(stage, f"{label}:render", "fail", failures=["renderer unavailable"])
             return None
