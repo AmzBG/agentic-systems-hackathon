@@ -1,0 +1,29 @@
+{
+ "case": "examples/attention/case.json",
+ "producing_commit": "5f3cddc28ee82ce85929e28b0efb45cc1bf88c42",
+ "status": "SUPERSEDED: run by another User 1 session before 5486ef6/aa88f39 (test-name prompt) and f0ce993 (test-name guard); not final-SHA evidence",
+ "command": "python agent.py --input examples/attention/case.json --output out/attention-5f3cddc --model deepseek/deepseek-v4.1-flash (defaults: single, auto=low, auto=throughput)",
+ "model_id_served": "deepseek/deepseek-v4.1-flash",
+ "served_provider": "Together",
+ "reasoning_setting_sent": {
+  "effort": "low"
+ },
+ "provider_preferences_sent": {
+  "require_parameters": true,
+  "sort": "throughput"
+ },
+ "requests": 2,
+ "repairs": "1 targeted (compute_js, tests), accepted",
+ "first_failure": "numerical_execution test_4: model-written expected softmax weight 0.964646662 vs computed 0.964663156 (atol 1e-6)",
+ "usage": {
+  "prompt_tokens": 11037,
+  "completion_tokens": 16340,
+  "reasoning_tokens_within_completion": 11136,
+  "total_tokens": 27377,
+  "verified": true
+ },
+ "agent_elapsed_seconds": 55.172,
+ "exit_code": 0,
+ "degraded": false,
+ "known_defect": "final page test name 'scaling_halves_the_dot_product' is false (d_k = 2 gives 1/sqrt(2)); at f0ce993 the agent would rename it to 'Expected outputs with Query matrix Q (3 queries x 2 dims) = custom values, Key matrix K (3 keys x 2 dims) = custom values, other inputs at defaults'"
+}

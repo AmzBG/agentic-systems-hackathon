@@ -1,0 +1,66 @@
+{
+ "case": "examples/attention/case.json",
+ "producing_commit": "f0ce993038a13960df064c8f3d8b2bf4209b2299",
+ "source_tree": "clean `git archive f0ce993` export (no local edits)",
+ "command": "python agent.py --input examples/attention/case.json --output <fresh empty dir> --model deepseek/deepseek-v4.1-flash",
+ "flags_at_defaults": {
+  "--flow": "single",
+  "--reasoning": "auto",
+  "--provider-sort": "auto"
+ },
+ "python": "3.11.9 venv, pinned requirements (quickjs 1.19.4, pypdf 6.19.0), wheel-only install",
+ "started_beirut": "2026-10-03 15:10:57",
+ "finished_beirut": "2026-10-03 15:11:48",
+ "model_id_requested": "deepseek/deepseek-v4.1-flash",
+ "model_id_served": "deepseek/deepseek-v4.1-flash",
+ "reasoning_setting_sent": {
+  "effort": "low"
+ },
+ "reasoning_resolution": "auto -> MODEL_PROFILES['deepseek/deepseek-v4.1-flash'].reasoning = low",
+ "provider_preferences_sent": {
+  "require_parameters": true,
+  "sort": "throughput"
+ },
+ "served_provider": "Together",
+ "flow": "single (planning_attempts 0)",
+ "requests": 1,
+ "http_attempts": 1,
+ "repairs_attempted": 0,
+ "finish_reasons": [
+  "stop"
+ ],
+ "usage": {
+  "prompt_tokens": 6884,
+  "completion_tokens": 15312,
+  "reasoning_tokens_within_completion": 11867,
+  "total_tokens": 22196,
+  "verified": true,
+  "unverified_attempts": 0
+ },
+ "call_seconds": 47.563,
+ "agent_elapsed_seconds": 49.609,
+ "wall_seconds_approx": 51,
+ "fetch": {
+  "status": "ok",
+  "kind": "html",
+  "bytes": 188707,
+  "chars": 40839,
+  "truncated": true,
+  "seconds": 0.75
+ },
+ "exit_code": 0,
+ "checks_ok": true,
+ "degraded": false,
+ "final_checks": {
+  "spec_schema": "pass",
+  "offline_html": "pass",
+  "compute_safety": "pass",
+  "numerical_execution": "pass",
+  "two_meaningful_controls": "pass",
+  "page_interpreter": "pass"
+ },
+ "numerical_execution_nondegraded": true,
+ "validate_output": "scripts/validate_output.py --output <dir> --model deepseek/deepseek-v4.1-flash -> ok true, exit 0",
+ "independent_oracle": "oracle_attention_f0ce993.py -> ok true: 7 trials (default, both presets, negative mixed scaled/unscaled, zero query, extreme bounds unscaled) x 6 outputs",
+ "test_name_guard": "no test renamed (no generation:test_names event); generated names: 'equal scores', 'dominant score without scaling', 'dominant score with scaling'"
+}

@@ -1,0 +1,84 @@
+{
+ "ok": true,
+ "page": "index.html",
+ "mapping": "q[1x4]/k[2x4]/v[2x2]/scaling -> raw_dot/scale_factor/scores/weights/weight_sum/output; d_k = 4",
+ "trials": {
+  "default": {
+   "ok": true,
+   "checks": {
+    "raw_dot": true,
+    "scale_factor": true,
+    "scores": true,
+    "weights": true,
+    "weight_sum": true,
+    "output": true
+   }
+  },
+  "preset_1": {
+   "ok": true,
+   "checks": {
+    "raw_dot": true,
+    "scale_factor": true,
+    "scores": true,
+    "weights": true,
+    "weight_sum": true,
+    "output": true
+   }
+  },
+  "preset_2": {
+   "ok": true,
+   "checks": {
+    "raw_dot": true,
+    "scale_factor": true,
+    "scores": true,
+    "weights": true,
+    "weight_sum": true,
+    "output": true
+   }
+  },
+  "negative_mixed_scaled": {
+   "ok": true,
+   "checks": {
+    "raw_dot": true,
+    "scale_factor": true,
+    "scores": true,
+    "weights": true,
+    "weight_sum": true,
+    "output": true
+   }
+  },
+  "negative_mixed_unscaled": {
+   "ok": true,
+   "checks": {
+    "raw_dot": true,
+    "scale_factor": true,
+    "scores": true,
+    "weights": true,
+    "weight_sum": true,
+    "output": true
+   }
+  },
+  "zero_query_value_average": {
+   "ok": true,
+   "checks": {
+    "raw_dot": true,
+    "scale_factor": true,
+    "scores": true,
+    "weights": true,
+    "weight_sum": true,
+    "output": true
+   }
+  },
+  "extreme_bounds_unscaled": {
+   "ok": true,
+   "checks": {
+    "raw_dot": true,
+    "scale_factor": true,
+    "scores": true,
+    "weights": true,
+    "weight_sum": true,
+    "output": true
+   }
+  }
+ }
+}

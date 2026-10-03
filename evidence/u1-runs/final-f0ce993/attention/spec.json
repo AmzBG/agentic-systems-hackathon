@@ -1,0 +1,434 @@
+{
+ "controls": [
+  {
+   "id": "q",
+   "label": "Query matrix Q",
+   "help": "Edits the query vector; changes raw dot products, scale factor, scaled scores, attention weights, and output.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     2,
+     0,
+     0,
+     0
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.1,
+   "shape": [
+    1,
+    4
+   ]
+  },
+  {
+   "id": "k",
+   "label": "Key matrix K",
+   "help": "Edits the two key vectors; changes raw dot products, scaled scores, attention weights, and output.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     1,
+     0,
+     0
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.1,
+   "shape": [
+    2,
+    4
+   ]
+  },
+  {
+   "id": "v",
+   "label": "Value matrix V",
+   "help": "Edits the two value vectors; changes the final output vector but not the attention weights.",
+   "units": "unitless",
+   "kind": "matrix",
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.1,
+   "shape": [
+    2,
+    2
+   ]
+  },
+  {
+   "id": "scaling",
+   "label": "Scaling toggle",
+   "help": "When on, scale_factor is 1/sqrt(dk); when off, scale_factor is 1. Changes scaled scores, attention weights, and output.",
+   "units": "unitless",
+   "kind": "toggle",
+   "default": true
+  }
+ ],
+ "outputs": [
+  {
+   "id": "raw_dot",
+   "label": "Raw dot products",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "scale_factor",
+   "label": "Scale factor",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "scores",
+   "label": "Scaled scores",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "weights",
+   "label": "Attention weights",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "weight_sum",
+   "label": "Weight sum",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "output",
+   "label": "Output vector",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "weights_bar",
+   "kind": "bar",
+   "title": "Attention weights",
+   "output": "weights",
+   "x_label": "key index",
+   "y_label": "weight",
+   "labels": [
+    "key 1",
+    "key 2"
+   ]
+  },
+  {
+   "id": "scores_bar",
+   "kind": "bar",
+   "title": "Scaled scores",
+   "output": "scores",
+   "x_label": "key index",
+   "y_label": "score",
+   "labels": [
+    "key 1",
+    "key 2"
+   ]
+  },
+  {
+   "id": "output_bar",
+   "kind": "bar",
+   "title": "Output vector",
+   "output": "output",
+   "x_label": "value dimension",
+   "y_label": "output component",
+   "labels": [
+    "dim 1",
+    "dim 2"
+   ]
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Equal scores produce uniform attention",
+   "instruction": "Predict: if two keys give the same score, what will the attention weights and output be? Then apply the preset, which sets Q and K to make raw dot products equal.",
+   "observe": "The weights readout becomes [0.5, 0.5] and weight_sum stays 1; the output becomes [0.5, 0.5] because V is the identity matrix. The scores bar shows equal bars.",
+   "why": "Softmax of equal scores gives each key the same weight, so the output is the average of the value vectors. Scaling does not change equality.",
+   "preset": {
+    "q": [
+     [
+      1,
+      1,
+      0,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0,
+      1,
+      0
+     ],
+     [
+      0,
+      1,
+      0,
+      1
+     ]
+    ],
+    "scaling": true
+   }
+  },
+  {
+   "title": "A dominant score with scaling off",
+   "instruction": "Predict: with one raw dot product much larger than the other and scaling turned off, how concentrated will the attention weights be? Then apply the preset, which sets Q, K, and scaling.",
+   "observe": "The weights readout becomes approximately [0.982, 0.018] and weight_sum stays 1; the output is nearly the first value vector. Turning scaling on would flatten the weights.",
+   "why": "Without scaling, the large score gap makes softmax saturate, assigning almost all weight to the first key. The scale_factor is 1 instead of 1/sqrt(dk)=0.5, so score differences are not reduced.",
+   "preset": {
+    "q": [
+     [
+      4,
+      0,
+      0,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ]
+    ],
+    "scaling": false
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "equal scores",
+   "inputs": {
+    "q": [
+     [
+      1,
+      1,
+      0,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0,
+      1,
+      0
+     ],
+     [
+      0,
+      1,
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scaling": true
+   },
+   "expected": {
+    "raw_dot": [
+     1,
+     1
+    ],
+    "scale_factor": 0.5,
+    "scores": [
+     0.5,
+     0.5
+    ],
+    "weights": [
+     0.5,
+     0.5
+    ],
+    "weight_sum": 1,
+    "output": [
+     0.5,
+     0.5
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "dominant score without scaling",
+   "inputs": {
+    "q": [
+     [
+      4,
+      0,
+      0,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scaling": false
+   },
+   "expected": {
+    "raw_dot": [
+     4,
+     0
+    ],
+    "scale_factor": 1,
+    "scores": [
+     4,
+     0
+    ],
+    "weights": [
+     0.9820137900379085,
+     0.01798620996209156
+    ],
+    "weight_sum": 1,
+    "output": [
+     0.9820137900379085,
+     0.01798620996209156
+    ]
+   },
+   "atol": 1e-06,
+   "rtol": 1e-06
+  },
+  {
+   "name": "dominant score with scaling",
+   "inputs": {
+    "q": [
+     [
+      4,
+      0,
+      0,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ]
+    ],
+    "v": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scaling": true
+   },
+   "expected": {
+    "raw_dot": [
+     4,
+     0
+    ],
+    "scale_factor": 0.5,
+    "scores": [
+     2,
+     0
+    ],
+    "weights": [
+     0.8807970779778823,
+     0.11920292202211755
+    ],
+    "weight_sum": 1,
+    "output": [
+     0.8807970779778823,
+     0.11920292202211755
+    ]
+   },
+   "atol": 1e-06,
+   "rtol": 1e-06
+  }
+ ],
+ "invariants": [
+  {
+   "name": "weights sum to one",
+   "output": "weights",
+   "kind": "sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "weights between zero and one",
+   "output": "weights",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "weight_sum scalar is finite",
+   "output": "weight_sum",
+   "kind": "finite",
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ]
+}

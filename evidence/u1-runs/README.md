@@ -13,6 +13,26 @@ targeting), `6b1a36e` (throughput made the default for this model) and `c3679e0`
 development check (page AST run in `templates/interpreter.js` vs Python-computed attention/decay/entropy values), not a
 certification; `n/a` = no oracle for that case.
 
+## Final-SHA Attention run (User 1 freeze candidate `f0ce993`)
+
+`final-f0ce993/attention/`: the one Attention recheck on the frozen User 1 core, produced at
+`f0ce993038a13960df064c8f3d8b2bf4209b2299` from a clean `git archive` export, Python 3.11.9 venv with pinned
+requirements, fresh output directory, exact command `python agent.py --input examples/attention/case.json --output DIR
+--model deepseek/deepseek-v4.1-flash` (all other flags at defaults: single flow, `--reasoning auto` → low,
+`--provider-sort auto` → throughput, so the request carried `reasoning: {effort: low}` and
+`provider: {require_parameters: true, sort: throughput}`). Served model `deepseek/deepseek-v4.1-flash` via Together.
+Result: exit 0, 1 request, 0 repairs, finish `stop`; 6,884 prompt + 15,312 completion (11,867 reasoning, within
+completion) = 22,196 verified tokens; call 47.6 s, agent 49.6 s, wall ≈51 s; all six checks pass, including
+`numerical_execution` and `page_interpreter`, **nondegraded**; `scripts/validate_output.py` ok; User 1's independent
+oracle (`oracle_attention_f0ce993.py`, result `oracle.json`) passes 7 trials × 6 outputs. Generated test names are
+single-setting ("equal scores", "dominant score without scaling", "dominant score with scaling"); the test-name guard
+renamed nothing. `run.json` holds the full provenance.
+
+`superseded-5f3cddc/attention/`: an earlier run of the same command by another User 1 session at `5f3cddc` (before
+the test-name prompt `aa88f39` and guard `f0ce993`). It exited 0 after one accepted targeted repair (a rounded
+model-written softmax expectation) and kept a false test name, "scaling_halves_the_dot_product" (d_k = 2 gives
+1/√2). Kept for transparency; it is not final-SHA evidence.
+
 ## Current-code runs
 
 | Run | Condition | Reasoning | Commit | Exit | Validator | Degraded | Oracle | Requests | Prompt | Completion | Reasoning tokens | Wall s | Finish reasons | Served providers |
