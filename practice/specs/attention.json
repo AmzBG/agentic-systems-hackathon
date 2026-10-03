@@ -35,11 +35,11 @@
   ],
   "explorations": [
     {
-      "title": "Make all scores equal",
-      "instruction": "Predict how equal scores will split attention between keys. Then apply the preset, compare the score and weight matrices, and inspect the mixed values.",
-      "observe": "Every score is zero, so each query assigns one half of its weight to each key and receives the average of the two value rows.",
-      "why": "Softmax maps equal scores to equal probabilities; the output is therefore the uniform weighted average.",
-      "preset": {"queries": [[0, 0], [0, 0]], "keys": [[1, 0], [0, 1]], "values": [[2, 0], [0, 4]], "scale": true}
+      "title": "Isolate score scaling",
+      "instruction": "Predict whether removing the 1/sqrt(2) factor makes each query's weights more concentrated. Apply the preset: Q, K, and V stay at the identity example; only scaling is disabled. Compare with the scaled default.",
+      "observe": "Each diagonal score changes from 1/sqrt(2) to 1; off-diagonal scores stay zero. Each diagonal weight rises from about 0.670 to 0.731, while the other weight falls from about 0.330 to 0.269. Both rows still sum to one. With V equal to the identity, the output equals the weights.",
+      "why": "For these fixed dot products, removing scaling increases each row's score gap. Softmax then assigns more weight to its larger score without changing normalization or the value vectors.",
+      "preset": {"scale": false}
     },
     {
       "title": "Make one key dominate",

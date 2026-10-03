@@ -26,6 +26,33 @@ def _event(stage: str, *, result: str = "pass", details: dict | None = None) -> 
 
 
 class EvidenceScriptTests(unittest.TestCase):
+    def test_attention_fixture_exploration_isolates_scaling(self) -> None:
+        from runtime import merge_inputs, render
+        spec = json.loads((ROOT / 'practice/specs/attention.json').read_text(encoding='utf-8'))
+        preset = spec['explorations'][0]['preset']
+        self.assertEqual(preset, {'scale': False})
+        defaults = {c['id']: c['default'] for c in spec['controls']}
+        trial = merge_inputs(spec['controls'], preset)
+        for key in ('queries', 'keys', 'values'):
+            self.assertEqual(trial[key], defaults[key])
+        with tempfile.TemporaryDirectory() as temp:
+            page = Path(temp) / 'index.html'
+            page.write_text(render(spec), encoding='utf-8')
+            for scaled in (True, False):
+                diagonal = 1 / math.sqrt(2) if scaled else 1
+                weight = math.exp(diagonal) / (math.exp(diagonal) + 1)
+                expected = {'score_matrix': [[diagonal, 0], [0, diagonal]],
+                            'attention_weights': [[weight, 1-weight], [1-weight, weight]],
+                            'attended_values': [[weight, 1-weight], [1-weight, weight]]}
+                report = verify_page(page, {'scale': scaled}, expected)
+                self.assertTrue(report['ok'], report)
+
+    def test_entropy_fixture_exposes_normalization_and_contribution_equations(self) -> None:
+        spec = json.loads((ROOT / 'practice/specs/entropy.json').read_text(encoding='utf-8'))
+        explanation = spec['starting_point']['explanation']
+        for equation in ('p_i = w_i / sum(w)', 'c_i = -p_i log2(p_i)', 'H = sum(c_i)', 'p_i = 1/n'):
+            self.assertIn(equation, explanation)
+
     def test_independent_attention_uniform_and_scaled_identity(self) -> None:
         inputs = {'q': [[0, 0], [0, 0]], 'k': [[1, 0], [0, 1]],
                   'v': [[2, 0], [0, 4]], 'dk': 2, 'scale_on': True}

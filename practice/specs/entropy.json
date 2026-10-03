@@ -6,7 +6,7 @@
   "starting_point": {
     "idea": "Discrete entropy measures the average surprise of an outcome.",
     "why": "It gives a numerical way to compare uncertain and predictable sources.",
-    "explanation": "Normalize nonnegative weights into probabilities, then add each outcome's contribution. Zero-probability outcomes contribute zero. This is a small teaching example, not a reproduction of Shannon's communication experiments."
+    "explanation": "Weights w_i → probabilities p_i = w_i / sum(w) → contributions c_i = -p_i log2(p_i) → entropy H = sum(c_i), in bits. Use the active outcomes only; a zero probability contributes zero. If all active weights are zero, this toy example chooses p_i = 1/n. These are teaching inputs, not measurements from Shannon's paper."
   },
   "symbols": [
     {"symbol": "p_i", "meaning": "Probability of outcome i", "units": "unitless"},
