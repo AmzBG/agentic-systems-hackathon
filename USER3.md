@@ -1,5 +1,11 @@
 # USER3.md — checks and evidence
 
+Final verification17:19: clean checkout0e78ef47961877d91b85b6838d63779336fd2169
+passed197tests/42.954s, audit200trackedfiles, both example validators, six Entropy
+identities, gitdiffcheck and clean status. Remote matches; unauthenticatedHTTP200.
+Prompt correction's live effect remains unmeasured; no paid calls this five-minute
+pass. Any following evidence-only commit leaves this tested production unchanged.
+
 Final five-minute submission pass17:15: sole-integrator authority remains active.
 Corrected actual prompt conflict (brief requirements were incorrectly lumped with
 untrusted source commands); no paper-specific branches, new model/dependency or

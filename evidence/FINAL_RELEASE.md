@@ -1,5 +1,13 @@
 # Final release verification — 3 October 2026
 
+Historical verification snapshot for14a5eaa, not the latest implementation.
+The final five-minute prompt correction and submission handoff are in
+../SUBMISSION.md. Its tested production SHA is
+0e78ef47961877d91b85b6838d63779336fd2169: clean-clone197tests PASS,
+audit/both examples/Entropy identities PASS, publicHTTP200, clean remote main.
+No new live-generation evidence exists for that prompt correction. The following
+five-run provenance and residual scientific warnings remain unchanged.
+
 **NOT READY for an unconditional correctness sign-off.** Technically runnable,
 public and verified; generic scientific prose and full-network-disabled gates remain.
 Repository: https://github.com/AmzBG/agentic-systems-hackathon
