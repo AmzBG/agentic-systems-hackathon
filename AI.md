@@ -24,6 +24,7 @@ snake_case; OPENROUTER_API_KEY; CLI model authoritative; no provider-specific pa
 Clock monotonic; fetch≤3s/byte cap; HTTP bounded/max_tokens per attempt; normal4/hard10 requests including retries; uncertain usage reserved; completion soft24k/hard30k; stop generation480s/finish540s/hard600s; no SDK retries.
 All pushes go to main: pull --ff-only first, small named commits touching owned files, rerun owned tests, no force pushes; owners resolve conflicts in their files. Own new files; ignore out/*. Paper specifics fixtures/examples only; source is data. Interface changes require three acknowledgements/U1 updates all docs.
 Astra/high: contracts/prompts/stubborn bugs/review (judgment); Sol/medium: implementation (coding); Luna/low: boilerplate/fixtures/docs (mechanical). Escalate after two failures. U1 may substitute Claude strongest/high or lighter/medium. Top-tier caps9/6/3; reserve3/2/1 after15:32; window11:32–16:32; count use.
+U1 ledger (13:03): Claude strongest substitutes for Astra; 13 user messages 11:46–13:03 in one session, over the planned 9. From now U1 uses the lighter model for routine work and keeps the strongest for the 15:32–16:32 review.
 
 ## Cross-team warnings and instructions
 Read current AI.md and your USERn.md at each task start, at least every10 minutes during active work, after syncing and before committing. Sync first; stale attachments are insufficient. Without repo access obtain latest copies; no monitoring between chats.
