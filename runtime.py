@@ -563,8 +563,12 @@ def _teaching(spec):
     parts.append('</section>')
     explorations = ''.join(parts)
     parts = ['<section><h2>Grounding</h2><ul>']
+    support_labels = {"excerpt": "FROM PAPER", "example": "TOY EXAMPLE",
+                      "simplification": "SIMPLIFICATION", "unverified": "UNVERIFIED"}
     for g in spec.get("grounding", []):
-        parts.append(f'<li><strong>{esc(g.get("paper", ""))}</strong> — {esc(g.get("locator", ""))} <span class="badge">{esc(g.get("support", ""))}</span><p>{esc(g.get("claim", ""))}</p></li>')
+        support = g.get("support", "")
+        label = support_labels.get(support, support)
+        parts.append(f'<li><strong>{esc(g.get("paper", ""))}</strong> — {esc(g.get("locator", ""))} <span class="badge" data-support="{esc(support)}">{esc(label)}</span><p>{esc(g.get("claim", ""))}</p></li>')
     parts.append(f'</ul><h3>Limitation</h3><p>{esc(spec.get("limitation", ""))}</p></section>')
     return introduction, explorations, ''.join(parts)
 

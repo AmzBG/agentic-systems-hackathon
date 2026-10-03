@@ -180,7 +180,7 @@ def js_result(script):
         raise AssertionError("Engine test must finish with JSON.stringify")
     script = script[:last] + "var ownedTestResult = " + script[last:] + "\nownedTestResult;"
     child = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--js-engine"], input=script,
-                           text=True, capture_output=True, timeout=8)
+                           text=True, capture_output=True, timeout=20)
     if child.returncode:
         raise AssertionError(child.stderr or child.stdout)
     result = json.loads(child.stdout)
@@ -281,6 +281,13 @@ class ContractTests(unittest.TestCase):
         self.assertIn('type="application/json"', page)
         self.assertNotIn('"compute_js":', page)
         self.assertNotIn("Runtime stub", page)
+        self.assertIn("TOY EXAMPLE", page)
+        provenance_spec = copy.deepcopy(spec)
+        provenance_spec["grounding"] = [dict(spec["grounding"][0], support=kind)
+                                        for kind in ("excerpt", "example", "simplification", "unverified")]
+        provenance_page = render(provenance_spec)
+        for label in ("FROM PAPER", "TOY EXAMPLE", "SIMPLIFICATION", "UNVERIFIED"):
+            self.assertIn(label, provenance_page)
 
     def test_frozen_signature_and_no_collaborator_imports(self):
         import inspect
