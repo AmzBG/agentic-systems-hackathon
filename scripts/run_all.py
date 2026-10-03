@@ -141,7 +141,7 @@ def main() -> int:
                                                      timeout=args.timeout)
                             exit_code = process.returncode
                             stderr_tail = _safe_error(process.stderr)
-                        except subprocess.TimeoutExpired as exc:
+                        except subprocess.TimeoutExpired:
                             exit_code = None
                             stderr_tail = "run exceeded wall timeout"
                         except OSError as exc:

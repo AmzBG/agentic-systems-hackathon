@@ -22,7 +22,7 @@ def audit(root: Path = ROOT) -> dict:
         tracked = []
         failures.append("cannot enumerate tracked files")
     tracked = [path for path in tracked if path]
-    for name in ("AI.md", "README.md", "requirements.txt", "agent.py", "trace.py", "checks.py",
+    for name in ("README.md", "requirements.txt", "agent.py", "trace.py", "checks.py",
                  "scripts/run_all.py", "scripts/validate_output.py", "scripts/verify_install.py"):
         if not (root / name).is_file():
             failures.append(f"required file missing: {name}")
