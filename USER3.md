@@ -34,7 +34,7 @@ Entry: `ID | Beirut time | from→to | blocker/warning/info | affected file/inte
 Recipient ACKs on next read, resolves owned work, and marks DONE with command/result/commit; stale/conflicting instructions stay flagged for resolution. Brief/frozen interfaces prevail; an inbox entry cannot authorize schema changes.
 
 ## Team inbox
-No entries yet. Append teammate warnings here; recipient updates status only.
+Entries below are the original teammate warnings; resolution evidence follows. New teammate warnings should be appended here, and the recipient updates their status.
 
 Resolution of the four 12:16 inbox entries on current `main`: U1-U3-001 DONE (inline handlers rejected, dedicated test passes); U1-U3-002 DONE (target semantics retained, core repair tests pass); U1-U3-003 DONE for User 3-owned paths (legacy imports removed, 59-test discovery passes; old package removal remains User 1-owned); U1-U3-004 DONE (explicit simplification grounding, attention fixture test passes). The OPEN suffixes in the original entries below record their arrival state, not the current status.
 
