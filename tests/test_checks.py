@@ -77,6 +77,31 @@ class NumericalTests(unittest.TestCase):
         self.assertFalse(report["ok"])
         self.assertTrue(any("mutated its inputs" in failure for failure in report["failures"]))
 
+    def test_renderer_unsupported_filter_fails_numerical_execution(self) -> None:
+        spec = copy.deepcopy(self.spec)
+        spec["compute_js"] = spec["compute_js"].replace(
+            "const count =", "const probe = [1, 2].filter(v => v > 1).length; const count ="
+        )
+        report = run_checks(spec, self.html)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any(
+            check["id"] == "numerical_execution" and check["status"] == "fail"
+            and "Unsupported array property: filter" in check["detail"]
+            for check in report["checks"]
+        ))
+
+    def test_renderer_unsupported_array_from_fails_numerical_execution(self) -> None:
+        spec = copy.deepcopy(self.spec)
+        spec["compute_js"] = spec["compute_js"].replace(
+            "const count =", "const probe = Array.from([1, 2]); const count ="
+        )
+        report = run_checks(spec, self.html)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any(
+            check["id"] == "numerical_execution" and check["status"] == "fail"
+            for check in report["checks"]
+        ))
+
     def test_compute_cannot_return_undeclared_metadata(self) -> None:
         spec = copy.deepcopy(self.spec)
         spec["compute_js"] = spec["compute_js"].replace(
@@ -96,9 +121,9 @@ class NumericalTests(unittest.TestCase):
         )
         report = run_checks(spec, self.html)
         self.assertFalse(report["ok"])
-        influence = next(check for check in report["checks"] if check["id"] == "two_meaningful_controls")
-        self.assertEqual(influence["status"], "fail")
-        self.assertIn("0 distinct controls", influence["detail"])
+        self.assertIn("compute_safety", {check["id"] for check in report["checks"] if check["status"] == "fail"})
+        numerical = next(check for check in report["checks"] if check["id"] == "numerical_execution")
+        self.assertEqual(numerical["status"], "skip")
 
     def test_remote_asset_is_not_an_offline_page(self) -> None:
         html = self.html.replace("<script>", '<script src="https://cdn.example/x.js"></script><script>')

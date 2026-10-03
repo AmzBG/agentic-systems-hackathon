@@ -12,7 +12,10 @@ import multiprocessing
 import queue
 import re
 from html.parser import HTMLParser
+from pathlib import Path
 from typing import Any
+
+from runtime import RuntimeSpecError, parse_compute
 
 
 KINDS = {"slider", "number", "toggle", "select", "vector", "matrix"}
@@ -341,7 +344,8 @@ def _probes(spec: dict) -> list[tuple[str, dict, str | None, dict | None]]:
     return result
 
 
-def _worker(code: str, probes: list[tuple[str, dict, str | None, dict | None]], result_queue: Any) -> None:
+def _worker(code: str, ast: list, interpreter: str,
+            probes: list[tuple[str, dict, str | None, dict | None]], result_queue: Any) -> None:
     try:
         import quickjs
 
@@ -353,18 +357,18 @@ def _worker(code: str, probes: list[tuple[str, dict, str | None, dict | None]], 
             ctx.set_memory_limit(16 * 1024 * 1024)
             ctx.set_max_stack_size(512 * 1024)
             ctx.set_time_limit(0.08)
+            ctx.eval(interpreter)
             ctx.eval(code)
             source = """(() => {
-              const reads=[];
               const data=INPUTS;
               const before=JSON.stringify(data);
-              const tracked=new Proxy(data,{get(target,key){
-                if(typeof key==='string' && Object.prototype.hasOwnProperty.call(target,key)) reads.push(key);
-                return target[key];
-              }});
-              const value=compute(tracked);
-              return JSON.stringify({value,reads:[...new Set(reads)],mutated:JSON.stringify(data)!==before});
-            })()""".replace("INPUTS", json.dumps(inputs, ensure_ascii=True, allow_nan=False))
+              const value=NumericRuntime.run(AST,data);
+              // The page interpreter copies its inputs. A separate native call
+              // detects source-level writes to the caller's input object.
+              compute(data);
+              return JSON.stringify({value,mutated:JSON.stringify(data)!==before});
+            })()""".replace("INPUTS", json.dumps(inputs, ensure_ascii=True, allow_nan=False)).replace(
+                "AST", json.dumps(ast, ensure_ascii=True, allow_nan=False))
             raw = ctx.eval(source)
             if not isinstance(raw, str):
                 raise ValueError("compute returned nonserializable output")
@@ -376,10 +380,14 @@ def _worker(code: str, probes: list[tuple[str, dict, str | None, dict | None]], 
         result_queue.put(("failed", f"{type(exc).__name__}: {str(exc)[:120]}"))
 
 
-def _execute(code: str, probes: list[tuple[str, dict, str | None, dict | None]]) -> tuple[str, Any]:
+def _execute(code: str, ast: list, probes: list[tuple[str, dict, str | None, dict | None]]) -> tuple[str, Any]:
+    try:
+        interpreter = (Path(__file__).resolve().parent / "templates" / "interpreter.js").read_text(encoding="utf-8")
+    except OSError as exc:
+        return "unavailable", f"renderer interpreter unavailable: {type(exc).__name__}"
     context = multiprocessing.get_context("spawn")
     result_queue = context.Queue(maxsize=1)
-    child = context.Process(target=_worker, args=(code, probes, result_queue), daemon=True)
+    child = context.Process(target=_worker, args=(code, ast, interpreter, probes, result_queue), daemon=True)
     try:
         child.start()
         try:
@@ -468,12 +476,18 @@ def run_checks(spec: dict, html: str) -> dict:
         add("numerical_execution", "skip", "schema failed; compute was not executed", "compute_js")
         return {"ok": False, "degraded": True, "checks": checks, "failures": failures, "revisions": []}
     code_error = _safe_compute(spec["compute_js"])
-    add("compute_safety", "fail" if code_error else "pass", code_error or "pure function shape", "compute_js")
+    ast = None
+    if not code_error:
+        try:
+            ast = parse_compute(spec["compute_js"])
+        except (RuntimeSpecError, KeyError, TypeError, ValueError, RecursionError) as exc:
+            code_error = f"renderer cannot parse compute: {str(exc)[:180]}"
+    add("compute_safety", "fail" if code_error else "pass", code_error or "renderer-compatible function shape", "compute_js")
     if code_error:
         add("numerical_execution", "skip", "unsafe code was not executed", "compute_js")
         return {"ok": False, "degraded": True, "checks": checks, "failures": failures, "revisions": []}
     probes = _probes(spec)
-    status, payload = _execute(spec["compute_js"], probes)
+    status, payload = _execute(spec["compute_js"], ast, probes)
     if status == "unavailable":
         add("numerical_execution", "skip", str(payload), "compute_js")
         return {"ok": not failures, "degraded": True, "checks": checks, "failures": failures, "revisions": []}
@@ -522,7 +536,7 @@ def run_checks(spec: dict, html: str) -> dict:
                         f"(measured={str(values.get(output_id))[:160]} expected={str(expected)[:160]} "
                         f"atol={test['atol']} rtol={test['rtol']})"
                     )
-        if changed_control and changed_control in record.get("reads", []) and isinstance(default, dict):
+        if changed_control and isinstance(default, dict):
             if any(
                 output_id in values and output_id in default
                 and not _close(values[output_id], default[output_id], 1e-9, 1e-9)

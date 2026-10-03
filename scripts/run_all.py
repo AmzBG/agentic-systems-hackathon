@@ -43,16 +43,17 @@ def _supports_flow(agent: Path) -> bool:
 
 def summarize_repeats(rows: list[dict]) -> list[dict]:
     """Keep each repeated run's outcome visible in the group summary."""
-    groups: dict[tuple[str, str, str], list[dict]] = {}
+    groups: dict[tuple[str, str, str, str], list[dict]] = {}
     for row in rows:
-        key = (row["case"], row["model_id"], row["flow"])
+        key = (row["case"], row["model_id"], row["flow"], row.get("reasoning", "low"))
         groups.setdefault(key, []).append(row)
     summaries = []
-    for (case, model, flow), group in sorted(groups.items()):
+    for (case, model, flow, reasoning), group in sorted(groups.items()):
         summaries.append({
             "case": case,
             "model_id": model,
             "flow_requested": flow,
+            "reasoning_requested": reasoning,
             "runs": [{
                 "repeat": row["repeat"],
                 "status": row["status"],
@@ -75,6 +76,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models", required=True, nargs="+", help="Real OpenRouter model IDs")
     parser.add_argument("--flows", nargs="+", choices=("single", "planned"), default=["single"])
+    parser.add_argument("--reasoning", choices=("low", "off", "model"), default="low",
+                        help="OpenRouter reasoning mode passed to agent.py (default: low)")
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--cases", nargs="+", type=Path, help="Explicit case JSON paths")
@@ -98,6 +101,7 @@ def main() -> int:
             "cases": [str(case) for case in cases],
             "models": args.models,
             "flows": args.flows,
+            "reasoning": args.reasoning,
             "repeats": args.repeats,
             "live_calls_made": 0,
         }, indent=2))
@@ -113,6 +117,7 @@ def main() -> int:
                 for repeat in range(1, args.repeats + 1):
                     run_dir = output / "runs" / _slug(case.stem if case.stem != "case" else case.parent.name) / _slug(model) / flow / str(repeat)
                     row = {"case": str(case.resolve()), "model_id": model, "flow": flow,
+                           "reasoning": args.reasoning,
                            "repeat": repeat, "output": str(run_dir),
                            "flow_evidence": {"requested": flow, "cli_flag_sent": supports_flow}}
                     if run_dir.exists() and any(run_dir.iterdir()):
@@ -126,7 +131,8 @@ def main() -> int:
                     else:
                         run_dir.mkdir(parents=True, exist_ok=True)
                         command = [sys.executable, str(agent), "--input", str(case.resolve()),
-                                   "--output", str(run_dir), "--model", model]
+                                   "--output", str(run_dir), "--model", model,
+                                   "--reasoning", args.reasoning]
                         if supports_flow:
                             command.extend(["--flow", flow])
                         started = time.monotonic()
@@ -160,7 +166,7 @@ def main() -> int:
             stream.write(json.dumps(row, ensure_ascii=False) + "\n")
     summary = {"runs": len(rows), "passed": sum(row["status"] == "pass" for row in rows),
                "failed": sum(row["status"] != "pass" for row in rows),
-               "models": args.models, "flows": args.flows,
+               "models": args.models, "flows": args.flows, "reasoning": args.reasoning,
                "cases": [str(case.resolve()) for case in cases],
                "repeated_runs": summarize_repeats(rows),
                "report": str(output / "runs.jsonl")}

@@ -108,6 +108,16 @@ class EvidenceScriptTests(unittest.TestCase):
         self.assertEqual(summary[0]["runs"][0]["repairs"][0]["outcome"], "accepted")
         self.assertEqual(summary[0]["runs"][1]["flow_evidence"]["effective_flow"], "single")
 
+    def test_repeat_summary_keeps_reasoning_modes_separate(self) -> None:
+        rows = [
+            {"case": "case.json", "model_id": "test/model", "flow": "single",
+             "reasoning": mode, "repeat": 1, "status": "pass", "usage": {}}
+            for mode in ("low", "off")
+        ]
+        summary = summarize_repeats(rows)
+        self.assertEqual({item["reasoning_requested"] for item in summary}, {"low", "off"})
+        self.assertTrue(all(item["passed"] == 1 for item in summary))
+
     def test_remote_asset_and_missing_trace_fail(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp)
