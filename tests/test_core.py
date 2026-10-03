@@ -233,7 +233,7 @@ class ContractTests(unittest.TestCase):
                        "this, with, process", "all strings nonblank", "unitless", "at most 256 iterations",
                        "filter, indexOf, includes", "== and !=", "Math.LN2 (use Math.log(2))",
                        "across all outputs combined", "instead of substituting sentinel numbers",
-                       "each test name a true statement about those inputs and values",
+                       "Name each test by the situation it sets up", "at full precision",
                        "when that narrows a range the brief asks for, say so and why in the limitation"):
             self.assertIn(phrase, system)
         repair = prompts.build_repair_messages({"focus": "f"}, toy_spec(), ["x: y"], ["grounding"])
