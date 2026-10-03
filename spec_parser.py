@@ -304,9 +304,11 @@ class _Validator:
         return self.errors
 
     def check_controls(self) -> None:
-        defaults = [c.get("default") for c in self.spec.get("controls", []) if isinstance(c, dict)]
-        if sum(_leaf_count(d) for d in defaults if isinstance(d, list)) > MAX_LEAVES:
-            self.err("controls", f"more than {MAX_LEAVES} numbers across all vector and matrix inputs")
+        # Same rule as runtime.validate_inputs: every numeric control (slider/number = 1 leaf) counts.
+        numeric = [c.get("default") for c in self.spec.get("controls", [])
+                   if isinstance(c, dict) and c.get("kind") in {"slider", "number", "vector", "matrix"}]
+        if sum(_leaf_count(d) for d in numeric) > MAX_LEAVES:
+            self.err("controls", f"more than {MAX_LEAVES} numbers across all numeric inputs combined")
         self._check_controls()
 
     def _check_controls(self) -> None:

@@ -774,6 +774,28 @@ class EvidenceDrivenTests(unittest.TestCase):
             validate_spec(spec)  # 3 + 64 + 64 > 128
         self.assertTrue(any("across all vector and matrix inputs" in e for e in ctx.exception.errors))
 
+    def test_input_cap_counts_scalar_controls_like_the_runtime(self):  # U2-U1-003 repro 1
+        spec = toy_spec()
+        spec["controls"] = spec["controls"][:1]  # one slider = 1 numeric leaf
+        for cid in ("m1", "m2"):
+            spec["controls"].append({"id": cid, "label": "M", "help": "h", "units": "u", "kind": "matrix",
+                                     "default": [[0] * 8 for _ in range(8)], "min": 0, "max": 1, "step": 1,
+                                     "shape": [8, 8]})
+        with self.assertRaises(SpecError) as ctx:
+            validate_spec(spec)  # 1 + 64 + 64 = 129 > 128, as runtime.validate_inputs counts
+        self.assertTrue(any("all numeric inputs combined" in e for e in ctx.exception.errors))
+
+    def test_page_probe_enforces_runtime_output_shape_and_exact_keys(self):  # U2-U1-003 repro 2
+        if agent.page_compute_check(toy_spec()) is None:
+            self.skipTest("QuickJS or User 2 runtime unavailable")
+        nine = toy_spec()
+        nine["compute_js"] = ("function compute(inputs) { const x = inputs.gain + inputs.xs[0]; "
+                              "return { scaled: Array(9).fill(x), total: x }; }")
+        self.assertIn("output scaled", agent.page_compute_check(nine)["detail"])
+        extra = toy_spec()
+        extra["compute_js"] = "function compute(inputs) { return { scaled: inputs.xs, total: 1, extra: 2 }; }"
+        self.assertEqual(agent.page_compute_check(extra)["status"], "fail")
+
     def test_every_attempt_fits_remaining_completion_and_time(self):
         """16k generation cut off with missing usage, a failed regeneration retried, low remaining time."""
         seen = []

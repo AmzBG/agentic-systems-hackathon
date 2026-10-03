@@ -266,7 +266,7 @@ def page_compute_check(spec: dict, root: Path = Path(__file__).resolve().parent)
     """
     try:
         import quickjs
-        from runtime import merge_inputs, parse_compute
+        from runtime import merge_inputs, numeric_shape, parse_compute
         interpreter = (root / "templates" / "interpreter.js").read_text(encoding="utf-8")
     except Exception:
         return None
@@ -288,9 +288,14 @@ def page_compute_check(spec: dict, root: Path = Path(__file__).resolve().parent)
             context.set_memory_limit(64 * 1024 * 1024)
             call = f"JSON.stringify(NumericRuntime.run({ast}, {inputs}, NumericRuntime.budget()))"
             result = json.loads(context.eval(interpreter + "\n" + call))
-            missing = declared - set(result)
-            if missing:
-                return {**check, "status": "fail", "detail": f"{name}: page compute omits outputs {sorted(missing)}"}
+            if set(result) != declared:
+                return {**check, "status": "fail", "detail": f"{name}: page compute returns {sorted(result)}, "
+                                                             f"declared outputs are {sorted(declared)}"}
+            for key in sorted(declared):
+                try:
+                    numeric_shape(result[key])  # the page's own rule: finite, rectangular, each axis <= 8
+                except Exception as exc:
+                    return {**check, "status": "fail", "detail": f"{name}: output {key}: {exc}"}
             leaves = sum(_leaves(result[key]) for key in declared)
             if leaves > PAGE_OUTPUT_LEAVES:
                 return {**check, "status": "fail",
