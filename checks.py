@@ -190,6 +190,8 @@ def _schema_errors(spec: Any) -> list[str]:
         for item in grounding
     ):
         errors.append("grounding needs a paper, locator, supported claim")
+    elif not any(item["support"] in {"excerpt", "unverified"} for item in grounding):
+        errors.append("grounding needs an excerpt or unverified paper citation")
     tests = spec.get("tests")
     if not isinstance(tests, list) or len(tests) < 2:
         errors.append("at least two numerical tests required")

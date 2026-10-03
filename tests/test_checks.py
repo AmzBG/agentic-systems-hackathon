@@ -2,6 +2,7 @@
 
 import copy
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -48,6 +49,15 @@ class NumericalTests(unittest.TestCase):
             and "atol=1e-09" in failure
             for failure in report["failures"]
         ))
+
+    def test_grounding_needs_a_paper_citation(self) -> None:
+        spec = copy.deepcopy(self.spec)
+        spec["grounding"] = [item for item in spec["grounding"]
+                             if item["support"] in {"example", "simplification"}]
+        report = run_checks(spec, self.html)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("excerpt or unverified paper citation" in failure
+                            for failure in report["failures"]))
 
     def test_failed_invariant_reports_measured_and_expected_sum(self) -> None:
         spec = copy.deepcopy(self.spec)
@@ -144,4 +154,45 @@ class NumericalTests(unittest.TestCase):
         self.assertTrue(report["ok"], report["failures"])
         influence = next(check for check in report["checks"] if check["id"] == "two_meaningful_controls")
         self.assertEqual(influence["status"], "pass")
+
+
+class PublishedExampleTests(unittest.TestCase):
+    def test_entropy_page_matches_independent_oracle(self) -> None:
+        import quickjs
+
+        root = Path(__file__).resolve().parents[1]
+        html = (root / "examples" / "entropy" / "index.html").read_text(encoding="utf-8")
+        payload = re.search(
+            r'<script type="application/json" id="runtime-data">(.*?)</script>', html, re.S
+        )
+        self.assertIsNotNone(payload)
+        ast = json.loads(payload.group(1))["ast"]
+        oracle = json.loads((root / "practice" / "oracles" / "core_identities.json").read_text(
+            encoding="utf-8"))["cases"]["entropy"]
+        inputs = {
+            "n_outcomes": oracle["inputs"]["count"],
+            "weights": oracle["inputs"]["weights"] + [0, 0],
+            "uniform": False,
+        }
+        context = quickjs.Context()
+        context.set_memory_limit(16 * 1024 * 1024)
+        context.set_time_limit(0.08)
+        context.eval((root / "templates" / "interpreter.js").read_text(encoding="utf-8"))
+
+        def calculate(values: dict) -> dict:
+            result = context.eval("JSON.stringify(NumericRuntime.run(" + json.dumps(ast) + ","
+                                  + json.dumps(values) + "))")
+            return json.loads(result)
+
+        actual = calculate(inputs)
+        for measured, expected in zip(actual["probabilities"], oracle["expected"]["probabilities"]):
+            self.assertAlmostEqual(measured, expected, places=9)
+        for measured, expected in zip(actual["contributions"], oracle["expected"]["contributions"]):
+            self.assertAlmostEqual(measured, expected, places=9)
+        self.assertAlmostEqual(actual["entropy"], oracle["expected"]["entropy_bits"], places=9)
+
+        certain = calculate({**inputs, "weights": [1, 0, 0, 0, 0, 0]})
+        self.assertEqual(certain["probabilities"], [1, 0, 0, 0])
+        self.assertEqual(certain["contributions"], [0, 0, 0, 0])
+        self.assertEqual(certain["entropy"], 0)
 
