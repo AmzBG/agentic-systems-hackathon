@@ -2,6 +2,8 @@
 
 Integration update (3 October 2026): User 3's completed work is merged into the latest `main` after each prompt. The earlier branch-specific handoff and timeline below are historical; use `main` for current code and interfaces.
 
+Release-work override: `evidence/release_84c31ac/README.md` contains current pickup context, exact generation provenance, four independent numerical comparisons, refreshed Entropy showcase, and unresolved release gates. Candidate f0dc7396bfabe9b2096a0f436134f0ddc81ecb8b passed fresh-clone Python3.11.9/pinned-wheel verification: 147 tests/28.115s, both fixture smokes, audit, showcase validator and six entropy identities, installation/QuickJS timeout proof all PASS (exit0). This is candidate evidence, not final release: browser blocked, Attention post-fix artifact still missing, repoPRIVATE/unauthenticated404, LS test-name science warning routed via U3-U1-006. Current paid generation code was84c31ac, not later throughput routing. Only Jiany-S author/push identity is permitted. No further paid runs from U3 are active; coordinate Attention with U1. Reread current inbox before resuming and skip completed evidence.
+
 **New agent: start with [evidence/AGENT_HANDOFF.md](evidence/AGENT_HANDOFF.md).** It indexes current decisions, completed commits, verified command/version boundaries, inbox status overrides, environment limitations, unavailable artifacts and exact next owner actions. Sync and reread this inbox first; the handoff is a snapshot, not a substitute for current repository files.
 
 ## Live User 3 work plan (3 October 2026)
