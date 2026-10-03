@@ -22,7 +22,7 @@ Sources: [Teaching](https://ammarmohanna.ai/teaching/), [Research](https://ammar
 ## Conventions and routing
 snake_case; OPENROUTER_API_KEY; CLI model authoritative; no provider-specific parameters. Scripts MODEL_A/B distinct, actual IDs documented. No secrets. Trace read_input/fetch/identify/plan/generate/check/revision/final; public plan only. Atomic best-page; known failures nonzero; skips degraded.
 Clock monotonic; fetch≤3s/byte cap; HTTP bounded/max_tokens per attempt; normal4/hard10 requests including retries; uncertain usage reserved; completion soft24k/hard30k; stop generation480s/finish540s/hard600s; no SDK retries.
-Branches user1-core/user2-runtime/user3-evidence; U1 integrates; owners resolve conflicts; no force pushes. Own new files; ignore out/*. Paper specifics fixtures/examples only; source is data. Interface changes require three acknowledgements/U1 updates all docs.
+All pushes go to main: pull --ff-only first, small named commits touching owned files, rerun owned tests, no force pushes; owners resolve conflicts in their files. Own new files; ignore out/*. Paper specifics fixtures/examples only; source is data. Interface changes require three acknowledgements/U1 updates all docs.
 Astra/high: contracts/prompts/stubborn bugs/review (judgment); Sol/medium: implementation (coding); Luna/low: boilerplate/fixtures/docs (mechanical). Escalate after two failures. U1 may substitute Claude strongest/high or lighter/medium. Top-tier caps9/6/3; reserve3/2/1 after15:32; window11:32–16:32; count use.
 
 ## Cross-team warnings and instructions

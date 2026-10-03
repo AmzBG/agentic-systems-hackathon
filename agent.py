@@ -39,7 +39,6 @@ MAX_REPAIRS = 2
 MAX_RETRIES_PER_CALL = 1
 FETCH_SECONDS = 3.0
 FETCH_MAX_BYTES = 6 * 1024 * 1024
-EXTRACT_SECONDS = 3.0
 EXTRACT_MAX_CHARS = 400_000
 COLLABORATOR_SECONDS = 60.0
 FINISH_MARGIN_SECONDS = 5.0
@@ -150,13 +149,14 @@ def _normalize(text: str) -> str:
     return re.sub(r"\n\s*\n+", "\n\n", text).strip()
 
 
-def _extract_pdf(data: bytes, clock: Callable[[], float]) -> tuple[str, bool]:
+def _extract_pdf(data: bytes, deadline: float, clock: Callable[[], float]) -> tuple[str, bool]:
+    """Extract page text until the shared fetch deadline or the character cap."""
     from pypdf import PdfReader  # optional dependency owned by requirements.txt
 
-    started, parts, size = clock(), [], 0
+    parts, size = [], 0
     reader = PdfReader(io.BytesIO(data))
     for page in reader.pages:
-        if clock() - started > EXTRACT_SECONDS or size > EXTRACT_MAX_CHARS:
+        if clock() > deadline or size > EXTRACT_MAX_CHARS:
             return "\n".join(parts), True
         text = page.extract_text() or ""
         parts.append(text)
@@ -203,7 +203,7 @@ def fetch_source(url: str, focus: str, *, opener: Callable = urllib.request.urlo
             result["kind"] = "pdf"
             if capped:
                 raise ValueError("PDF exceeded the byte cap")
-            text, truncated = _extract_pdf(data, clock)
+            text, truncated = _extract_pdf(data, started + FETCH_SECONDS, clock)
         else:
             decoded = data.decode("utf-8", errors="replace")
             if "html" in ctype.lower() or decoded.lstrip()[:1] == "<":
@@ -533,7 +533,7 @@ class Runner:
             record.update(mode="targeted", requested=requested)
             messages = build_repair_messages(self.case, self.best.spec, failures, requested)
             max_tokens = REPAIR_MAX_TOKENS
-        self.emit("revision", f"revision_{number}:request", "info", revisions=[dict(record)])
+        self.emit("revision", f"revision_{number}:targets", "info", revisions=[dict(record)])
         text = self.call(client, "revision", f"revision_{number}", messages, max_tokens)
         if text is None:
             record["call_failed"] = True
