@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from run_all import summarize_repeats  # noqa: E402
+from check_entropy_oracle import _near_active_vector  # noqa: E402
 from validate_output import validate_output  # noqa: E402
 
 
@@ -22,6 +23,10 @@ def _event(stage: str, *, result: str = "pass", details: dict | None = None) -> 
 
 
 class EvidenceScriptTests(unittest.TestCase):
+    def test_independent_oracle_allows_only_zero_inactive_slots(self) -> None:
+        self.assertTrue(_near_active_vector([0.5, 0.5, 0, 0], [0.5, 0.5]))
+        self.assertFalse(_near_active_vector([0.5, 0.5, 0.1], [0.5, 0.5]))
+
     def test_usage_counts_request_once_and_reasoning_is_subset(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp)

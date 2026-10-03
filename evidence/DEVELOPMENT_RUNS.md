@@ -2,6 +2,8 @@
 
 These are development observations, not scores or a claim that a generated page passed browser review. Each live run must keep its own outcome, including failures. Reasoning tokens are already within completion tokens.
 
+An additional unreachable-source stress run using `evidence/inputs/entropy_unreachable.json` was interrupted at the user's request before any model response was recorded. Its retained local trace shows `fetch` failed with `URLError` in 0.312 s; no generation result, page, token usage or cost is claimed. A request may have been in flight when interrupted, so its usage is **unknown**, not zero. No more live calls were made afterward.
+
 | Run | Input / model | Flow and renderer | Attempts | Prompt / completion / reasoning subset | Elapsed | Result and repairs |
 |---|---|---|---:|---:|---:|---|
 | U1 2026-10-03 12:49 Beirut | `examples/entropy/case.json`; `deepseek/deepseek-v4.1-flash` (served model matched) | Real agent, repairs disabled; stand-in page, no `runtime.py`. Planning status not recorded. | 1 | 6,916 / 9,002 / 6,126; verified scored total 15,918 | 117 s process; 114 s model call; fetch 3.0 s | Exit 1. Wire parsed on first response, then `spec_schema` rejected blank `units` on toggle control `equalize`; numerical checks skipped. No repair was attempted. This is **not** a validated page result. |
