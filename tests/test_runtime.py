@@ -179,14 +179,44 @@ def js_result(script):
     if last < 0:
         raise AssertionError("Engine test must finish with JSON.stringify")
     script = script[:last] + "var ownedTestResult = " + script[last:] + "\nownedTestResult;"
+    # Parent pipe encoding and child standard streams must agree even when
+    # Windows locale mode and inherited PYTHONIOENCODING differ.
+    child_env = dict(os.environ, PYTHONIOENCODING="utf-8")
     child = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--js-engine"], input=script,
-                           text=True, capture_output=True, timeout=20)
+                           encoding="utf-8", env=child_env, capture_output=True, timeout=20)
     if child.returncode:
         raise AssertionError(child.stderr or child.stdout)
     result = json.loads(child.stdout)
     if isinstance(result, dict) and "engine_error" in result:
         raise AssertionError(result["engine_error"])
     return result
+
+
+@unittest.skipUnless(os.name == "nt" and Path("C:/Windows/System32/chakra.dll").is_file(),
+                     "Bounded Windows JSRT engine unavailable; Unicode transport unverified")
+class EngineTransportTests(unittest.TestCase):
+    def test_unicode_roundtrip(self):
+        value = "caf\u00e9 \u2212 \u03c0 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \U0001f600"
+        self.assertEqual(js_result("JSON.stringify(" + json.dumps(value, ensure_ascii=False) + ");"), value)
+
+    def test_unicode_roundtrip_in_fresh_process_environments(self):
+        value = "caf\u00e9 \u2212 \u03c0 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \U0001f600"
+        source = ("import json; from tests.test_runtime import js_result; "
+                  "value = " + ascii(value) + "; "
+                  "result = js_result('JSON.stringify(' + json.dumps(value, ensure_ascii=False) + ');'); "
+                  "print(json.dumps(result, ensure_ascii=True))")
+        for settings in ({}, {"PYTHONUTF8": "0", "PYTHONIOENCODING": "utf-8"},
+                         {"PYTHONUTF8": "1", "PYTHONIOENCODING": "ascii"}):
+            with self.subTest(settings=settings):
+                environment = os.environ.copy()
+                environment.pop("PYTHONUTF8", None)
+                environment.pop("PYTHONIOENCODING", None)
+                environment.update(settings)
+                child = subprocess.run([sys.executable, "-c", source],
+                                       cwd=Path(__file__).resolve().parents[1], env=environment,
+                                       encoding="utf-8", capture_output=True, timeout=30)
+                self.assertEqual(child.returncode, 0, child.stderr or child.stdout)
+                self.assertEqual(json.loads(child.stdout), value)
 
 
 def calculate(spec, patch=None):
