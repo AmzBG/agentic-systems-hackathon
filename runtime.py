@@ -540,25 +540,25 @@ def _teaching(spec):
     """Static plain-text teaching content survives any compute failure."""
     esc = _escape
     start = spec.get("starting_point", {})
-    parts = [f'<header><p class="eyebrow">Paper to Playground · Scientific learning workbench</p><h1>{esc(spec.get("title", "Teaching page"))}</h1>',
+    parts = [f'<header><p class="eyebrow">Paper to Playground</p><h1>{esc(spec.get("title", "Teaching page"))}</h1>',
              f'<p class="lead">{esc(start.get("idea", ""))}</p>',
              f'<p class="why"><strong>Why it matters:</strong> {esc(start.get("why", ""))}</p>',
              '<details class="lesson-notes"><summary>About this lesson</summary>',
              f'<p><strong>Audience:</strong> {esc(spec.get("audience", ""))}</p>',
              f'<p><strong>Plan:</strong> {esc(spec.get("plan", ""))}</p></details></header>',
-             '<section class="notation" aria-label="Symbols and units"><details><summary>Symbols and units</summary><div class="scroll"><table><caption>Notation</caption><thead><tr><th scope="col">Symbol</th><th scope="col">Meaning</th><th scope="col">Units</th></tr></thead><tbody>']
+             '<section class="notation" aria-label="Symbols and units"><details open><summary>Symbols and units</summary><div class="scroll"><table><caption>Notation</caption><thead><tr><th scope="col">Symbol</th><th scope="col">Meaning</th><th scope="col">Units</th></tr></thead><tbody>']
     for s in spec.get("symbols", []):
         parts.append('<tr>' + ''.join(f'<td>{esc(s.get(k, ""))}</td>' for k in ("symbol", "meaning", "units")) + '</tr>')
     parts.append('</tbody></table></div></details></section>')
     introduction = ''.join(parts)
-    parts = ['<section aria-labelledby="explorations"><h2 id="explorations">Guided explorations</h2><p>Make a prediction, apply the example, then compare it with the calculated result.</p>']
+    parts = ['<section aria-labelledby="explorations"><h2 id="explorations">Experiments</h2>']
     for index, e in enumerate(spec.get("explorations", [])):
         parts.append(f'<article class="exploration"><h3>{index + 1}. {esc(e.get("title", ""))}</h3>')
         instruction = e.get("instruction", "").lstrip().removeprefix("Predict:").lstrip().removeprefix("Predict ")
         parts.append(f'<p class="prediction" id="prediction-{index}"><strong>Predict:</strong> {esc(instruction)}</p>')
         parts.append(f'<div class="exploration-actions"><button type="button" class="preset" data-preset="{index}" aria-describedby="prediction-{index}">Apply preset</button>')
         parts.append(' <a href="#results">View updated results</a></div>')
-        parts.append(f'<div class="preset-result" id="preset-result-{index}" role="status" aria-live="polite">Apply the preset to compare the calculated result with your prediction.</div>')
+        parts.append(f'<div class="preset-result" id="preset-result-{index}" role="status" aria-live="polite"></div>')
         parts.append(f'<details class="exploration-feedback" id="feedback-{index}"><summary>Compare your prediction</summary>')
         for key, label in (("observe", "Observe"), ("why", "Explain")):
             parts.append(f'<p><strong>{label}:</strong> {esc(e.get(key, ""))}</p>')
@@ -566,7 +566,7 @@ def _teaching(spec):
     parts.append('</section>')
     explorations = ''.join(parts)
     parts = [f'<section class="limitation"><h2>Limitation</h2><p>{esc(spec.get("limitation", ""))}</p></section>',
-             '<section><h2>Grounding</h2><ul class="grounding-list">']
+             '<section><h2>Source and grounding</h2><ul class="grounding-list">']
     support_labels = {"excerpt": "FROM PAPER", "example": "TOY EXAMPLE",
                       "simplification": "SIMPLIFICATION", "unverified": "UNVERIFIED"}
     for g in spec.get("grounding", []):
@@ -614,11 +614,11 @@ def render(spec: dict) -> str:
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'sha256-{digest}\'; style-src \'unsafe-inline\'; img-src data:; connect-src \'none\'; object-src \'none\'; base-uri \'none\'; form-action \'none\'">'
             f'<title>{_escape(teaching_spec.get("title", "Teaching page"))}</title><style>{css}</style></head><body><main>{teaching}'
-            f'<section class="workbench" aria-labelledby="calculate"><div class="workbench-heading"><h2 id="calculate">Interactive workbench</h2><p class="flow"><span>Inputs</span><span aria-hidden="true">→</span><span>Mechanism</span><span aria-hidden="true">→</span><span>Result</span></p></div><p id="status" role="status" aria-live="polite">{_escape(status)}</p>'
+            f'<section class="workbench" aria-labelledby="calculate"><div class="workbench-heading"><h2 id="calculate">Try it</h2></div><p id="status" role="status" aria-live="polite">{_escape(status)}</p>'
             '<noscript>Degraded: JavaScript is disabled. Teaching content remains available; calculations and self-checks have not run.</noscript>'
-            '<div class="workbench-grid"><section class="control-panel" aria-labelledby="input-heading"><h3 id="input-heading">Inputs</h3><p class="section-note">Edit a value to recalculate. Sliders update as you move them.</p><a class="mobile-result-link" href="#principal-result">View current result</a><div id="controls"></div><a href="#explorations">Try the two guided explorations</a></section><section class="live-panel" aria-labelledby="results"><h3 id="results" tabindex="-1">Mechanism and result</h3><p id="result-status">No valid result yet.</p><div id="principal-result" tabindex="-1"></div>'
-            f'<p class="mechanism-note">{_escape(mechanism)}</p>'
-            '<div id="visuals"><div id="outputs"></div></div><p class="section-note">Displayed numbers are rounded; calculations use full precision.</p></section></div></section>'
+            '<div class="workbench-grid"><section class="control-panel" aria-labelledby="input-heading"><h3 id="input-heading">Inputs</h3><a class="mobile-result-link" href="#principal-result">View current result</a><div id="controls"></div><a href="#explorations">Experiments</a></section><section class="live-panel" aria-labelledby="results"><h3 id="results" tabindex="-1">Calculation</h3><p id="result-status">No valid result yet.</p>'
+            f'<p class="mechanism-note">{_escape(mechanism)}</p><div id="principal-result" tabindex="-1"></div>'
+            '<div id="visuals"><div id="outputs"></div></div><p class="section-note">Plot labels are rounded; numeric tables show full precision.</p></section></div></section>'
             f'{explorations}'
             '<section class="verification"><h2>Self-check</h2><p id="check-status" role="status">Not run.</p><p>These checks test the specified examples and identities; they do not verify every claim in the explanation.</p><details><summary>Inspect measured values, expectations and tolerances</summary><ul id="checks"></ul></details></section>'
             f'{grounding}</main>'

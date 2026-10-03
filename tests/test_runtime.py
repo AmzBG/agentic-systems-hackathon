@@ -326,7 +326,7 @@ class ContractTests(unittest.TestCase):
         self.assertLess(page.index('id="controls"'), page.index('id="principal-result"'))
         self.assertLess(page.index('id="principal-result"'), page.index('id="outputs"'))
         self.assertLess(page.index('class="verification"'), page.index('class="limitation"'))
-        self.assertLess(page.index('class="limitation"'), page.index('<h2>Grounding'))
+        self.assertLess(page.index('class="limitation"'), page.index('<h2>Source and grounding'))
         feedback = [attrs for tag, attrs in parsed.tags if tag == "details" and attrs.get("class") == "exploration-feedback"]
         self.assertEqual(len(feedback), 2)
         self.assertTrue(all("open" not in attrs for attrs in feedback))
@@ -335,7 +335,7 @@ class ContractTests(unittest.TestCase):
         page = render(entropy_spec())
         self.assertLess(page.index('id="calculate"'), page.index('id="results"'))
         self.assertLess(page.index('id="results"'), page.index('id="explorations"'))
-        self.assertLess(page.index('id="explorations"'), page.index('<h2>Grounding'))
+        self.assertLess(page.index('id="explorations"'), page.index('<h2>Source and grounding'))
         self.assertEqual(page.count('<summary>Compare your prediction</summary>'), 2)
         self.assertEqual(page.count('href="#results"'), 2)
         self.assertIn('they do not verify every claim', page)
@@ -567,7 +567,7 @@ class InteractionTests(unittest.TestCase):
         self.assertIn("Total entropy 0 bits", result["snapshot"])
         self.assertEqual(result["snapshot"], result["retained"])
         self.assertFalse(result["open"])
-        self.assertIn("Current result", result["current"])
+        self.assertIn("Total entropy", result["current"])
         failure = entropy_spec()
         failure["compute_js"] = failure["compute_js"].replace("const n =", "if (inputs.count === 2) throw 'failure'; const n =")
         stale = page_result(failure, "const before=text('principal-result');change('input-count-scalar','2');", "{before,after:text('principal-result'),stale:document.getElementById('principal-result').attrs['data-stale']}")
@@ -583,7 +583,7 @@ class InteractionTests(unittest.TestCase):
             with self.subTest(name=name):
                 spec = json.loads(path.read_text(encoding="utf-8"))
                 result = page_result(spec)
-                self.assertEqual(result["status"], "Inputs and calculation valid.")
+                self.assertEqual(result["status"], "")
                 self.assertEqual(result["checkStatus"], f"{count} passed; 0 failed; 0 skipped.")
                 self.assertIn("Measured", result["checks"])
                 self.assertIn("expected", result["checks"])
@@ -601,7 +601,7 @@ class InteractionTests(unittest.TestCase):
         spec["explorations"][0]["preset"] = {"weights": [1]+[0]*7}
         spec["explorations"][1]["preset"] = {"weights": [1]*8, "count": 8}
         result = page_result(spec, "change('input-field-7-7','2');", "{status:text('status'),visuals:text('visuals'),layout:nodes.find(n=>n.style.gridTemplateColumns).style.gridTemplateColumns}")
-        self.assertEqual(result["status"], "Inputs and calculation valid.")
+        self.assertEqual(result["status"], "")
         self.assertIn("repeat(8", result["layout"])
         self.assertNotIn("unavailable", result["visuals"])
 
@@ -622,7 +622,7 @@ class InteractionTests(unittest.TestCase):
         result = page_result(spec)
         self.assertIn("1 visual(s) unavailable", result["status"])
         self.assertIn("undefined at zero", result["visuals"])
-        self.assertIn("Current valid result", result["resultStatus"])
+        self.assertEqual(result["resultStatus"], "")
 
     def test_negative_bar_and_constant_heatmap_have_finite_geometry(self):
         spec = all_kinds_spec()
@@ -642,7 +642,7 @@ class InteractionTests(unittest.TestCase):
 
     def test_initial_entropy_and_two_preset_handlers(self):
         result = page_result(entropy_spec())
-        self.assertEqual(result["status"], "Inputs and calculation valid.")
+        self.assertEqual(result["status"], "")
         self.assertIn("Total entropy", result["outputs"])
         self.assertIn("2", result["outputs"])
         self.assertEqual(result["checkStatus"], "9 passed; 0 failed; 0 skipped.")
@@ -658,7 +658,7 @@ class InteractionTests(unittest.TestCase):
 
     def test_swept_line_heatmap_values_and_labels_execute(self):
         result = page_result(all_kinds_spec())
-        self.assertEqual(result["status"], "Inputs and calculation valid.")
+        self.assertEqual(result["status"], "")
         self.assertIn("Squared amplitude sweep", result["visuals"])
         self.assertIn("Signed field", result["visuals"])
         self.assertIn("Field values", result["visuals"])
@@ -666,7 +666,7 @@ class InteractionTests(unittest.TestCase):
 
     def test_attention_checks_execute_and_matrix_edits_recalculate(self):
         result = page_result(attention_spec(), "change('input-queries-0-0','0');preset(0);")
-        self.assertEqual(result["status"], "Inputs and calculation valid.")
+        self.assertEqual(result["status"], "")
         self.assertIn("8 passed; 0 failed", result["checkStatus"])
         self.assertIn("0.5", result["outputs"])
 
@@ -780,7 +780,7 @@ class SafetyTests(unittest.TestCase):
         self.assertEqual(json.loads(parsed.scripts[0][1])["spec"]["controls"][0]["label"], attack)
         result = page_result(spec)
         self.assertIn(attack, result["outputs"])
-        self.assertEqual(result["status"], "Inputs and calculation valid.")
+        self.assertEqual(result["status"], "")
 
     def test_unsafe_compute_rejected_before_interpretation(self):
         bodies = ["return document.body;", "return fetch('https://example.com');", "return Math.random();",
