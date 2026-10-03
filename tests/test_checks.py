@@ -193,41 +193,14 @@ class NumericalTests(unittest.TestCase):
 
 class PublishedExampleTests(unittest.TestCase):
     def test_entropy_page_matches_independent_oracle(self) -> None:
-        import quickjs
-
+        import sys
         root = Path(__file__).resolve().parents[1]
-        html = (root / "examples" / "entropy" / "index.html").read_text(encoding="utf-8")
-        payload = re.search(
-            r'<script type="application/json" id="runtime-data">(.*?)</script>', html, re.S
-        )
-        self.assertIsNotNone(payload)
-        ast = json.loads(payload.group(1))["ast"]
-        oracle = json.loads((root / "practice" / "oracles" / "core_identities.json").read_text(
-            encoding="utf-8"))["cases"]["entropy"]
-        inputs = {
-            "n_outcomes": oracle["inputs"]["count"],
-            "weights": oracle["inputs"]["weights"] + [0, 0],
-            "uniform": False,
-        }
-        context = quickjs.Context()
-        context.set_memory_limit(16 * 1024 * 1024)
-        context.set_time_limit(0.08)
-        context.eval((root / "templates" / "interpreter.js").read_text(encoding="utf-8"))
+        sys.path.insert(0, str(root / 'scripts'))
+        from check_entropy_oracle import verify_entropy_page
+        report = verify_entropy_page(root / 'examples/entropy/index.html')
+        self.assertTrue(report['ok'], report)
+        self.assertEqual(len(report['checks']), 6)
 
-        def calculate(values: dict) -> dict:
-            result = context.eval("JSON.stringify(NumericRuntime.run(" + json.dumps(ast) + ","
-                                  + json.dumps(values) + "))")
-            return json.loads(result)
 
-        actual = calculate(inputs)
-        for measured, expected in zip(actual["probabilities"], oracle["expected"]["probabilities"]):
-            self.assertAlmostEqual(measured, expected, places=9)
-        for measured, expected in zip(actual["contributions"], oracle["expected"]["contributions"]):
-            self.assertAlmostEqual(measured, expected, places=9)
-        self.assertAlmostEqual(actual["entropy"], oracle["expected"]["entropy_bits"], places=9)
-
-        certain = calculate({**inputs, "weights": [1, 0, 0, 0, 0, 0]})
-        self.assertEqual(certain["probabilities"], [1, 0, 0, 0])
-        self.assertEqual(certain["contributions"], [0, 0, 0, 0])
-        self.assertEqual(certain["entropy"], 0)
-
+if __name__ == '__main__':
+    unittest.main()

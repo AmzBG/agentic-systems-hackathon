@@ -56,7 +56,7 @@ Successful runs create:
 - `out/index.html` - self-contained HTML with embedded styles, JavaScript, and visuals.
 - `out/trace.jsonl` - one event per line, including checks, revisions, elapsed time, and per-call token usage.
 
-Two public practice inputs are under `examples/attention/` and `examples/entropy/`. The latter also contains a real model-generated [`index.html`](examples/entropy/index.html) and its [`trace.jsonl`](examples/entropy/trace.jsonl); the matching input is [`case.json`](examples/entropy/case.json). The trace preserves both failed and accepted repairs.
+Two public practice inputs are under `examples/attention/` and `examples/entropy/`. The latter also contains a real model-generated [`index.html`](examples/entropy/index.html) and its [`trace.jsonl`](examples/entropy/trace.jsonl); the matching input is [`case.json`](examples/entropy/case.json). The refreshed showcase used one request with no repairs; older failed/accepted repair evidence remains in Git history.
 Preview the six-case run plan without making an API request:
 
 ```powershell
@@ -70,6 +70,8 @@ The pipeline validates the input and source, asks the command-line-selected Open
 The shared contract sets hard guards at 10 API calls, 30,000 completion tokens, and 10 minutes. The normal strategy targets one generation call and at most two targeted repairs. The current OpenRouter setting is `--reasoning low`, with an explicit `--reasoning {low,off,model}` option for experiments.
 
 ## Evidence status
+
+[Release evidence and pickup instructions](evidence/release_84c31ac/README.md) retain four new generated mechanisms with independent numerical comparisons, exact code provenance, usage, and scientific warnings. These are one-run numerical passes, not full teaching/source/browser approval or proof of hidden-case robustness. The refreshed entropy example passed its independent oracle. Final-SHA clean-clone verification, genuine browser QA, generated Attention proof, and public repository access remain release gates.
 
 Offline contract tests and a fresh Python 3.11 wheel-only installation have passed; the install check also confirmed that the pinned QuickJS engine interrupts an infinite loop. All six practice URLs yielded extractable source text through the real fetch path, although one live entropy fetch failed near the three-second cap and was routed to the core owner.
 

@@ -1,0 +1,119 @@
+{
+  "bayes-updating": {
+    "ok": true,
+    "checks": {
+      "post_alpha": true,
+      "post_beta": true,
+      "post_mean": true
+    },
+    "inputs": {
+      "alpha0": 2,
+      "beta0": 2,
+      "successes": 3,
+      "failures": 1
+    },
+    "expected": {
+      "post_alpha": 5,
+      "post_beta": 3,
+      "post_mean": 0.625
+    },
+    "observed": {
+      "post_alpha": 5,
+      "post_beta": 3,
+      "post_mean": 0.625
+    }
+  },
+  "least-squares-loss": {
+    "ok": true,
+    "checks": {
+      "pred": true,
+      "resid": true,
+      "sq": true,
+      "sse": true
+    },
+    "inputs": {
+      "x1": 0,
+      "y1": 1,
+      "x2": 1,
+      "y2": 3,
+      "intercept": 0,
+      "slope": 2
+    },
+    "expected": {
+      "pred": [
+        0,
+        2
+      ],
+      "resid": [
+        1,
+        1
+      ],
+      "sq": [
+        1,
+        1
+      ],
+      "sse": 2
+    },
+    "observed": {
+      "pred": [
+        0,
+        2
+      ],
+      "resid": [
+        1,
+        1
+      ],
+      "sq": [
+        1,
+        1
+      ],
+      "sse": 2
+    }
+  },
+  "logistic-probability": {
+    "ok": true,
+    "checks": {
+      "z": true,
+      "odds": true,
+      "p": true
+    },
+    "inputs": {
+      "intercept": 0,
+      "weight": 0,
+      "x": 0
+    },
+    "expected": {
+      "z": 0,
+      "odds": 1,
+      "p": 0.5
+    },
+    "observed": {
+      "z": 0,
+      "odds": 1,
+      "p": 0.5
+    }
+  },
+  "exponential-decay": {
+    "ok": true,
+    "checks": {
+      "t_half": true,
+      "remaining_fraction": true,
+      "remaining_amount": true
+    },
+    "inputs": {
+      "n0": 80,
+      "lambda": 0.2,
+      "t": 5
+    },
+    "expected": {
+      "t_half": 3.465735902799726,
+      "remaining_fraction": 0.36787944117144233,
+      "remaining_amount": 29.430355293715387
+    },
+    "observed": {
+      "t_half": 3.465735902799726,
+      "remaining_fraction": 0.36787944117144233,
+      "remaining_amount": 29.430355293715387
+    }
+  }
+}

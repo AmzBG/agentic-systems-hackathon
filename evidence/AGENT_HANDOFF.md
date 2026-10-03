@@ -1,5 +1,7 @@
 # Resume here — User 3
 
+Latest release-work pickup: see `release_84c31ac/README.md` first. It supersedes stale run/showcase status below: four new real single/low runs and independent page-interpreter comparisons pass; refreshed entropy generation passes; final-SHA clone/browser/Attention/public-access gates remain explicit. Producing code was 84c31ac, not subsequent main. Commit identity is Jiany-S only. Check current AI.md/USER3.md/inboxes before acting; do not duplicate these paid runs or the completed paired entropy comparison.
+
 Snapshot: 3 October 2026, Asia/Beirut. Verified starting HEAD and origin/main: `1e774a75269801198d34e13923ae7be43de88471`, clean checkout. This is a handoff snapshot, not a claim that main will stay unchanged. Fetch and reread current files before acting. No implementation or model run was requested by the context-preservation task.
 
 Final synchronization in this documentation pass included `2a028e4faa6fd2f4c287a3a42a61d85560171110`: new model-client call metadata uses `reasoning_setting` instead of `reasoning`. Historical traces may use the old field or omit it. Do not conclude reasoning was disabled merely from a missing old field; inspect producing code and both names. No new paid run or full suite was performed for this documentation-only handoff; the verified test boundaries below remain explicit.
