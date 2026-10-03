@@ -471,8 +471,8 @@ class _Validator:
             for key in ("min", "max", "expected"):
                 if key in item and not _is_number(item[key]):
                     self.err(f"{path}.{key}", "must be a finite number")
-            if kind == "range" and "min" not in item and "max" not in item:
-                self.err(path, "range needs min and/or max")
+            if kind == "range" and ("min" not in item or "max" not in item):
+                self.err(path, "range needs both min and max")
             if kind == "range" and _is_number(item.get("min")) and _is_number(item.get("max")) and item["min"] > item["max"]:
                 self.err(path, "min must not exceed max")
             if kind in {"sum", "row_sum"} and "expected" not in item:

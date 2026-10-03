@@ -37,6 +37,16 @@ Recipient ACKs next read, resolves owned work, marks DONE with command/result/co
 ## Checkpoints and assistants
 12:02 contracts/stubs;12:32 U3 entropy/U2 working page before live calls;13:32 U1 vertical slice;14:32 U3 six-case/two-model evidence;15:32 flow/fixes;16:02 freeze;16:32 review;17:02 pushes/SHA;17:02–17:32 U3 clean clone/3.11 venv/run/offline check/URL+full SHA. Owners report commits/checks/blockers. Post-freeze only practice-proven fixes; changed SHA needs recheck. Assistants edit owned files except inbox appends; propose interface changes; return changed functions/sections; use stubs.
 
+## Pending frozen-block corrections (U1 proposal 13:30; needs U2+U3 ACK before 16:02)
+Each line states what all three implementations already do on main; nothing new is requested. After both ACKs, U1 edits AI.md/USER1.md and U2/U3 paste the same blocks into their own files.
+1. Wire: revisions use the same **two** delimiter pairs (not three). Outside the blocks only whitespace and one optional fence pair around the whole response; one fence pair inside a block is stripped; metadata must not contain `compute_js`.
+2. `parse_spec(text)` handles complete responses only; targeted revisions go through U1-internal `merge_revision(base, text, requested)`: metadata keys ⊆ requested + `version`; compute block only when `compute_js` is requested; every top-level value replaced whole on a copy; full validation; failure keeps the base.
+3. Budget: every `reserve()` is paired with exactly one `record()`, including failed attempts; unverified usage keeps the whole reservation charged; `remaining_seconds()` = 480 s generation stop − elapsed (HTTP timeouts are clipped to it); one monotonic origin for budget and trace.
+4. CheckReport `target`: a top-level Spec key (`compute_js`, `controls`, …), `spec` (key named in detail), `html` (renderer defect, never a spec repair) or null. Optional per-check `tier` (`safety`/`numerical`/`structural`/`advisory`); untiered checks rank as structural. The agent may append core checks (currently `page_interpreter`, tier numerical) and recomputes `ok`/`failures` accordingly.
+5. Trace: stages are exactly read_input/fetch/identify/plan/generate/check/revision/final; parse and render are actions; any `request`/`…:request` action carries `details.request_number`; final carries `details.exit_code` matching its result.
+6. Compute language: compute must run in the page interpreter (`templates/interpreter.js`, U2): const/let, arithmetic incl. `%` `**`, strict comparisons, ternary, if/return, counted `for` ≤256 iterations, `for…of`, local functions/arrows, approved `Math.*`, `Number.isFinite`, `.length/.map/.reduce/.slice/.forEach/.push/.concat`, `Array(n).fill`. No `filter/indexOf/includes/sort/Array.from/new/typeof/while/==`. Caps: each array axis ≤8 and ≤128 numbers per output.
+7. Schema minimums the brief requires: `symbols` ≥1; `grounding` ≥1 with a paper citation (`excerpt` or `unverified`); invariant `sum`/`row_sum` need `expected`, `range` needs both min and max (min ≤ max); line sweeps lie inside their control bounds.
+
 ## Frozen interfaces (identical in all four files)
 Python 3.11 types below are structural contracts; `Spec`, `Usage`, `CheckReport`, and `TraceEvent` mean dictionaries with the shapes below. Implementations may use type aliases, not incompatible classes.
 

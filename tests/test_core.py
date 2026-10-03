@@ -283,6 +283,7 @@ class ParserTests(unittest.TestCase):
         self.assertRejects(broken(lambda s: s["visuals"][1]["sweep"].update(max=9)), "within the control")
         self.assertRejects(broken(lambda s: s["visuals"][1]["sweep"].update(points=60)), "points")
         self.assertRejects(broken(lambda s: s["invariants"][0].update(kind="sum")), "needs expected")
+        self.assertRejects(broken(lambda s: s["invariants"][0].update(kind="range", min=0)), "both min and max")
         self.assertRejects(broken(lambda s: s.update(grounding=[])), "at least 1")
         self.assertRejects(broken(lambda s: s["tests"][0]["expected"].update(total=[[1], [1, 2]])), "rectangular")
         self.assertRejects(broken(lambda s: s["outputs"][0].update(role="result")), "intermediate")
@@ -624,6 +625,37 @@ class FlowTests(unittest.TestCase):
                                    "detail": "control equalize lacks label, help, or units"}]}
         self.assertEqual(agent.repair_targets(schema_only)[0], ["controls"])  # field fix: no dependents
         self.assertEqual([c["id"] for c in fixable], ["numerical_execution", "two_meaningful_controls"])
+
+    def test_truncated_generation_gets_full_regeneration_budget_and_note(self):
+        cut = api_reply("BEGIN_SPEC\n{\"version\": 1,", usage={"prompt_tokens": 10,
+                        "completion_tokens": agent.GENERATION_MAX_TOKENS})
+        cut["choices"][0]["finish_reason"] = "length"
+        h = Harness(cut, api_reply(wire()))
+        self.assertEqual(h.run(), 0)
+        second = h.sent_bodies()[1]
+        self.assertEqual(second["max_tokens"], min(agent.GENERATION_MAX_TOKENS, 30_000 - agent.GENERATION_MAX_TOKENS))
+        self.assertIn("cut off at the completion-token limit", second["messages"][1]["content"])
+
+    def test_untiered_failures_still_rank_when_tiers_mixed(self):
+        tiered_pass = {"id": "page_interpreter", "status": "pass", "detail": "", "target": "compute_js", "tier": "numerical"}
+        failing = agent.normalize_report({"ok": False, "checks": [
+            {"id": "spec_schema", "status": "fail", "detail": "x", "target": "spec"}, dict(tiered_pass)], "failures": ["x"]})
+        passing = agent.normalize_report({"ok": True, "checks": [
+            {"id": "spec_schema", "status": "pass", "detail": "", "target": "spec"}, dict(tiered_pass)], "failures": []})
+        self.assertLess(agent.rank_report(passing)[0], agent.rank_report(failing)[0])
+
+    @unittest.skipUnless(agent.page_compute_check(toy_spec()) is not None, "QuickJS or User 2 runtime unavailable")
+    def test_page_interpreter_failure_drives_compute_repair(self):
+        bad = toy_spec()
+        bad["compute_js"] = ("function compute(inputs) { const scaled = inputs.xs.filter(x => x > -9); "
+                             "return { scaled, total: scaled.reduce((a, b) => a + b, 0) }; }")
+        h = Harness(api_reply(wire(bad)), api_reply(wire(metadata={"version": 1}, compute=toy_spec()["compute_js"])))
+        self.assertEqual(h.run(), 0)
+        first_check = [e for e in h.events if e["stage"] == "check"][0]
+        self.assertIn(("page_interpreter", "fail"), [(c["id"], c["status"]) for c in first_check["checks"]])
+        repair = h.sent_bodies()[1]["messages"][1]["content"]
+        self.assertIn("Current compute function:", repair)  # compute-only repair
+        self.assertIn("top-level keys: []", repair)
 
     def test_degraded_ok_exits_zero_and_reports(self):
         report = ok_report()

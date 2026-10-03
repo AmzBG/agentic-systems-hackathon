@@ -39,10 +39,14 @@ REASONING_MODES = {"model": None, "low": {"effort": "low"}, "off": {"enabled": F
 DEFAULT_REASONING = "low"
 GENERATION_MAX_TOKENS = 16_000
 REPAIR_MAX_TOKENS = 7_000
-PLAN_MAX_TOKENS = 800
+PLAN_MAX_TOKENS = 3_000  # reasoning precedes the visible plan; 3k + 16k generation < 24k soft cap
 MAX_REPAIRS = 2
 MAX_RETRIES_PER_CALL = 1
 MIN_RETRY_TOKENS = 2_000
+MIN_REGENERATION_TOKENS = 8_000
+TRUNCATED_NOTE = ("the previous response was cut off at the completion-token limit before END_COMPUTE; "
+                  "reason briefly and write compact JSON without indentation")
+PAGE_PROBE_SECONDS = 2.0
 FETCH_SECONDS = 3.0
 FETCH_MAX_BYTES = 6 * 1024 * 1024
 EXTRACT_MAX_CHARS = 400_000
@@ -235,6 +239,47 @@ def fetch_source(url: str, focus: str, *, opener: Callable = urllib.request.urlo
     return result
 
 
+# ------------------------------------------------------------------ page interpreter probe
+
+def page_compute_check(spec: dict, root: Path = Path(__file__).resolve().parent) -> dict | None:
+    """Run compute through the page's own numeric interpreter (QuickJS) on defaults, presets and tests.
+
+    Checks may execute compute as full JavaScript, but the page runs a smaller language; a compute that
+    only the larger engine accepts would pass checks and still leave the page without numbers. Returns
+    None when the renderer, interpreter or engine is unavailable (nothing is claimed in that case).
+    """
+    try:
+        import quickjs
+        from runtime import merge_inputs, parse_compute
+        interpreter = (root / "templates" / "interpreter.js").read_text(encoding="utf-8")
+    except Exception:
+        return None
+    check = {"id": "page_interpreter", "status": "pass", "target": "compute_js", "tier": "numerical"}
+    try:
+        ast = json.dumps(parse_compute(spec["compute_js"]))
+    except Exception as exc:
+        return {**check, "status": "fail", "detail": f"page interpreter rejects compute: {exc}"[:300]}
+    controls = spec.get("controls", [])
+    probes = [("default", {})]
+    probes += [(f"exploration_{i + 1}", e.get("preset", {})) for i, e in enumerate(spec.get("explorations", []))]
+    probes += [(f"test_{i + 1}", t.get("inputs", {})) for i, t in enumerate(spec.get("tests", []))]
+    declared = {o.get("id") for o in spec.get("outputs", [])}
+    for name, preset in probes:
+        try:
+            inputs = json.dumps(merge_inputs(controls, preset))
+            context = quickjs.Context()
+            context.set_time_limit(PAGE_PROBE_SECONDS)
+            context.set_memory_limit(64 * 1024 * 1024)
+            call = f"JSON.stringify(NumericRuntime.run({ast}, {inputs}, NumericRuntime.budget()))"
+            missing = declared - set(json.loads(context.eval(interpreter + "\n" + call)))
+            if missing:
+                return {**check, "status": "fail", "detail": f"{name}: page compute omits outputs {sorted(missing)}"}
+        except Exception as exc:
+            reason = str(exc).splitlines()[0] if str(exc) else type(exc).__name__
+            return {**check, "status": "fail", "detail": f"{name}: page interpreter error: {reason}"[:300]}
+    return {**check, "detail": f"{len(probes)} probes ran in the page interpreter"}
+
+
 # ------------------------------------------------------------------ candidates
 
 @dataclass
@@ -266,7 +311,7 @@ def rank_report(report: dict) -> tuple[tuple, bool]:
     safe = not any(c.get("tier") == "safety" for c in failed)
     if any("tier" in c for c in checks):
         def count(tier: str, status: str = "fail") -> int:
-            return sum(1 for c in checks if c.get("tier") == tier and c.get("status") == status)
+            return sum(1 for c in checks if c.get("tier", "structural") == tier and c.get("status") == status)
         detail = (count("safety"), count("numerical"), count("structural"),
                   count("numerical", "skip"), count("advisory"))
     else:
@@ -428,6 +473,12 @@ class Runner:
             except Exception as exc:
                 report = normalize_report(None)
                 report["failures"] = [f"checks failed to run: {type(exc).__name__}"]
+        page_check = page_compute_check(spec)
+        if page_check is not None:
+            report["checks"].append(page_check)
+            if page_check["status"] == "fail":
+                report["ok"] = False
+                report["failures"].append(f"page_interpreter: {page_check['detail']}")
         rank, safe = rank_report(report)
         result = "pass" if report["ok"] else "fail"
         self.emit("check", label, result, checks=report["checks"], failures=report["failures"],
@@ -499,6 +550,8 @@ class Runner:
                 self.consider(self.evaluate(spec, "generation", "generate"))
             except SpecError as exc:
                 errors = exc.errors
+                if client.last_call.get("finish_reason") == "length":
+                    errors = [TRUNCATED_NOTE] + errors
                 self.emit("generate", "parse", "fail", failures=errors[:40])
 
         for number in range(1, MAX_REPAIRS + 1):
@@ -531,8 +584,12 @@ class Runner:
                 return False  # nothing parsed and nothing demonstrated; a blind retry is not a repair
             record.update(mode="full", requested=list(SPEC_KEYS))
             messages = build_generation_messages(self.case, source, plan, errors)
-            max_tokens = GENERATION_MAX_TOKENS if self.budget.allows_optional_call(GENERATION_MAX_TOKENS) \
-                else REPAIR_MAX_TOKENS
+            # Nothing usable exists yet, so spend what the hard cap allows (the soft cap guards repairs only).
+            max_tokens = min(GENERATION_MAX_TOKENS, self.budget.completion_left())
+            if max_tokens < MIN_REGENERATION_TOKENS:
+                self.emit("revision", f"revision_{number}", "skip", details={
+                    "reason": "too few completion tokens left for a complete response", **self.budget.snapshot()})
+                return False
         else:
             report = self.best.report
             targets, fixable = repair_targets(report)

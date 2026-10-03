@@ -66,7 +66,7 @@ Visual: {{"id": ID, "kind": "bar"|"line"|"heatmap"|"values", "title": str, "outp
   "sweep": {{"control": slider/number CONTROL_ID, "min": number, "max": number, "points": 2..{MAX_SWEEP_POINTS}}} (line only, range inside the control bounds)}}
   bar shows a vector output, heatmap a matrix output, line a scalar output recomputed across the sweep, values any output.
 Presets and test inputs override defaults; every value must satisfy its control's kind, bounds and shape.
-Invariants: range needs min and/or max (each value); sum (flat vector) and row_sum (each matrix row) need expected; nondecreasing applies to a flat vector.
+Invariants: range needs both min and max (min <= max, each value); sum (flat vector) and row_sum (each matrix row) need expected; nondecreasing applies to a flat vector.
 Test comparison: |actual - expected| <= atol + rtol*|expected|. Tests must be hand-checkable identities of the
 mechanism with exact expected values (special or limiting cases), not merely finiteness. When an observation states a
 number, add a test whose inputs equal that exploration's preset and whose expected value is that number.
