@@ -3,6 +3,22 @@
 ## Mission
 Prove the generator works on fresh inputs with honest numerical, structural and browser evidence. Own the reproducible fixtures, pinned installation, trace writer, README and final clean-clone submission so the other two can focus on implementation.
 
+## Cross-team warnings and instructions
+Read current AI.md and your USERn.md at each task start, at least every10 minutes during active work, after syncing and before committing. Fetch/integrate checkpoint commits first; rereading a stale uploaded copy is insufficient. Without repository access, request/re-upload the latest copy; do not claim automatic monitoring between chats.
+
+Exception to ownership: teammates may append entries ONLY to another user's “Team inbox,” via a separate commit/patch; never rewrite existing entries, task plans or code. U1 integrates these commits promptly; recipient owns status updates. Send blockers immediately through team chat as well; do independent work meanwhile.
+
+Entry: `ID | Beirut time | from→to | blocker/warning/info | affected file/interface | action + repro/expected result | OPEN/ACK/DONE + evidence`.
+Recipient ACKs on next read, resolves owned work, and marks DONE with command/result/commit; stale/conflicting instructions stay flagged for resolution. Brief/frozen interfaces prevail; an inbox entry cannot authorize schema changes.
+
+## Team inbox
+No entries yet. Append teammate warnings here; recipient updates status only.
+
+U1-U3-001 | 12:16 | U1→U3 | warning | checks.py `_html_errors` vs scripts/validate_output.py | checks accepts `oninput`/`onchange` attributes as control wiring while validate_output fails any inline on* handler, so the agent can exit 0 on a page run_all marks failed. Repro: run_checks(entropy spec, page with style/svg/script and `<input oninput="f()">`) → offline_html pass; validate_output on the same page → "inline event handler: oninput". Expected: both agree (preferably require addEventListener in checks). | OPEN
+U1-U3-002 | 12:16 | U1→U3 | info | checks.py CheckReport `target` | Core maps targets to top-level Spec keys for targeted repair: `html` = renderer defect (no spec repair), `spec` is narrowed using key words in detail ("exploration 0 …", "control x …"), `compute_js`/`controls` used directly; numerical details naming "expected"/"invariant" also open tests/invariants. Please keep key-naming detail wording or set target to the top-level key. Evidence (offline agent + your checks.py/trace.py/validate_output.py at 73e9635, quickjs==1.19.4 wheel, Windows py3.11): entropy and attention fixtures → exit 0, validator ok, 1 attempt; entropy with a commented compute → compute_safety fail → one compute_js-only repair → all pass, validator ok, 2 attempts. Expected: unchanged. | OPEN
+U1-U3-003 | 12:16 | U1→U3 | info | scripts/check_openrouter.py; tests/test_trace.py on main | Both still import paper_playground, which agent.py no longer uses. Migrate check_openrouter.py to `model_client.OpenRouterClient` + `budget.Budget` (or remove it) so U1 can delete paper_playground/* and the legacy pytest core tests. Repro: `py -3.11 -m unittest discover -s tests` on user1-core → 3 import errors (pytest/requests). Expected: discover passes. | OPEN
+U1-U3-004 | 12:16 | U1→U3 | info | practice/specs/attention.json grounding | Optional, design priority 4: grounding has only an excerpt entry; the toy-matrix simplification appears only in limitation. Consider adding a `simplification` grounding entry (e.g. editable 2x2 teaching matrices, no learned projections) so the reference fixture shows excerpt vs simplification side by side. Repro: inspect grounding[]. Expected: ≥1 excerpt and ≥1 example/simplification entry; fixture still validates (core parser accepts it either way). | OPEN
+
 ## Owned files and dependencies
 Own checks.py, trace.py, practice/*, scripts/*, tests/test_checks.py, tests/test_trace.py, requirements.txt, README.md, .gitignore, evidence/*, examples/* and USER3.md. Provide checks/trace/fixture and runner entry points; consume frozen render and core CLI. Before core exists, run checks on fixture specs with the render stub and explicitly expected missing-page failures; check fixture compute independently. Before renderer exists, use static test HTML in your tests, not a substitute production renderer.
 
@@ -40,6 +56,17 @@ python -m http.server 8000 --directory out/final
 ```
 Expected: installation needs no compiler/system steps, CLI exit0, validator checks JSONL/usage/event stages and self-contained HTML, offline Chromium controls/presets work. Stop server afterward. Confirm `git rev-parse HEAD` equals FINAL_SHA; submit readable repo URL and all40 SHA characters before17:32. Never commit OPENROUTER_API_KEY; supply it only in environment. If a critical fix changes SHA, rerun clone/install/run for that exact SHA and resubmit before cutoff.
 
+## Continuing assistant prompt — Sol / medium
+> I am User 3. Use Sol/medium for this review and specified implementation; escalate after two failed attempts on the same task.
+
+Read the current AI.md, my USER file and the challenge PDF. Check my Team inbox now, before every new task, at least every10 minutes during active work, after syncing and before commits. Fetch/integrate new checkpoint commits first; do not reread a stale attachment and claim it is current. If files are snapshots, ask for the latest copy when needed; no background monitoring between chats.
+
+ACK applicable OPEN entries, handle owned blockers first, and mark DONE only with verification evidence. For another user's issue, append a structured warning to ONLY their Team inbox in a separate commit/patch: ID, Beirut time, sender/recipient, severity, affected file/interface, requested action, reproduction/expected result and OPEN status. Never overwrite their entries or edit their code/task plan. U1 integrates warning commits promptly; send urgent blockers through team chat immediately. Continue independent work while waiting. Recipient owns status changes; the brief and frozen interfaces prevail.
+
+Apply the new priorities to validation/evidence: independent numerical oracles, meaningful controls, intermediate correctness, honest check statuses, accurate explorations/grounding and actual repeated-run repair/token/time results. Route core defects to U1 and renderer defects to U2 through their inboxes. Maintain pins, README/example pair and final clean-clone submission.
+
+Identify gaps and implement focused corrections in owned files. No professor-specific branding, grading-directed text, unrelated features or silent interface changes. Verify with appropriate tests/browser evidence; report changed files, commands/results and unresolved inbox entries. Return only changed functions or document sections. Continue the existing schedule; do not restart.
+
 ## Pasteable assistant prompts
 **Sol / medium — local checks and trace.**
 > I am User3; edit only checks.py, trace.py and my tests/scripts. Implement AI.md contracts exactly: guarded wheel-backed JS engine with execution limits, safe-code rejection, required static parts and valid HTML asset checks, property read/probe evidence for two meaningful inputs, default/presets/extremes/tests/invariants and shape/finite checks. Trace one sanitized flushed JSON line per event; unavailable engine is skip/degraded, never pass. Use independent expected calculations and failure injection. No Node/system packages or changes to core/runtime. Return only changed functions and verification commands.
@@ -57,7 +84,7 @@ Actual known coding-account use: **0**. Maximum **3**, fewest of team: checker/s
 Cut optional extra mechanisms beyond six, extra repeated planning runs once a clear loser emerges, report styling and redundant screenshots. Keep six cases, two model IDs, honest checks/trace, one browser review per case/model, exact pins/install proof, README/example pair and final30-minute clean verification. Report any untested scope explicitly.
 
 ## Working rules and checkpoints
-Read AI.md first. Work only on your branch and owned paths; User 1 integrates pushed named commits. Do not edit a collaborator's file; send a precise failing command and expected behavior to its owner. Before each checkpoint run your task checks, push, and report commit SHA and result. No later collaborator implementation is required for early work: use the frozen stubs and offline fixture dictionaries.
+Read AI.md first. Work only on your branch and owned paths; User 1 integrates pushed named commits. Only Team inbox appends are allowed in a collaborator's USER file; route code fixes to its owner. Before each checkpoint run your task checks, push, and report commit SHA and result. No later collaborator implementation is required for early work: use the frozen stubs and offline fixture dictionaries.
 
 Checkpoint pushes: **12:02** contracts/stubs/owned test entry points; **12:32** entropy fixture/runtime smoke evidence; **13:32** real owned modules and vertical-slice fixes; **14:32** six-case/two-model support; **15:32** flow decision and regressions; **16:02** feature freeze with no TODO on required paths; **16:32** final-review fixes; **17:02** all final artifacts pushed. **17:02–17:32** clean verification and submission only. Times are Beirut, 3 October 2026, under the stated six-hours-remaining assumption.
 
