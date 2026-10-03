@@ -1,0 +1,7 @@
+{
+  "source_url": "https://arxiv.org/pdf/1312.6114",
+  "focus": "Explain positive KL(q||p) for a two-dimensional diagonal Gaussian q against a standard normal prior p. Editable two-element mean and standard-deviation vectors are the controls. Default mu=[1,0], sigma=[1,2]; mu range -3 to 3, sigma range 0.1 to 3. Show squared means, variances, log-variances, per-coordinate KL and total in nats. Explore matching the prior and changing only one standard deviation. Explain why the ELBO contains negative KL. No sampling or model training.",
+  "audience": "Engineering undergraduate familiar with algebra; define every new symbol and explain intermediate calculations.",
+  "excerpt": "Paraphrase: Appendix B derives negative KL for q=N(mu,diag(sigma^2)) and p=N(0,I). Negating it gives KL(q||p)=0.5*sum(mu_j^2+sigma_j^2-1-ln(sigma_j^2)). Here sigma is standard deviation and must be positive; logarithms are natural. Coordinates contribute additively. This demonstration isolates the regularization term, not the full variational objective.",
+  "section": "Kingma and Welling, Auto-Encoding Variational Bayes, Appendix B, Gaussian case."
+}

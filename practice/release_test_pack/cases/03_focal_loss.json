@@ -1,0 +1,7 @@
+{
+  "source_url": "https://arxiv.org/pdf/1708.02002",
+  "focus": "Explain unweighted binary focal loss for one example. Controls: p_t in [0.01,0.99] (probability assigned to the true class) and gamma in [0,5]. Default p_t=0.9, gamma=2. Show cross entropy, modulation factor and focal loss in nats, with a visual comparing their magnitudes. Explore gamma=0 and an easy versus difficult example. No alpha weighting, detector or training.",
+  "audience": "Engineering undergraduate familiar with algebra; define every new symbol and explain intermediate calculations.",
+  "excerpt": "Paraphrase: unweighted focal loss is FL(p_t)=-(1-p_t)^gamma*ln(p_t), gamma>=0. Cross entropy is -ln(p_t). The modulation factor suppresses the contribution of already well-classified examples. At gamma=0 the factor is one. p_t denotes the probability of the true class, which need not be the positive-class probability.",
+  "section": "Lin et al., Focal Loss for Dense Object Detection (2017), Section 3.2, Equation 4; unweighted form."
+}

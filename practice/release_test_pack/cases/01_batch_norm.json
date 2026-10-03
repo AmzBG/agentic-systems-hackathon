@@ -1,0 +1,7 @@
+{
+  "source_url": "https://arxiv.org/pdf/1502.03167",
+  "focus": "Explain one training-time batch-normalization transform for four editable scalar activations. Include gamma and beta controls, fixed epsilon=0.00001, and display batch mean, population variance, normalized activations and affine outputs. Default x=[1,2,3,4], gamma=1, beta=0. Allow x values -10 to 10, gamma -2 to 2, beta -3 to 3. Explore a constant batch and negative gamma. Distinguish mini-batch statistics from inference statistics; no training.",
+  "audience": "Engineering undergraduate familiar with algebra; define every new symbol and explain intermediate calculations.",
+  "excerpt": "Paraphrase of the cited algorithm: for a batch of m values, mu=sum(x)/m and v=sum((x-mu)^2)/m. Normalize with xhat=(x-mu)/sqrt(v+epsilon), then y=gamma*xhat+beta. Epsilon is positive for numerical stability. Gamma and beta are learned in a network but manually controlled in this toy. The batch variance divisor is m, not m-1.",
+  "section": "Ioffe and Szegedy, Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift (2015), Section 3, Algorithm 1."
+}

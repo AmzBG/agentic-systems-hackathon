@@ -1,5 +1,7 @@
 # Entropy review — 3 October 2026
 
+Current factual override: the refreshed tracked showcase is generation84c31ac, one request/no repairs,7995 prompt+9922 completion=17917 total (7055 reasoning included),46.609 trace seconds, exit0/nondegraded. Older three-request metrics below describe the superseded showcase, not the current file. U2's e7fefcc browser QA genuinely tested this refreshed page; U3 recomputed SHA256 `ed4d813f62cb0d1fc2199803a5144cf89a8dc4902415b140a8a6591851d1723d`, matching `../browser_qa_20261003/environment.json`. Tested load/controls/both presets/visuals/console/invalid retention/keyboard and three widths PASS as U2 observations. Fully network-disabled remains UNVERIFIED; original artifact/current-css-only retests do not certify newest runtime/workbench. U3 did not perform a new browser run. Details, screenshots and exact scope: `../browser_qa_20261003/README.md`. Prior BLOCKED/browser paragraphs below are historical and superseded only for those observed checks.
+
 Reviewed repository implementation: `faa6de3`. This extends `evidence/REVIEW_TEMPLATE.md`; it is not a browser pass or an instructor score.
 
 | Field | Evidence |

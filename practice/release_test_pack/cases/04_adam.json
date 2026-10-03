@@ -1,0 +1,7 @@
+{
+  "source_url": "https://arxiv.org/pdf/1412.6980",
+  "focus": "Explain three scalar Adam steps using externally specified gradients, without training. Controls: editable gradient vector of length 3 in [-4,4], learning rate alpha in [0,0.2], and displayed step count 1 to 3. Default gradients=[2,2,2], alpha=0.1, steps=1. Fix theta0=1, beta1=0.9, beta2=0.999, epsilon=1e-8. Display m, v, bias-corrected moments, update and theta for active steps. Explore reversing the gradient sign and all-zero gradients. Explain that the supplied gradients are illustrative, not a trained model.",
+  "audience": "Engineering undergraduate familiar with algebra; define every new symbol and explain intermediate calculations.",
+  "excerpt": "Paraphrase of Algorithm 1: initialize m0=v0=0. For t starting at 1, m_t=beta1*m_(t-1)+(1-beta1)*g_t; v_t=beta2*v_(t-1)+(1-beta2)*g_t^2. Correct initialization bias with mhat=m_t/(1-beta1^t) and vhat=v_t/(1-beta2^t). Then theta_t=theta_(t-1)-alpha*mhat/(sqrt(vhat)+epsilon). Square gradients elementwise. Epsilon is outside the square root in this update.",
+  "section": "Kingma and Ba, Adam: A Method for Stochastic Optimization, Section 2, Algorithm 1."
+}

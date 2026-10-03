@@ -1,0 +1,7 @@
+{
+  "source_url": "https://paper-playground-test.invalid/unavailable-paper.pdf",
+  "focus": "Explain the focal-loss mechanism and the explicitly modified demonstration defined in the supplied note. Controls p_t in [0.01,0.99] and gamma in [0,5], defaults p_t=0.9 and gamma=2. Display base cross entropy, modulation, base focal loss and modified demonstration loss. Explain which relation belongs to the paper and which coefficient belongs only to this supplied example.",
+  "audience": "Engineering undergraduate familiar with algebra; define every new symbol and explain intermediate calculations.",
+  "section": "Lin et al., Focal Loss for Dense Object Detection (2017), Section 3.2, Equation 4; unweighted form.",
+  "mechanism_note_7": "Paraphrase: unweighted focal loss is FL(p_t)=-(1-p_t)^gamma*ln(p_t), gamma>=0. Cross entropy is -ln(p_t). The modulation factor suppresses the contribution of already well-classified examples. At gamma=0 the factor is one. p_t denotes the probability of the true class, which need not be the positive-class probability. Author-created test extension: display a modified loss L_demo=3.7*FL. The coefficient 3.7 is only an illustrative scale, not a claim from the paper. This note is sufficient even if source fetching fails."
+}

@@ -1,0 +1,949 @@
+{
+  "01_batch_norm": [
+    {
+      "probe": "default",
+      "inputs": {
+        "x": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "gamma": 1,
+        "beta": 0
+      },
+      "expected": {
+        "mean": 2.5,
+        "variance": 1.25,
+        "normalized": [
+          -1.3416354199689269,
+          -0.447211806656309,
+          0.447211806656309,
+          1.3416354199689269
+        ],
+        "y": [
+          -1.3416354199689269,
+          -0.447211806656309,
+          0.447211806656309,
+          1.3416354199689269
+        ]
+      }
+    },
+    {
+      "probe": "constant",
+      "inputs": {
+        "x": [
+          3,
+          3,
+          3,
+          3
+        ],
+        "gamma": 2,
+        "beta": -1
+      },
+      "expected": {
+        "mean": 3.0,
+        "variance": 0.0,
+        "normalized": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "y": [
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0
+        ]
+      }
+    },
+    {
+      "probe": "negative_scale",
+      "inputs": {
+        "x": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "gamma": -2,
+        "beta": 1
+      },
+      "expected": {
+        "mean": 2.5,
+        "variance": 1.25,
+        "normalized": [
+          -1.3416354199689269,
+          -0.447211806656309,
+          0.447211806656309,
+          1.3416354199689269
+        ],
+        "y": [
+          3.6832708399378538,
+          1.894423613312618,
+          0.105576386687382,
+          -1.6832708399378538
+        ]
+      }
+    }
+  ],
+  "02_gaussian_kl": [
+    {
+      "probe": "default",
+      "inputs": {
+        "mu": [
+          1,
+          0
+        ],
+        "sigma": [
+          1,
+          2
+        ]
+      },
+      "expected": {
+        "per_coordinate": [
+          0.5,
+          0.8068528194400547
+        ],
+        "total": 1.3068528194400546
+      }
+    },
+    {
+      "probe": "match_prior",
+      "inputs": {
+        "mu": [
+          0,
+          0
+        ],
+        "sigma": [
+          1,
+          1
+        ]
+      },
+      "expected": {
+        "per_coordinate": [
+          0.0,
+          0.0
+        ],
+        "total": 0.0
+      }
+    },
+    {
+      "probe": "shift_mean",
+      "inputs": {
+        "mu": [
+          2,
+          0
+        ],
+        "sigma": [
+          1,
+          1
+        ]
+      },
+      "expected": {
+        "per_coordinate": [
+          2.0,
+          0.0
+        ],
+        "total": 2.0
+      }
+    },
+    {
+      "probe": "small_sigma",
+      "inputs": {
+        "mu": [
+          0,
+          0
+        ],
+        "sigma": [
+          0.1,
+          1
+        ]
+      },
+      "expected": {
+        "per_coordinate": [
+          1.8075850929940454,
+          0.0
+        ],
+        "total": 1.8075850929940454
+      }
+    }
+  ],
+  "03_focal_loss": [
+    {
+      "probe": "default",
+      "inputs": {
+        "p_t": 0.9,
+        "gamma": 2
+      },
+      "expected": {
+        "cross_entropy": 0.10536051565782628,
+        "modulation": 0.009999999999999995,
+        "focal_loss": 0.0010536051565782623,
+        "demonstration_loss": 0.0010536051565782623
+      }
+    },
+    {
+      "probe": "gamma_zero",
+      "inputs": {
+        "p_t": 0.9,
+        "gamma": 0
+      },
+      "expected": {
+        "cross_entropy": 0.10536051565782628,
+        "modulation": 1.0,
+        "focal_loss": 0.10536051565782628,
+        "demonstration_loss": 0.10536051565782628
+      }
+    },
+    {
+      "probe": "difficult",
+      "inputs": {
+        "p_t": 0.1,
+        "gamma": 2
+      },
+      "expected": {
+        "cross_entropy": 2.3025850929940455,
+        "modulation": 0.81,
+        "focal_loss": 1.865093925325177,
+        "demonstration_loss": 1.865093925325177
+      }
+    },
+    {
+      "probe": "balanced",
+      "inputs": {
+        "p_t": 0.5,
+        "gamma": 2
+      },
+      "expected": {
+        "cross_entropy": 0.6931471805599453,
+        "modulation": 0.25,
+        "focal_loss": 0.17328679513998632,
+        "demonstration_loss": 0.17328679513998632
+      }
+    }
+  ],
+  "07_offline_unknown_field": [
+    {
+      "probe": "default",
+      "inputs": {
+        "p_t": 0.9,
+        "gamma": 2
+      },
+      "expected": {
+        "cross_entropy": 0.10536051565782628,
+        "modulation": 0.009999999999999995,
+        "focal_loss": 0.0010536051565782623,
+        "demonstration_loss": 0.0038983390793395707
+      }
+    },
+    {
+      "probe": "gamma_zero",
+      "inputs": {
+        "p_t": 0.9,
+        "gamma": 0
+      },
+      "expected": {
+        "cross_entropy": 0.10536051565782628,
+        "modulation": 1.0,
+        "focal_loss": 0.10536051565782628,
+        "demonstration_loss": 0.3898339079339573
+      }
+    },
+    {
+      "probe": "difficult",
+      "inputs": {
+        "p_t": 0.1,
+        "gamma": 2
+      },
+      "expected": {
+        "cross_entropy": 2.3025850929940455,
+        "modulation": 0.81,
+        "focal_loss": 1.865093925325177,
+        "demonstration_loss": 6.900847523703155
+      }
+    },
+    {
+      "probe": "balanced",
+      "inputs": {
+        "p_t": 0.5,
+        "gamma": 2
+      },
+      "expected": {
+        "cross_entropy": 0.6931471805599453,
+        "modulation": 0.25,
+        "focal_loss": 0.17328679513998632,
+        "demonstration_loss": 0.6411611420179494
+      }
+    }
+  ],
+  "04_adam": [
+    {
+      "probe": "default",
+      "inputs": {
+        "gradients": [
+          2,
+          2,
+          2
+        ],
+        "alpha": 0.1,
+        "steps": 1
+      },
+      "expected": {
+        "history": [
+          {
+            "step": 1,
+            "m": 0.2,
+            "v": 0.004,
+            "mhat": 2.0000000000000004,
+            "vhat": 3.9999999999999964,
+            "subtracted_update": 0.09999999950000009,
+            "theta": 0.9000000005
+          }
+        ],
+        "theta": 0.9000000005
+      }
+    },
+    {
+      "probe": "negative",
+      "inputs": {
+        "gradients": [
+          -2,
+          -2,
+          -2
+        ],
+        "alpha": 0.1,
+        "steps": 1
+      },
+      "expected": {
+        "history": [
+          {
+            "step": 1,
+            "m": -0.2,
+            "v": 0.004,
+            "mhat": -2.0000000000000004,
+            "vhat": 3.9999999999999964,
+            "subtracted_update": -0.09999999950000009,
+            "theta": 1.0999999995
+          }
+        ],
+        "theta": 1.0999999995
+      }
+    },
+    {
+      "probe": "zero",
+      "inputs": {
+        "gradients": [
+          0,
+          0,
+          0
+        ],
+        "alpha": 0.1,
+        "steps": 3
+      },
+      "expected": {
+        "history": [
+          {
+            "step": 1,
+            "m": 0.0,
+            "v": 0.0,
+            "mhat": 0.0,
+            "vhat": 0.0,
+            "subtracted_update": 0.0,
+            "theta": 1.0
+          },
+          {
+            "step": 2,
+            "m": 0.0,
+            "v": 0.0,
+            "mhat": 0.0,
+            "vhat": 0.0,
+            "subtracted_update": 0.0,
+            "theta": 1.0
+          },
+          {
+            "step": 3,
+            "m": 0.0,
+            "v": 0.0,
+            "mhat": 0.0,
+            "vhat": 0.0,
+            "subtracted_update": 0.0,
+            "theta": 1.0
+          }
+        ],
+        "theta": 1.0
+      }
+    },
+    {
+      "probe": "two_steps",
+      "inputs": {
+        "gradients": [
+          2,
+          2,
+          2
+        ],
+        "alpha": 0.1,
+        "steps": 2
+      },
+      "expected": {
+        "history": [
+          {
+            "step": 1,
+            "m": 0.2,
+            "v": 0.004,
+            "mhat": 2.0000000000000004,
+            "vhat": 3.9999999999999964,
+            "subtracted_update": 0.09999999950000009,
+            "theta": 0.9000000005
+          },
+          {
+            "step": 2,
+            "m": 0.38,
+            "v": 0.007996,
+            "mhat": 2.0000000000000004,
+            "vhat": 4.000000000000054,
+            "subtracted_update": 0.09999999949999937,
+            "theta": 0.8000000010000006
+          }
+        ],
+        "theta": 0.8000000010000006
+      }
+    },
+    {
+      "probe": "reversal",
+      "inputs": {
+        "gradients": [
+          2,
+          -2,
+          2
+        ],
+        "alpha": 0.1,
+        "steps": 2
+      },
+      "expected": {
+        "history": [
+          {
+            "step": 1,
+            "m": 0.2,
+            "v": 0.004,
+            "mhat": 2.0000000000000004,
+            "vhat": 3.9999999999999964,
+            "subtracted_update": 0.09999999950000009,
+            "theta": 0.9000000005
+          },
+          {
+            "step": 2,
+            "m": -0.01999999999999999,
+            "v": 0.007996,
+            "mhat": -0.10526315789473682,
+            "vhat": 4.000000000000054,
+            "subtracted_update": -0.005263157868421017,
+            "theta": 0.905263158368421
+          }
+        ],
+        "theta": 0.905263158368421
+      }
+    },
+    {
+      "probe": "no_update",
+      "inputs": {
+        "gradients": [
+          2,
+          2,
+          2
+        ],
+        "alpha": 0,
+        "steps": 3
+      },
+      "expected": {
+        "history": [
+          {
+            "step": 1,
+            "m": 0.2,
+            "v": 0.004,
+            "mhat": 2.0000000000000004,
+            "vhat": 3.9999999999999964,
+            "subtracted_update": 0.0,
+            "theta": 1.0
+          },
+          {
+            "step": 2,
+            "m": 0.38,
+            "v": 0.007996,
+            "mhat": 2.0000000000000004,
+            "vhat": 4.000000000000054,
+            "subtracted_update": 0.0,
+            "theta": 1.0
+          },
+          {
+            "step": 3,
+            "m": 0.542,
+            "v": 0.011988004,
+            "mhat": 2.000000000000001,
+            "vhat": 4.000000000000001,
+            "subtracted_update": 0.0,
+            "theta": 1.0
+          }
+        ],
+        "theta": 1.0
+      }
+    }
+  ],
+  "05_attention_stability": [
+    {
+      "probe": "default",
+      "inputs": {
+        "Q": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "K": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "V": [
+          [
+            10
+          ],
+          [
+            20
+          ]
+        ],
+        "scaling": true
+      },
+      "expected": {
+        "raw_scores": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "scores": [
+          [
+            0.7071067811865475,
+            0.0
+          ],
+          [
+            0.0,
+            0.7071067811865475
+          ]
+        ],
+        "weights": [
+          [
+            0.6697615493266569,
+            0.3302384506733431
+          ],
+          [
+            0.3302384506733431,
+            0.6697615493266569
+          ]
+        ],
+        "output": [
+          [
+            13.302384506733432
+          ],
+          [
+            16.697615493266568
+          ]
+        ]
+      }
+    },
+    {
+      "probe": "unscaled",
+      "inputs": {
+        "Q": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "K": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "V": [
+          [
+            10
+          ],
+          [
+            20
+          ]
+        ],
+        "scaling": false
+      },
+      "expected": {
+        "raw_scores": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "scores": [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0
+          ]
+        ],
+        "weights": [
+          [
+            0.7310585786300049,
+            0.2689414213699951
+          ],
+          [
+            0.2689414213699951,
+            0.7310585786300049
+          ]
+        ],
+        "output": [
+          [
+            12.689414213699951
+          ],
+          [
+            17.31058578630005
+          ]
+        ]
+      }
+    },
+    {
+      "probe": "equal_scores",
+      "inputs": {
+        "Q": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "K": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "V": [
+          [
+            10
+          ],
+          [
+            20
+          ]
+        ],
+        "scaling": true
+      },
+      "expected": {
+        "raw_scores": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "scores": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ],
+        "weights": [
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.5,
+            0.5
+          ]
+        ],
+        "output": [
+          [
+            15.0
+          ],
+          [
+            15.0
+          ]
+        ]
+      }
+    },
+    {
+      "probe": "large",
+      "inputs": {
+        "Q": [
+          [
+            1000,
+            0
+          ],
+          [
+            0,
+            1000
+          ]
+        ],
+        "K": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "V": [
+          [
+            10
+          ],
+          [
+            20
+          ]
+        ],
+        "scaling": true
+      },
+      "expected": {
+        "raw_scores": [
+          [
+            1000,
+            0
+          ],
+          [
+            0,
+            1000
+          ]
+        ],
+        "scores": [
+          [
+            707.1067811865474,
+            0.0
+          ],
+          [
+            0.0,
+            707.1067811865474
+          ]
+        ],
+        "weights": [
+          [
+            1.0,
+            8.08028751644722e-308
+          ],
+          [
+            8.08028751644722e-308,
+            1.0
+          ]
+        ],
+        "output": [
+          [
+            10.0
+          ],
+          [
+            20.0
+          ]
+        ]
+      }
+    }
+  ],
+  "06_entropy_edges": [
+    {
+      "probe": "default",
+      "inputs": {
+        "weights": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "n": 4
+      },
+      "expected": {
+        "probabilities": [
+          0.25,
+          0.25,
+          0.25,
+          0.25
+        ],
+        "contributions_bits": [
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "entropy_bits": 2.0,
+        "uniform_fallback": false
+      }
+    },
+    {
+      "probe": "certainty",
+      "inputs": {
+        "weights": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "n": 4
+      },
+      "expected": {
+        "probabilities": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "contributions_bits": [
+          -0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "entropy_bits": 0.0,
+        "uniform_fallback": false
+      }
+    },
+    {
+      "probe": "three_outcomes",
+      "inputs": {
+        "weights": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "n": 3
+      },
+      "expected": {
+        "probabilities": [
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333
+        ],
+        "contributions_bits": [
+          0.5283208335737187,
+          0.5283208335737187,
+          0.5283208335737187
+        ],
+        "entropy_bits": 1.584962500721156,
+        "uniform_fallback": false
+      }
+    },
+    {
+      "probe": "one_outcome",
+      "inputs": {
+        "weights": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "n": 1
+      },
+      "expected": {
+        "probabilities": [
+          1.0
+        ],
+        "contributions_bits": [
+          -0.0
+        ],
+        "entropy_bits": 0.0,
+        "uniform_fallback": false
+      }
+    },
+    {
+      "probe": "all_zero",
+      "inputs": {
+        "weights": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "n": 4
+      },
+      "expected": {
+        "probabilities": [
+          0.25,
+          0.25,
+          0.25,
+          0.25
+        ],
+        "contributions_bits": [
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "entropy_bits": 2.0,
+        "uniform_fallback": true
+      }
+    },
+    {
+      "probe": "zero_active_prefix",
+      "inputs": {
+        "weights": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "n": 2
+      },
+      "expected": {
+        "probabilities": [
+          0.5,
+          0.5
+        ],
+        "contributions_bits": [
+          0.5,
+          0.5
+        ],
+        "entropy_bits": 1.0,
+        "uniform_fallback": true
+      }
+    }
+  ]
+}

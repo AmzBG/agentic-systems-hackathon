@@ -1,0 +1,7 @@
+{
+  "source_url": "https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf",
+  "focus": "Explain discrete entropy with four editable nonnegative weights in [0,4] and active outcome count n in [1,4]. Use the first n weights, normalize them and show active probabilities, individual bit contributions and entropy. Default weights=[1,1,1,1], n=4. If all active weights are zero, explicitly use a uniform active distribution as a stated UI convention, not a result of the paper. Explore certainty and equal likelihood; handle zero probability without evaluating log(0).",
+  "audience": "Engineering undergraduate familiar with algebra; define every new symbol and explain intermediate calculations.",
+  "excerpt": "Paraphrase: discrete entropy in bits is H=-sum(p_i*log2(p_i)) for nonnegative probabilities summing to one. The contribution at p_i=0 is defined by its limiting value zero. Entropy vanishes for a certain outcome; for n equally likely outcomes its value is log2(n). Converting editable weights into probabilities is an illustrative interface choice.",
+  "section": "Claude Shannon, A Mathematical Theory of Communication (1948), Section 6, Choice, Uncertainty and Entropy."
+}
