@@ -50,23 +50,25 @@
   const compute=(inputs,b)=>outputs(NumericRuntime.run(data.ast,inputs,b));
   let state,last=null;const widgets=new Map();
   function status(message,error=false){el('status').textContent=message;el('status').className=error?'error':'';}
-  function sync(){for(const c of spec.controls){const ws=widgets.get(c.id);if(!ws)continue;const value=state[c.id];for(const w of ws){const v=w.path.reduce((x,i)=>x[i],value);if(c.kind==='toggle')w.node.checked=v;else w.node.value=String(v);w.node.removeAttribute('aria-invalid');}const read=el('read-'+c.id);if(read)read.textContent=format(value)+' '+c.units;}}
+  function sync(){for(const c of spec.controls){const ws=widgets.get(c.id);if(!ws)continue;const value=state[c.id];for(const w of ws){const v=w.path.reduce((x,i)=>x[i],value);if(c.kind==='toggle')w.node.checked=v;else w.node.value=String(v);w.node.removeAttribute('aria-invalid');}const read=el('read-'+c.id);if(read)read.textContent=format(value)+' '+c.units;const error=el('error-'+c.id);if(error)error.textContent='';}}
   function edit(c,w) {
     try {
       let value;if(c.kind==='toggle')value=w.node.checked;else if(c.kind==='select')value=w.node.value;
       else {if(w.node.value.trim()===''||w.node.validity.badInput)fail(c.label+': enter a finite number');value=Number(w.node.value);if(!finite(value))fail(c.label+': enter a finite number');}
       const proposed=clone(state);if(!w.path.length)proposed[c.id]=value;else{let target=proposed[c.id];for(const i of w.path.slice(0,-1))target=target[i];target[w.path[w.path.length-1]]=value;}
       state=validate(proposed,true);sync();recalculate();
-    }catch(error){sync();w.node.setAttribute('aria-invalid','true');status('Invalid edit; last valid inputs retained. '+error.message,true);}
+    }catch(error){sync();w.node.setAttribute('aria-invalid','true');el('error-'+c.id).textContent='Invalid edit; previous value restored. '+error.message;status('Invalid edit; last valid inputs retained. '+error.message,true);}
   }
   function controls() {
     for(const c of spec.controls) {
-      const field=create('fieldset',undefined,el('controls'));create('legend',c.label+' ('+unit(c.units)+')',field);
+      const field=create('fieldset',undefined,el('controls'));create('legend',c.label+(c.units?' ('+c.units+')':''),field);
       const help=create('small',c.help,field);help.id='help-'+c.id;const ws=[];widgets.set(c.id,ws);
       const add=(path,type,parent,label)=>{
         const box=create('div',undefined,parent),id='input-'+c.id+'-'+(path.join('-')||'scalar');
+        box.className=path.length?'cell':type==='checkbox'?'toggle-control':'scalar-control';
         const lab=create('label',label,box);lab.htmlFor=id;
-        const node=create(type==='select'?'select':'input',undefined,box);node.id=id;node.setAttribute('aria-describedby',help.id);
+        if(!path.length&&type!=='checkbox')lab.className='sr-only';
+        const node=create(type==='select'?'select':'input',undefined,box);node.id=id;node.setAttribute('aria-describedby',help.id+' error-'+c.id);
         if(type==='select')for(const o of c.options){const option=create('option',o.label,node);option.value=o.value;}
         else{node.type=type;if(type==='number'||type==='range'){node.min=String(c.min);node.max=String(c.max);node.step=String(c.step);}}
         const w={node,path};ws.push(w);node.addEventListener(type==='range'?'input':'change',()=>edit(c,w));return node;
@@ -76,14 +78,36 @@
         if(c.kind==='matrix'){grid.style.gridTemplateColumns='repeat('+c.shape[1]+', minmax(110px,1fr))';grid.style.minWidth=(110*c.shape[1])+'px';}
         for(let row=0;row<c.shape[0];row++)for(let col=0;col<(c.kind==='matrix'?c.shape[1]:1);col++){
           const path=c.kind==='matrix'?[row,col]:[row];add(path,'number',grid,c.kind==='matrix'?'Row '+(row+1)+', column '+(col+1):'Element '+(row+1));}
-      }else{add([],c.kind==='toggle'?'checkbox':c.kind==='select'?'select':c.kind==='slider'?'range':'number',field,c.label);if(c.kind==='slider'){const read=create('output','',field);read.id='read-'+c.id;read.htmlFor=ws[0].node.id;}}
+      }else{
+        let read;
+        if(c.kind==='slider'){const heading=create('div',undefined,field);heading.className='control-heading';create('span','Current value',heading);read=create('output','',heading);read.id='read-'+c.id;}
+        add([],c.kind==='toggle'?'checkbox':c.kind==='select'?'select':c.kind==='slider'?'range':'number',field,c.label);
+        if(read)read.htmlFor=ws[0].node.id;
+      }
+      const error=create('small','',field);error.id='error-'+c.id;error.className='field-error';
     }
   }
   function renderOutputs(result) {
     el('outputs').replaceChildren();
     const containers=new Map();
-    for(const o of spec.outputs){const box=create('div',undefined,el('outputs'));box.className='output';containers.set(o.id,box);create('h3',o.label+' — '+o.role+' ('+unit(o.units)+')',box);create('pre',displayValue(result[o.id]),box);}
+    for(const o of spec.outputs){
+      const box=create('div',undefined,el('outputs'));box.className='output';box.id='output-'+o.id;box.setAttribute('data-role',o.role);containers.set(o.id,box);
+      create('h4',o.label+' — '+o.role+' ('+unit(o.units)+')',box);
+      if(!Array.isArray(result[o.id]))create('p',format(result[o.id]),box).className='output-value';
+      else if(!spec.visuals.some(v=>v.output===o.id))numericTable(result[o.id],o.label+' ('+unit(o.units)+')',box);
+    }
     return containers;
+  }
+  function resultReadout(result,parent,snapshot=false) {
+    parent.replaceChildren();parent.className=snapshot?'preset-result':'result-preview';
+    create('p',snapshot?'Result when this preset was applied':'Current result',parent).className='readout-label';
+    for(const o of spec.outputs.filter(o=>o.role==='result')){
+      const link=create('a',o.label,parent);link.href='#output-'+o.id;
+      if(Array.isArray(result[o.id])){
+        const visual=spec.visuals.find(v=>v.output===o.id);
+        numericTable(result[o.id],o.units||'Numeric values',parent,visual&&visual.labels,{x:visual&&visual.x_label,y:visual&&visual.y_label});
+      }else{const value=create('p',format(result[o.id]),parent);value.className='output-value';create('span',' '+o.units,value).className='units';}
+    }
   }
   const ns='http://www.w3.org/2000/svg';
   function svgNode(tag,attrs,parent,text){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(text!==undefined)n.textContent=text;if(parent)parent.append(n);return n;}
@@ -109,8 +133,9 @@
   function renderVisual(v,result,inputs,b,parent) {
     const output=spec.outputs.find(o=>o.id===v.output),value=result[v.output],s=shape(value);
     const tableAxes={x:v.x_label,y:v.y_label,value:output.label+' ('+unit(output.units)+')'};
-    create('h3',v.title,parent);
+    create('h5',v.title,parent);
     if(v.kind==='values'){numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels,tableAxes);return;}
+    create('small','Scroll horizontally to see the full plot.',parent).className='plot-hint';
     if(v.kind==='heatmap') {
       if(s.dims.length!==2)fail('Heatmap requires a matrix');
       create('p',v.x_label+' × '+v.y_label+'; '+output.label+(output.units?' ('+output.units+')':''),parent);
@@ -121,14 +146,14 @@
         if(cols<=4)svgNode('text',{x:x+255/cols,y:y+110/rows+5,'text-anchor':'middle'},svg,tickNumber(value[r][c]));}}
       for(let c=0;c<cols;c++){const label=(v.labels&&v.labels[c])||String(c+1);const tick=svgNode('text',{x:90+(c+.5)*510/cols,y:276,'text-anchor':'middle'},svg,shortLabel(label));svgNode('title',{},tick,label);}
       svgNode('text',{x:350,y:310,'text-anchor':'middle'},svg,v.x_label);svgNode('text',{x:350,y:340,'text-anchor':'middle'},svg,'Scale: '+format(lo)+' to '+format(hi)+' '+unit(output.units));
-      svgNode('text',{transform:'translate(18 150) rotate(-90)','text-anchor':'middle'},svg,v.y_label);numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels,tableAxes);return;
+      svgNode('text',{transform:'translate(18 150) rotate(-90)','text-anchor':'middle'},svg,v.y_label);numericTable(value,output.label+' ('+unit(output.units)+')',tableDisclosure(parent),v.labels,tableAxes);return;
     }
     if(v.kind==='bar') {
       if(s.dims.length!==1)fail('Bar chart requires a vector');
       const svg=chart(v,parent),[lo,hi]=domain(value,true);axis(svg,v,1,value.length,lo,hi,'',output.units,true);
       const y=x=>284-(x-lo)/(hi-lo)*240,zero=y(0),width=510/value.length;
       value.forEach((x,i)=>{svgNode('rect',{x:92+i*width,y:Math.min(zero,y(x)),width:Math.max(1,width-8),height:Math.abs(y(x)-zero),fill:'#207a96'},svg);svgNode('text',{x:92+(i+.5)*width,y:Math.max(38,Math.min(280,y(x)+(x<0?18:-7))),'text-anchor':'middle'},svg,format(x));const label=(v.labels&&v.labels[i])||String(i+1);const tick=svgNode('text',{x:92+(i+.5)*width,y:306,'text-anchor':'middle'},svg,label.length>10?label.slice(0,9)+'…':label);svgNode('title',{},tick,label);});
-      numericTable(value,output.label+' ('+unit(output.units)+')',parent,v.labels,tableAxes);return;
+      numericTable(value,output.label+' ('+unit(output.units)+')',tableDisclosure(parent),v.labels,tableAxes);return;
     }
     if(v.kind==='line') {
       if(s.dims.length!==0)fail('Line chart requires a scalar output');
@@ -136,10 +161,11 @@
       for(let i=0;i<sw.points;i++){const x=i===sw.points-1?sw.max:sw.min+(sw.max-sw.min)*i/(sw.points-1),next=clone(inputs);next[sw.control]=x;const value=compute(validate(next),b)[v.output];if(!finite(value))fail('Sweep output must be scalar');points.push([x,value]);}
       const svg=chart(v,parent),[lo,hi]=domain(points.map(p=>p[1]));axis(svg,v,sw.min,sw.max,lo,hi,control.units,output.units);
       svgNode('polyline',{points:points.map(([x,y])=>(88+(x-sw.min)/(sw.max-sw.min)*520)+','+(284-(y-lo)/(hi-lo)*240)).join(' '),fill:'none',stroke:'#207a96','stroke-width':3},svg);
-      numericTable(points,'Sweep: '+v.x_label+' ('+unit(control.units)+'), '+output.label+' ('+unit(output.units)+')',parent,undefined,{columns:[v.x_label+' ('+unit(control.units)+')',output.label+' ('+unit(output.units)+')']});return;
+      numericTable(points,'Sweep: '+v.x_label+' ('+unit(control.units)+'), '+output.label+' ('+unit(output.units)+')',tableDisclosure(parent),undefined,{columns:[v.x_label+' ('+unit(control.units)+')',output.label+' ('+unit(output.units)+')']});return;
     }
     fail('Unsupported visual');
   }
+  function tableDisclosure(parent){const details=create('details',undefined,parent);create('summary','Inspect numeric values',details);return details;}
   function compare(a,e,t) {
     if(Array.isArray(e))return Array.isArray(a)&&a.length===e.length&&e.every((v,i)=>compare(a[i],v,t));
     return finite(a)&&finite(e)&&Math.abs(a-e)<=t.atol+t.rtol*Math.abs(e);
@@ -166,8 +192,8 @@
   }
   function recalculate() {
     const b=NumericRuntime.budget(2000000);let result,containers;
-    try{result=compute(state,NumericRuntime.budget());last=result;containers=renderOutputs(result);el('result-status').textContent='Current valid result.';}
-    catch(error){status('Calculation failed. '+error.message,true);el('result-status').textContent=last?'Last valid result retained — stale for current inputs.':'No valid result available.';el('check-status').textContent='Degraded: current calculation failed; checks not run.';el('check-status').className='skip';el('checks').replaceChildren();return;}
+    try{result=compute(state,NumericRuntime.budget());last=result;containers=renderOutputs(result);resultReadout(result,el('principal-result'));el('principal-result').removeAttribute('data-stale');el('result-status').textContent='Current valid result.';}
+    catch(error){status('Calculation failed. '+error.message,true);el('principal-result').setAttribute('data-stale','true');el('result-status').textContent=last?'Last valid result retained — stale for current inputs.':'No valid result available.';el('check-status').textContent='Degraded: current calculation failed; checks not run.';el('check-status').className='skip';el('checks').replaceChildren();return;}
     el('visuals').replaceChildren(el('outputs'));let visualFailures=0;
     for(const v of spec.visuals){const box=create('div',undefined,containers.get(v.output));box.className='chart';try{renderVisual(v,result,state,b,box);}catch(error){visualFailures++;box.replaceChildren();create('h3',v.title,box);create('p','Visual unavailable: '+error.message,box).className='error';}}
     status(visualFailures?'Calculation valid; '+visualFailures+' visual(s) unavailable.':'Inputs and calculation valid.',visualFailures>0);
@@ -177,7 +203,12 @@
   if(data.error||!data.ast){status('Degraded: '+(data.error||'Compute unavailable'),true);el('check-status').textContent='Skipped: compute was not admitted.';document.querySelectorAll('.preset').forEach(button=>button.disabled=true);return;}
   try {
     state=merge({});controls();sync();
-    document.querySelectorAll('.preset').forEach(button=>button.addEventListener('click',()=>{try{const next=merge(spec.explorations[Number(button.dataset.preset)].preset);state=next;sync();recalculate();}catch(error){status('Invalid preset; last valid inputs retained. '+error.message,true);}}));
+    document.querySelectorAll('.preset').forEach(button=>button.addEventListener('click',()=>{try{
+      const index=Number(button.dataset.preset),next=merge(spec.explorations[index].preset);state=next;sync();recalculate();
+      const readout=el('preset-result-'+index),feedback=el('feedback-'+index);
+      if(feedback)feedback.open=false;
+      if(readout){if(last&&el('result-status').textContent==='Current valid result.')resultReadout(last,readout,true);else readout.textContent='Preset applied, but calculation failed. See the workbench status.';}
+    }catch(error){status('Invalid preset; last valid inputs retained. '+error.message,true);}}));
     recalculate();
   }catch(error){status('Degraded: '+error.message,true);el('check-status').textContent='Skipped: initialization failed.';}
 })();

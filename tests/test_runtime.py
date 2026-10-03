@@ -268,7 +268,7 @@ const document={
   getElementById:id=>nodes.find(n=>n.id===id),
   querySelectorAll:selector=>selector==='.preset'?nodes.filter(n=>n.className==='preset'):[]
 };
-for(const id of ['runtime-data','controls','outputs','visuals','status','result-status','check-status','checks']){const n=new TestNode('div');n.id=id;}
+for(const id of ['runtime-data','controls','outputs','visuals','status','result-status','check-status','checks','principal-result','preset-result-0','preset-result-1','feedback-0','feedback-1']){const n=new TestNode('div');n.id=id;}
 for(let i=0;i<2;i++){const b=new TestNode('button');b.className='preset';b.dataset.preset=String(i);}
 const text=id=>document.getElementById(id).textContent;
 const change=(id,value)=>{const n=document.getElementById(id);n.value=value;n.events.change();};
@@ -524,6 +524,26 @@ class CalculationTests(unittest.TestCase):
 
 
 class InteractionTests(unittest.TestCase):
+    def test_invalid_edit_has_local_accessible_feedback_and_clears_on_correction(self):
+        result = page_result(entropy_spec(), "change('input-count-scalar','');const message=text('error-count');const input=document.getElementById('input-count-scalar');const invalid=input.attrs['aria-invalid'];change('input-count-scalar','2');", "{message,invalid,describedBy:input.attrs['aria-describedby'],corrected:text('error-count'),value:input.value}")
+        self.assertIn("previous value restored", result["message"])
+        self.assertEqual(result["invalid"], "true")
+        self.assertEqual(result["describedBy"], "help-count error-count")
+        self.assertEqual(result["corrected"], "")
+        self.assertEqual(result["value"], "2")
+
+    def test_result_readout_and_preset_snapshot_are_calculated_and_retained(self):
+        result = page_result(entropy_spec(), "preset(0);const snapshot=text('preset-result-0');change('input-count-scalar','2');", "{snapshot,retained:text('preset-result-0'),current:text('principal-result'),open:document.getElementById('feedback-0').open}")
+        self.assertIn("Total entropy 0 bits", result["snapshot"])
+        self.assertEqual(result["snapshot"], result["retained"])
+        self.assertFalse(result["open"])
+        self.assertIn("Current result", result["current"])
+        failure = entropy_spec()
+        failure["compute_js"] = failure["compute_js"].replace("const n =", "if (inputs.count === 2) throw 'failure'; const n =")
+        stale = page_result(failure, "const before=text('principal-result');change('input-count-scalar','2');", "{before,after:text('principal-result'),stale:document.getElementById('principal-result').attrs['data-stale']}")
+        self.assertEqual(stale["before"], stale["after"])
+        self.assertEqual(stale["stale"], "true")
+
     def test_synced_public_fixtures_and_measured_expected_details(self):
         root = Path(__file__).resolve().parents[1]
         for name, count in (("entropy", 12), ("attention", 10)):
