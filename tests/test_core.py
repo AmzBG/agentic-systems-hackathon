@@ -510,6 +510,9 @@ class FlowTests(unittest.TestCase):
         repair_prompt = h.sent_bodies()[1]["messages"][1]["content"]
         self.assertIn("bad_title", repair_prompt)
         self.assertIn('["title"]', repair_prompt)
+        for event in h.events:  # every request-named action must be a numbered API attempt
+            if event["action"] == "request" or event["action"].endswith(":request"):
+                self.assertIsInstance(event["details"].get("request_number"), int)
 
     def test_exhaustion_keeps_best_page_and_fails(self):
         checks = lambda spec, html: failing_report()
