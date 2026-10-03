@@ -8,6 +8,8 @@ Release-work override: `evidence/release_84c31ac/README.md` contains current pic
 
 ## Live User 3 work plan (3 October 2026)
 
+Stabilization status overrides historical plan/run-availability statements: no paid calls, optimization, Entropy/planning repeats, final clone, freeze or submission this turn. U1 bundles now present; generated T-attention-4 independent six-trial review PASS with teaching/coverage warnings and old-code provenance. Four retained breadth pages reviewed beyond arithmetic: see evidence/release_84c31ac/SCIENTIFIC_REVIEW.md; LS false test name persists despite generic prompt fix558d0cf (effect unmeasured). Current CLI default auto resolves DeepSeek profile low/throughput, single submission/planned development. Real browser evidence pending U2; only harness observations available. Preserve Jiany-S commits, owned paths and status accuracy. Remaining gates: generic semantic effects, final Attention coverage acceptance, browser, public access, owner freeze, exact-SHA final clone/run/validation. Resume Attention oracle with `python scripts/check_attention_oracle.py --output evidence/u1-runs/stage2/T-attention-4`; breadth script requires --output/--inputs/--expected, using the mappings in oracles.json.
+
 The core and checker are on `main`; User 3 works on `main` in owned paths only. The assessment model is `deepseek/deepseek-v4.1-flash`. The local ignored `.env` already has a key; no key value belongs in chat, traces, or Git. The team is User 1 `Jadjnm`, User 2 `AmzBG`, and User 3 `Jiany-S`. Repository access is confirmed for User 1 and User 3; User 2 owns the repository. The team plans to make the repository public before submission; final verification must check unauthenticated access.
 
 Current dependency order:

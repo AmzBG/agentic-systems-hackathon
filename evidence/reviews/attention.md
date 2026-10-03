@@ -1,27 +1,21 @@
-# Attention review — 3 October 2026
+# Generated Attention review — 3 October 2026
 
-Reviewed repository implementation: `faa6de3`. This extends `evidence/REVIEW_TEMPLATE.md`; it is not a generated-output or browser pass.
+This supersedes the fixture-only limitation of the prior review. Reviewed retained real generation: `evidence/u1-runs/stage2/T-attention-4/{index.html,trace.jsonl,spec.json}`, supplied by U1 at d5bab9e. U1's manifest identifies producing SHA `fc2844f5101ba343410929462246fb41e9c26f87`; the trace itself does not stamp Git SHA, so provenance is owner-reported, not independently recoverable from trace. It predates later prompt/repair/default-routing changes and is NOT a final-current-code generation.
 
-| Field | Evidence |
-|---|---|
-| Case | `examples/attention/case.json` |
-| Reviewed content | `practice/specs/attention.json` and its local rendered `out/attention/index.html` |
-| Artifact provenance | Handwritten practice fixture, NOT User 1's successful generated Attention output |
-| Model / reasoning / requests / usage / elapsed / repair | N/A for fixture; generated-run evidence unavailable locally |
-| Generated-output validation / repeats | SKIP; no supplied production artifact and trace to inspect |
+## Trace and independent calculation
 
-## Independent scientific review
+Current validator PASS:9 events, exit0, degraded=false, one request, zero repairs. Actual trace: model and served model `deepseek/deepseek-v4.1-flash`, low reasoning, provider sort throughput, served Together; prompt6787/completion9192/total15979, reasoning6034 already included in completion. API41.75s, final cumulative43.641s; U1's manifest wall44.6s is a different measure, not a contradiction. No planning request occurred.
 
-Compared fixture explanation, symbols and examples with [Vaswani et al., Section 3.2.1, equation (1)](https://arxiv.org/html/1706.03762v7). PASS for fixture fidelity: row-wise softmax of scaled query/key dot products mixes value rows. Q, K, V and key dimension are defined; scores and normalized weights are explicit intermediates. Independent arithmetic with identity matrices and key dimension 2 gives diagonal score 0.7071067812 and diagonal weight 0.6697615493. Without scaling the weight becomes 0.7310585786. Equal scores give weights 0.5/0.5 and, for values [2,0] and [0,4], output [1,2]. A score gap 4/sqrt(2) gives first-key weight 0.9441927808. These agree with fixture expectations.
+`python scripts/check_attention_oracle.py --output evidence/u1-runs/stage2/T-attention-4` independently calculates QK^T/divisor, stable row-wise softmax and weights*V using Python math, then compares every declared output via bounded QuickJS on the delivered AST. Six trials PASS: defaults, both actual presets, scaled identity, unscaled identity, zero-query averaging. Detailed inputs/expected/observed are in `attention_oracle.json`; none of its expected values come from generated tests. Identity key dimension2 gives diagonal score.7071067812, weight.6697615493; scaling off gives.7310585786. Zero scores mix V=[[2,0],[0,4]] into [1,2] for each query.
 
-The fixed 2x2 matrices are marked as simplifications; masking, learned projections, multiple heads and training are explicitly excluded. Both explorations request predictions and explain the resulting mixtures. No fixture science defect identified; generated Attention fidelity remains unverified.
+## Scientific, teaching and grounding review
 
-## Browser checks
+Compared visible teaching and grounding to [Vaswani et al., Section3.2.1 equation1](https://arxiv.org/html/1706.03762v7): core computation matches scaled scores→row-normalized weights→value mixture. Q/K/V,d_k,S,A,O and divisor are defined. Score/weight heatmaps, row-sum bars and peak-weight scale sweep are coherent. Editable matrices, scaling toggle and scale slider are meaningful for this toy setup. Equal-keys preset gives uniform rows; dominant unscaled first-row scores[6,0] give weights[.997527,.002473]. FROM PAPER claims about scaling and dot products are supported; 2x2 matrices/peak statistic are explicitly SIMPLIFICATION, not paper experiment results. The limitation honestly says varying d_k independently of fixed matrix width is a toy numerical-scale experiment, not true change in feature dimension; accept only under that disclosure. No invented source locator found in inspected entries.
 
-BLOCKED: earlier in-app-browser access was denied by an administrator-enforced security policy. No browser was exercised in this reconciliation and no bypass was attempted.
+Concrete warnings, routed to U1: A1 second exploration says the entire O is almost the first value vector, but only its FIRST query row is; second row is [.268941,.731059] for identity V. A2 K-help says it changes row sums, which should remain1; equal scores/d_k=1 are counterexamples to unconditional “sharper/falls” control help. A3 invariant named “each attention row sums to one” actually sums the rowsums vector to2: [0,2] could satisfy it without either row being1. Our independent comparisons check each weight/row sum, but that does not cure the invariant's misleading name/coverage. Prefer row_sum on weights or per-leaf range around1. These are generated teaching/validation-coverage warnings, not a failed interpreter or numeric run.
 
-All template browser checks remain SKIP: offline Chromium loading; initial layout/units; Q/K/V edits and scaling toggle visibly affecting results; both preset buttons; updated intermediates; invalid/extreme edits; console; keyboard/focus; desktop/tablet/mobile widths; network activity. A JavaScript harness is not browser QA.
+## Browser evidence — pending User2
 
-## Estimate and unresolved warnings
+No actual browser was exercised by U3 this turn. U2's current notes contain AST/DOM-double evidence, not real Chromium PASS. Offline/network/CSP, layout, keyboard/focus, matrix edits/toggle/preset buttons, invalid-edit state and narrow-width behavior stay SKIP/BLOCKED until U2 supplies observations with artifact path/hash, runtime/commit, browser/version, performed actions/results and screenshots/console/network evidence where available. Preserve U2's provenance separately from U3 static/numerical checks; an untested item remains SKIP.
 
-No rubric score or efficiency winner assigned. User 1 must supply the existing successful generated Attention page/trace and four hidden-like case artifacts; no duplicate paid calls requested. User 2 owns browser verification. A fixture review cannot close the generated-output requirement.
+No rubric score assigned. Historical generated-output availability and numerical proof are now resolved for this selected artifact; final-version Attention acceptance and browser QA remain gates. No paid Attention call or rerun was made by U3.
