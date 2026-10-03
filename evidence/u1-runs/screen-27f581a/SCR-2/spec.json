@@ -1,0 +1,504 @@
+{
+ "controls": [
+  {
+   "id": "q11",
+   "label": "Q row 1, entry 1 (q11)",
+   "help": "First entry of query row 1; it changes raw dot products S in row 1, hence score row 1, weight row 1 and output row 1.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 1,
+   "min": -1000,
+   "max": 1000,
+   "step": 1
+  },
+  {
+   "id": "q12",
+   "label": "Q row 1, entry 2 (q12)",
+   "help": "Second entry of query row 1; it changes raw dot products S in row 1, hence score row 1, weight row 1 and output row 1.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 0,
+   "min": -1000,
+   "max": 1000,
+   "step": 1
+  },
+  {
+   "id": "q21",
+   "label": "Q row 2, entry 1 (q21)",
+   "help": "First entry of query row 2; it changes raw dot products S in row 2, hence score row 2, weight row 2 and output row 2.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 0,
+   "min": -1000,
+   "max": 1000,
+   "step": 1
+  },
+  {
+   "id": "q22",
+   "label": "Q row 2, entry 2 (q22)",
+   "help": "Second entry of query row 2; it changes raw dot products S in row 2, hence score row 2, weight row 2 and output row 2.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 1,
+   "min": -1000,
+   "max": 1000,
+   "step": 1
+  },
+  {
+   "id": "k11",
+   "label": "K row 1, entry 1 (k11)",
+   "help": "First entry of key row 1; it changes column 1 of the raw dot products S, hence column 1 of the scores and the weights in both rows.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 1,
+   "min": -1000,
+   "max": 1000,
+   "step": 1
+  },
+  {
+   "id": "k12",
+   "label": "K row 1, entry 2 (k12)",
+   "help": "Second entry of key row 1; it changes column 1 of the raw dot products S, hence column 1 of the scores and the weights in both rows.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 0,
+   "min": -1000,
+   "max": 1000,
+   "step": 1
+  },
+  {
+   "id": "k21",
+   "label": "K row 2, entry 1 (k21)",
+   "help": "First entry of key row 2; it changes column 2 of the raw dot products S, hence column 2 of the scores and the weights in both rows.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 0,
+   "min": -1000,
+   "max": 1000,
+   "step": 1
+  },
+  {
+   "id": "k22",
+   "label": "K row 2, entry 2 (k22)",
+   "help": "Second entry of key row 2; it changes column 2 of the raw dot products S, hence column 2 of the scores and the weights in both rows.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 1,
+   "min": -1000,
+   "max": 1000,
+   "step": 1
+  },
+  {
+   "id": "v1",
+   "label": "V entry for key 1 (v1)",
+   "help": "Value attached to key row 1; it enters the output as the term w[i][1]*v1 in each output row i.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 10,
+   "min": -20,
+   "max": 20,
+   "step": 1
+  },
+  {
+   "id": "v2",
+   "label": "V entry for key 2 (v2)",
+   "help": "Value attached to key row 2; it enters the output as the term w[i][2]*v2 in each output row i.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 20,
+   "min": -20,
+   "max": 20,
+   "step": 1
+  },
+  {
+   "id": "scaling",
+   "label": "Divide scores by sqrt(d_k)",
+   "help": "Switches between A = S/sqrt(d_k) and A = S, changing scores A, weights w and output O, and leaving the raw dot products S unchanged.",
+   "units": "unitless",
+   "kind": "toggle",
+   "default": true
+  }
+ ],
+ "outputs": [
+  {
+   "id": "scores_raw",
+   "label": "Raw dot products S = Q*K^T",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "scores_scaled",
+   "label": "Scores A = S/sqrt(d_k) with scaling on, A = S with scaling off",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "exp_shifted",
+   "label": "Shifted exponentials exp(A[i][j] - m[i])",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "weights",
+   "label": "Attention weights w, each row sums to 1",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "output",
+   "label": "Attention output O = w*V",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "v_scores",
+   "kind": "heatmap",
+   "title": "Raw dot products S[i][j] of query row i with key row j",
+   "output": "scores_raw",
+   "x_label": "key row index j",
+   "y_label": "query row index i"
+  },
+  {
+   "id": "v_weights",
+   "kind": "heatmap",
+   "title": "Attention weights w[i][j], each row normalized to sum to 1",
+   "output": "weights",
+   "x_label": "key row index j",
+   "y_label": "query row index i"
+  },
+  {
+   "id": "v_output",
+   "kind": "bar",
+   "title": "Attention output O[i][0] per query row i",
+   "output": "output",
+   "x_label": "query row index i",
+   "y_label": "output entry",
+   "labels": [
+    "query row 1",
+    "query row 2"
+   ]
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Scaling on versus off at the default inputs",
+   "instruction": "scaling is turned off, q11, q12, q21, q22, k11, k12, k21, k22, v1 and v2 keep their defaults 1, 0, 0, 1, 1, 0, 0, 1, 10 and 20.",
+   "observe": "The score matrix A and the weight matrix w stay at 0.5 in every entry in both settings, so the output readout keeps the rows 15 and 15; the raw dot-product matrix S is unchanged.",
+   "why": "Raw dot products are identical in the two settings and are 0 off the diagonal, so the off-diagonal scores are 0 with and without scaling; the diagonal score 1 becomes 1/sqrt(2) when scaling is on. Both score matrices have equal entries within each row, so each row of the softmax is uniform and each output row is the average 0.5*10 + 0.5*20 = 15.",
+   "preset": {
+    "scaling": false
+   }
+  },
+  {
+   "title": "One dominant key with scaling on",
+   "instruction": "scaling is turned on and k12 is raised to 100, while q11, q12, q21, q22, k11, k21, k22, v1 and v2 keep their defaults 1, 0, 0, 1, 1, 0, 1, 10 and 20.",
+   "observe": "Row 1 of the weight readout is dominated by its second entry, with w[1][1] = 0, and output row 1 reads 20; row 2 of the weights and output row 2 are untouched.",
+   "why": "S[1][2] = q11*k12 + q12*k22 = 100 while S[1][1] = 1, so after dividing by sqrt(2) the row-1 score gap is about 70; the shifted exponential of the smaller score is negligible, giving weight near 1 to key 2 and output row 1 equal to 1*v1 + 0*v2 evaluated at the unchanged row-2 weights.",
+   "preset": {
+    "scaling": true,
+    "k12": 100
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "identity queries and keys, scaling off",
+   "inputs": {
+    "q11": 1,
+    "q12": 0,
+    "q21": 0,
+    "q22": 1,
+    "k11": 1,
+    "k12": 0,
+    "k21": 0,
+    "k22": 1,
+    "v1": 10,
+    "v2": 20,
+    "scaling": false
+   },
+   "expected": {
+    "scores_raw": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scores_scaled": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "exp_shifted": [
+     [
+      1,
+      0.36787944117144233
+     ],
+     [
+      0.36787944117144233,
+      1
+     ]
+    ],
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "output": [
+     [
+      15
+     ],
+     [
+      15
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "identity queries and keys, scaling on",
+   "inputs": {
+    "q11": 1,
+    "q12": 0,
+    "q21": 0,
+    "q22": 1,
+    "k11": 1,
+    "k12": 0,
+    "k21": 0,
+    "k22": 1,
+    "v1": 10,
+    "v2": 20,
+    "scaling": true
+   },
+   "expected": {
+    "scores_raw": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scores_scaled": [
+     [
+      0.7071067811865475,
+      0
+     ],
+     [
+      0,
+      0.7071067811865475
+     ]
+    ],
+    "exp_shifted": [
+     [
+      1,
+      0.4930686913952398
+     ],
+     [
+      0.4930686913952398,
+      1
+     ]
+    ],
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "output": [
+     [
+      15
+     ],
+     [
+      15
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "dominant second key, scaling on",
+   "inputs": {
+    "q11": 1,
+    "q12": 0,
+    "q21": 0,
+    "q22": 1,
+    "k11": 1,
+    "k12": 100,
+    "k21": 0,
+    "k22": 1,
+    "v1": 10,
+    "v2": 20,
+    "scaling": true
+   },
+   "expected": {
+    "scores_raw": [
+     [
+      1,
+      100
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "scores_scaled": [
+     [
+      0.7071067811865475,
+      70.71067811865476
+     ],
+     [
+      0,
+      0.7071067811865475
+     ]
+    ],
+    "weights": [
+     [
+      0,
+      1
+     ],
+     [
+      0.3306812391979703,
+      0.6693187608020297
+     ]
+    ],
+    "output": [
+     [
+      20
+     ],
+     [
+      16.693187608020295
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "all query and key entries equal to one, scaling on",
+   "inputs": {
+    "q11": 1,
+    "q12": 1,
+    "q21": 1,
+    "q22": 1,
+    "k11": 1,
+    "k12": 1,
+    "k21": 1,
+    "k22": 1,
+    "v1": -20,
+    "v2": 20,
+    "scaling": true
+   },
+   "expected": {
+    "scores_raw": [
+     [
+      2,
+      2
+     ],
+     [
+      2,
+      2
+     ]
+    ],
+    "scores_scaled": [
+     [
+      1.414213562373095,
+      1.414213562373095
+     ],
+     [
+      1.414213562373095,
+      1.414213562373095
+     ]
+    ],
+    "exp_shifted": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "output": [
+     [
+      0
+     ],
+     [
+      0
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "each row of Attention weights w, each row sums to 1 adds up to 1",
+   "output": "weights",
+   "kind": "row_sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "every value of Attention weights w, each row sums to 1 is between 0 and 1",
+   "output": "weights",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "every value of Shifted exponentials exp(A[i][j] - m[i]) is between 0 and 1",
+   "output": "exp_shifted",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "every value of Attention output O = w*V is finite",
+   "output": "output",
+   "kind": "finite",
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ]
+}

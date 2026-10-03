@@ -1,0 +1,288 @@
+{
+ "controls": [
+  {
+   "id": "w1",
+   "label": "weight w1",
+   "help": "First weight; changing it alters the total T and therefore all active probabilities, contributions and H.",
+   "units": "unitless",
+   "kind": "number",
+   "default": 1,
+   "min": 0,
+   "max": 4,
+   "step": 0.1
+  },
+  {
+   "id": "w2",
+   "label": "weight w2",
+   "help": "Second weight; when n is at least 2 it alters T and therefore all active probabilities, contributions and H.",
+   "units": "unitless",
+   "kind": "number",
+   "default": 1,
+   "min": 0,
+   "max": 4,
+   "step": 0.1
+  },
+  {
+   "id": "w3",
+   "label": "weight w3",
+   "help": "Third weight; when n is at least 3 it alters T and therefore all active probabilities, contributions and H.",
+   "units": "unitless",
+   "kind": "number",
+   "default": 1,
+   "min": 0,
+   "max": 4,
+   "step": 0.1
+  },
+  {
+   "id": "w4",
+   "label": "weight w4",
+   "help": "Fourth weight; when n is 4 it alters T and therefore all active probabilities, contributions and H.",
+   "units": "unitless",
+   "kind": "number",
+   "default": 1,
+   "min": 0,
+   "max": 4,
+   "step": 0.1
+  },
+  {
+   "id": "n",
+   "label": "active outcome count n",
+   "help": "Number of leading weights used; it changes the active list, T, every active probability, the contributions and H.",
+   "units": "unitless",
+   "kind": "slider",
+   "default": 4,
+   "min": 1,
+   "max": 4,
+   "step": 1
+  }
+ ],
+ "outputs": [
+  {
+   "id": "total",
+   "label": "T, sum of active weights",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "probs",
+   "label": "active probabilities p_i",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "contribs",
+   "label": "contributions c_i = -p_i log2 p_i",
+   "units": "bits",
+   "role": "intermediate"
+  },
+  {
+   "id": "entropy",
+   "label": "entropy H",
+   "units": "bits",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "prob_bar",
+   "kind": "bar",
+   "title": "Active probabilities p_i after normalization",
+   "output": "probs",
+   "x_label": "outcome index i",
+   "y_label": "p_i (unitless)",
+   "labels": [
+    "outcome 1",
+    "outcome 2",
+    "outcome 3",
+    "outcome 4"
+   ]
+  },
+  {
+   "id": "contrib_bar",
+   "kind": "bar",
+   "title": "Bit contributions c_i of each active outcome",
+   "output": "contribs",
+   "x_label": "outcome index i",
+   "y_label": "c_i (bits)",
+   "labels": [
+    "outcome 1",
+    "outcome 2",
+    "outcome 3",
+    "outcome 4"
+   ]
+  },
+  {
+   "id": "h_bar",
+   "kind": "values",
+   "title": "Entropy H in bits",
+   "output": "entropy",
+   "x_label": "quantity",
+   "y_label": "H (bits)",
+   "labels": [
+    "entropy H"
+   ]
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Certainty: one weight carries everything",
+   "instruction": "weights w1 = 4, w2 = 0, w3 = 0, w4 = 0 with active outcome count n = 4",
+   "observe": "total is 4, the active probability vector is (1, 0, 0, 0), the contributions are (0, 0, 0, 0) bits and entropy H is 0 bits.",
+   "why": "Normalization puts all probability on outcome 1, and a zero probability contributes its limiting value 0, so every term of the sum vanishes.",
+   "preset": {
+    "w1": 4,
+    "w2": 0,
+    "w3": 0,
+    "w4": 0,
+    "n": 4
+   }
+  },
+  {
+   "title": "Equal likelihood at the largest active count",
+   "instruction": "weights w1 = 1, w2 = 1, w3 = 1, w4 = 1 with active outcome count n = 4",
+   "observe": "total is 4, the active probability vector is (0.25, 0.25, 0.25, 0.25), each contribution is 0.5 bits and entropy H is 2 bits.",
+   "why": "Four equal weights normalize to p_i = 1/4, and each term -p_i log2 p_i equals 0.5 bits, so the sum is log2 4 = 2 bits.",
+   "preset": {
+    "w1": 1,
+    "w2": 1,
+    "w3": 1,
+    "w4": 1,
+    "n": 4
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "all four weights equal",
+   "inputs": {
+    "w1": 1,
+    "w2": 1,
+    "w3": 1,
+    "w4": 1,
+    "n": 4
+   },
+   "expected": {
+    "total": 4,
+    "probs": [
+     0.25,
+     0.25,
+     0.25,
+     0.25
+    ],
+    "contribs": [
+     0.5,
+     0.5,
+     0.5,
+     0.5
+    ],
+    "entropy": 2
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "single certain outcome at full weight",
+   "inputs": {
+    "w1": 4,
+    "w2": 0,
+    "w3": 0,
+    "w4": 0,
+    "n": 4
+   },
+   "expected": {
+    "total": 4,
+    "probs": [
+     1,
+     0,
+     0,
+     0
+    ],
+    "contribs": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "entropy": 0
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "all active weights zero with three active outcomes",
+   "inputs": {
+    "w1": 0,
+    "w2": 0,
+    "w3": 0,
+    "w4": 0,
+    "n": 3
+   },
+   "expected": {
+    "total": 0,
+    "probs": [
+     0.3333333333333333,
+     0.3333333333333333,
+     0.3333333333333333
+    ],
+    "contribs": [
+     0.5283208335737188,
+     0.5283208335737188,
+     0.5283208335737188
+    ],
+    "entropy": 1.5849625007211563
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "two equally weighted active outcomes",
+   "inputs": {
+    "w1": 2,
+    "w2": 2,
+    "w3": 0,
+    "w4": 0,
+    "n": 2
+   },
+   "expected": {
+    "total": 4,
+    "probs": [
+     0.5,
+     0.5
+    ],
+    "contribs": [
+     0.5,
+     0.5
+    ],
+    "entropy": 1
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ],
+ "invariants": [
+  {
+   "name": "every value of entropy H is between 0 and 2",
+   "output": "entropy",
+   "kind": "range",
+   "min": 0,
+   "max": 2,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "the values of active probabilities p_i add up to 1",
+   "output": "probs",
+   "kind": "sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "every value of active probabilities p_i is finite",
+   "output": "probs",
+   "kind": "finite",
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ]
+}

@@ -1,0 +1,571 @@
+{
+ "controls": [
+  {
+   "id": "q",
+   "label": "Query matrix Q",
+   "help": "Query matrix Q; its rows drive the raw scores S, hence the scaled scores, the weights P and the output A.",
+   "units": "unitless",
+   "kind": "matrix",
+   "shape": [
+    2,
+    2
+   ],
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "min": -1000,
+   "max": 1000,
+   "step": 1
+  },
+  {
+   "id": "k",
+   "label": "Key matrix K",
+   "help": "Key matrix K; its rows are the second factor of each dot product, so changing K changes S, the scaled scores, P and A.",
+   "units": "unitless",
+   "kind": "matrix",
+   "shape": [
+    2,
+    2
+   ],
+   "default": [
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "min": -1000,
+   "max": 1000,
+   "step": 1
+  },
+  {
+   "id": "v",
+   "label": "Value matrix V",
+   "help": "Value matrix V; its rows are mixed by the weights P, so changing V changes the output A.",
+   "units": "unitless",
+   "kind": "matrix",
+   "shape": [
+    2,
+    1
+   ],
+   "default": [
+    [
+     10
+    ],
+    [
+     20
+    ]
+   ],
+   "min": -20,
+   "max": 20,
+   "step": 1
+  },
+  {
+   "id": "scaling",
+   "label": "Apply 1/sqrt(d_k) scaling",
+   "help": "Toggle for the 1/sqrt(d_k) factor; switching it off sets the scaled scores equal to the raw scores S, which changes P and A.",
+   "units": "unitless",
+   "kind": "toggle",
+   "default": true
+  }
+ ],
+ "outputs": [
+  {
+   "id": "raw_scores",
+   "label": "Raw dot products S = Q K^T",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "scaled_scores",
+   "label": "Scaled scores S_scaled",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "row_max",
+   "label": "Row maxima r of S_scaled",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "weights",
+   "label": "Softmax weights P",
+   "units": "unitless",
+   "role": "intermediate"
+  },
+  {
+   "id": "attn_output",
+   "label": "Output A = P V",
+   "units": "unitless",
+   "role": "result"
+  }
+ ],
+ "visuals": [
+  {
+   "id": "viz_raw",
+   "kind": "heatmap",
+   "title": "Raw dot products S = Q K^T",
+   "output": "raw_scores",
+   "x_label": "key row j",
+   "y_label": "query row i"
+  },
+  {
+   "id": "viz_scaled",
+   "kind": "heatmap",
+   "title": "Scaled scores S_scaled after the 1/sqrt(d_k) factor",
+   "output": "scaled_scores",
+   "x_label": "key row j",
+   "y_label": "query row i"
+  },
+  {
+   "id": "viz_weights",
+   "kind": "heatmap",
+   "title": "Softmax weights P, one normalization per query row",
+   "output": "weights",
+   "x_label": "key row j",
+   "y_label": "query row i"
+  },
+  {
+   "id": "viz_output",
+   "kind": "values",
+   "title": "Output A = P V",
+   "output": "attn_output",
+   "x_label": "value column",
+   "y_label": "query row i"
+  }
+ ],
+ "explorations": [
+  {
+   "title": "Equal scores in every row",
+   "instruction": "For Q = [[1,1],[1,1]], K = [[1,1],[1,1]], V = [[10],[20]] and scaling on, what are the two entries of each row of P?",
+   "observe": "S and S_scaled have all four entries equal, 2 and 1.414; both rows of P are 0.5 and 0.5, and A is 15 in both rows.",
+   "why": "All four dot products are equal, so each row maximum equals both entries, every shifted exponential is exp(0) = 1, and the row normalization splits the mass evenly; each output row is the arithmetic mean of the two values, 15.",
+   "preset": {
+    "q": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "k": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "v": [
+     [
+      10
+     ],
+     [
+      20
+     ]
+    ],
+    "scaling": true
+   }
+  },
+  {
+   "title": "One dominant score per row",
+   "instruction": "For Q = [[2,0],[0,1]], K = [[1,0],[0,1]], V = [[10],[20]] and scaling on, which entry dominates in each row of P?",
+   "observe": "S is [[2,0],[0,1]], S_scaled is [[1.414,0],[0,0.707]], P is [[0.804,0.196],[0.330,0.670]], and A is [[11.96],[16.70]].",
+   "why": "In row 1 the gap between the largest scaled score 1.414 and the other entry is wide, so exp(1.414) = 4.11 against exp(0) = 1 gives about 80 percent of the row mass to the first key; row 2 has the smaller gap 0.707 versus 0, so its weights are nearer to equal.",
+   "preset": {
+    "q": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      10
+     ],
+     [
+      20
+     ]
+    ],
+    "scaling": true
+   }
+  }
+ ],
+ "tests": [
+  {
+   "name": "all four scores equal",
+   "inputs": {
+    "q": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "k": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "v": [
+     [
+      10
+     ],
+     [
+      20
+     ]
+    ],
+    "scaling": true
+   },
+   "expected": {
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "attn_output": [
+     [
+      15
+     ],
+     [
+      15
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "zero queries",
+   "inputs": {
+    "q": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "v": [
+     [
+      10
+     ],
+     [
+      20
+     ]
+    ],
+    "scaling": false
+   },
+   "expected": {
+    "raw_scores": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      0
+     ]
+    ],
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "attn_output": [
+     [
+      15
+     ],
+     [
+      15
+     ]
+    ]
+   },
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "one dominant raw score, scaling off",
+   "inputs": {
+    "q": [
+     [
+      1000,
+      0
+     ],
+     [
+      0,
+      0
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      10
+     ],
+     [
+      20
+     ]
+    ],
+    "scaling": false
+   },
+   "expected": {
+    "raw_scores": [
+     [
+      1000,
+      0
+     ],
+     [
+      0,
+      0
+     ]
+    ],
+    "weights": [
+     [
+      1,
+      0
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "attn_output": [
+     [
+      10
+     ],
+     [
+      15
+     ]
+    ]
+   },
+   "atol": 1e-12,
+   "rtol": 1e-12
+  },
+  {
+   "name": "dominant scaled score preset",
+   "inputs": {
+    "q": [
+     [
+      2,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "k": [
+     [
+      1,
+      0
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    "v": [
+     [
+      10
+     ],
+     [
+      20
+     ]
+    ],
+    "scaling": true
+   },
+   "expected": {
+    "weights": [
+     [
+      0.8044,
+      0.1956
+     ],
+     [
+      0.3302,
+      0.6698
+     ]
+    ],
+    "attn_output": [
+     [
+      11.956
+     ],
+     [
+      16.698
+     ]
+    ]
+   },
+   "atol": 0.001,
+   "rtol": 0.001
+  },
+  {
+   "name": "maximal equal entries",
+   "inputs": {
+    "q": [
+     [
+      1000,
+      1000
+     ],
+     [
+      1000,
+      1000
+     ]
+    ],
+    "k": [
+     [
+      1000,
+      1000
+     ],
+     [
+      1000,
+      1000
+     ]
+    ],
+    "v": [
+     [
+      10
+     ],
+     [
+      20
+     ]
+    ],
+    "scaling": true
+   },
+   "expected": {
+    "raw_scores": [
+     [
+      2000000,
+      2000000
+     ],
+     [
+      2000000,
+      2000000
+     ]
+    ],
+    "weights": [
+     [
+      0.5,
+      0.5
+     ],
+     [
+      0.5,
+      0.5
+     ]
+    ],
+    "attn_output": [
+     [
+      15
+     ],
+     [
+      15
+     ]
+    ]
+   },
+   "atol": 1e-06,
+   "rtol": 1e-12
+  }
+ ],
+ "invariants": [
+  {
+   "name": "each row of Softmax weights P adds up to 1",
+   "output": "weights",
+   "kind": "row_sum",
+   "expected": 1,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "every value of Softmax weights P is between 0 and 1",
+   "output": "weights",
+   "kind": "range",
+   "min": 0,
+   "max": 1,
+   "atol": 1e-12,
+   "rtol": 0
+  },
+  {
+   "name": "every value of Output A = P V is between -20 and 20",
+   "output": "attn_output",
+   "kind": "range",
+   "min": -20,
+   "max": 20,
+   "atol": 1e-09,
+   "rtol": 1e-09
+  },
+  {
+   "name": "every value of Scaled scores S_scaled is finite",
+   "output": "scaled_scores",
+   "kind": "finite",
+   "atol": 1e-09,
+   "rtol": 1e-09
+  }
+ ]
+}

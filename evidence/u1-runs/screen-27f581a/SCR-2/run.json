@@ -1,0 +1,113 @@
+{
+ "run_id": "SCR-2",
+ "reasoning_mode": "off",
+ "producing_commit": "27f581a",
+ "case": "practice/release_test_pack/cases/05_attention_stability.json",
+ "input_sha256": "917efe4f3e532b5abb02eaf1f0ebd0362f854b57d9dc6fd9c783307c3e81e854",
+ "model": "deepseek/deepseek-v4.1-flash",
+ "provider": {
+  "require_parameters": true,
+  "sort": "throughput"
+ },
+ "calls": [
+  {
+   "request_number": 1,
+   "reasoning_setting": {
+    "enabled": false
+   },
+   "served_provider": "Together",
+   "finish_reason": "stop",
+   "duration_seconds": 13.093,
+   "usage": {
+    "prompt_tokens": 7679,
+    "completion_tokens": 4738,
+    "total_tokens": 12417,
+    "reasoning_tokens": 0,
+    "verified": true
+   },
+   "action": "request",
+   "result": "pass"
+  },
+  {
+   "request_number": 2,
+   "reasoning_setting": {
+    "enabled": false
+   },
+   "served_provider": "Together",
+   "finish_reason": "stop",
+   "duration_seconds": 4.61,
+   "usage": {
+    "prompt_tokens": 6074,
+    "completion_tokens": 1780,
+    "total_tokens": 7854,
+    "reasoning_tokens": 0,
+    "verified": true
+   },
+   "action": "revision_1",
+   "result": "pass"
+  },
+  {
+   "request_number": null,
+   "reasoning_setting": null,
+   "served_provider": null,
+   "finish_reason": null,
+   "duration_seconds": null,
+   "usage": null,
+   "action": "revision_1",
+   "result": "fail"
+  },
+  {
+   "request_number": 3,
+   "reasoning_setting": {
+    "enabled": false
+   },
+   "served_provider": "Together",
+   "finish_reason": "stop",
+   "duration_seconds": 5.25,
+   "usage": {
+    "prompt_tokens": 6074,
+    "completion_tokens": 1706,
+    "total_tokens": 7780,
+    "reasoning_tokens": 0,
+    "verified": true
+   },
+   "action": "revision_2",
+   "result": "pass"
+  },
+  {
+   "request_number": null,
+   "reasoning_setting": null,
+   "served_provider": null,
+   "finish_reason": null,
+   "duration_seconds": null,
+   "usage": null,
+   "action": "revision_2",
+   "result": "fail"
+  }
+ ],
+ "usage_totals": {
+  "prompt_tokens": 19827,
+  "completion_tokens": 8224,
+  "reasoning_tokens": 0,
+  "total_tokens": 28051,
+  "unverified_attempts": 0
+ },
+ "attempts": 3,
+ "repairs": {
+  "attempted": 2,
+  "accepted": 0
+ },
+ "exit_code": 1,
+ "checks_ok": false,
+ "degraded": false,
+ "elapsed_seconds": 29.5,
+ "final_checks": {
+  "spec_schema": "pass",
+  "offline_html": "pass",
+  "compute_safety": "pass",
+  "numerical_execution": "fail",
+  "two_meaningful_controls": "pass",
+  "page_interpreter": "pass"
+ },
+ "skipped_checks": []
+}

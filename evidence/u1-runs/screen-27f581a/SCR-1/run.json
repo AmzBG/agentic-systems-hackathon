@@ -1,0 +1,57 @@
+{
+ "run_id": "SCR-1",
+ "reasoning_mode": "low",
+ "producing_commit": "27f581a",
+ "case": "practice/release_test_pack/cases/05_attention_stability.json",
+ "input_sha256": "917efe4f3e532b5abb02eaf1f0ebd0362f854b57d9dc6fd9c783307c3e81e854",
+ "model": "deepseek/deepseek-v4.1-flash",
+ "provider": {
+  "require_parameters": true,
+  "sort": "throughput"
+ },
+ "calls": [
+  {
+   "request_number": 1,
+   "reasoning_setting": {
+    "effort": "low"
+   },
+   "served_provider": "Together",
+   "finish_reason": "stop",
+   "duration_seconds": 52.156,
+   "usage": {
+    "prompt_tokens": 7156,
+    "completion_tokens": 15948,
+    "total_tokens": 23104,
+    "reasoning_tokens": 12404,
+    "verified": true
+   },
+   "action": "request",
+   "result": "pass"
+  }
+ ],
+ "usage_totals": {
+  "prompt_tokens": 7156,
+  "completion_tokens": 15948,
+  "reasoning_tokens": 12404,
+  "total_tokens": 23104,
+  "unverified_attempts": 0
+ },
+ "attempts": 1,
+ "repairs": {
+  "attempted": 0,
+  "accepted": 0
+ },
+ "exit_code": 0,
+ "checks_ok": true,
+ "degraded": false,
+ "elapsed_seconds": 56.687,
+ "final_checks": {
+  "spec_schema": "pass",
+  "offline_html": "pass",
+  "compute_safety": "pass",
+  "numerical_execution": "pass",
+  "two_meaningful_controls": "pass",
+  "page_interpreter": "pass"
+ },
+ "skipped_checks": []
+}
