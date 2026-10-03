@@ -50,11 +50,26 @@ class NumericalTests(unittest.TestCase):
         self.assertFalse(report["ok"])
         self.assertIn("compute_safety", {c["id"] for c in report["checks"] if c["status"] == "fail"})
 
+    def test_compute_cannot_mutate_input_matrix(self) -> None:
+        spec = copy.deepcopy(self.spec)
+        spec["compute_js"] = spec["compute_js"].replace(
+            "const count =", "inputs.weights[0] = 0; const count ="
+        )
+        report = run_checks(spec, self.html)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("mutated its inputs" in failure for failure in report["failures"]))
+
     def test_remote_asset_is_not_an_offline_page(self) -> None:
         html = self.html.replace("<script>", '<script src="https://cdn.example/x.js"></script><script>')
         report = run_checks(self.spec, html)
         self.assertFalse(report["ok"])
         self.assertIn("offline_html", {c["id"] for c in report["checks"] if c["status"] == "fail"})
+
+    def test_inline_event_handlers_are_rejected_consistently(self) -> None:
+        html = self.html.replace("<svg", "<input oninput='f()'><svg")
+        report = run_checks(self.spec, html)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any("inline event handler" in failure for failure in report["failures"]))
 
     def test_attention_public_identities_and_four_live_controls(self) -> None:
         path = Path(__file__).resolve().parents[1] / "practice" / "specs" / "attention.json"

@@ -50,6 +50,7 @@ def main() -> int:
     parser.add_argument("--cases", nargs="+", type=Path, help="Explicit case JSON paths")
     parser.add_argument("--timeout", type=int, default=650, help="Per-run wall timeout in seconds")
     parser.add_argument("--agent", type=Path, default=ROOT / "agent.py")
+    parser.add_argument("--dry-run", action="store_true", help="List planned runs without calling the model")
     args = parser.parse_args()
     if args.repeats < 1 or args.timeout < 1:
         parser.error("repeats and timeout must be positive")
@@ -61,6 +62,16 @@ def main() -> int:
     for case in cases:
         if not case.is_file():
             parser.error(f"case not found: {case}")
+    if args.dry_run:
+        print(json.dumps({
+            "planned_runs": len(cases) * len(args.models) * len(args.flows) * args.repeats,
+            "cases": [str(case) for case in cases],
+            "models": args.models,
+            "flows": args.flows,
+            "repeats": args.repeats,
+            "live_calls_made": 0,
+        }, indent=2))
+        return 0
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     agent = args.agent.resolve()

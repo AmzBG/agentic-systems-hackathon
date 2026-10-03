@@ -56,6 +56,11 @@ Successful runs create:
 - `out/trace.jsonl` - one event per line, including checks, revisions, elapsed time, and per-call token usage.
 
 Two public practice inputs are under `examples/attention/` and `examples/entropy/`.
+Preview the six-case run plan without making an API request:
+
+```powershell
+python scripts/run_all.py --models deepseek/deepseek-v4.1-flash --repeats 1 --output evidence/baseline --dry-run
+```
 
 ## Preliminary architecture
 
@@ -69,7 +74,7 @@ See `docs/QUESTIONS_FOR_INSTRUCTOR.md`. The current loader requires the three na
 
 ## Repository access
 
-The GitHub repository is currently private. Before submission, confirm that both teammates and the instructor have read access. Repository collaboration and pushes must use the team's authorized GitHub accounts; no automation identity should be added as a collaborator.
+The GitHub repository is currently private. The team plans to make it public before submission; verify that the instructor can open the final URL without signing in. Commits and pushes use the authorized team accounts only.
 
 ## Reuse credits
 

@@ -275,8 +275,8 @@ def _html_errors(html: Any) -> list[str]:
         errors.append("page lacks embedded CSS or JavaScript")
     if not any(x in lower for x in ("<svg", "<canvas", "createelementns", "getcontext")):
         errors.append("page has no inline visual drawing")
-    if not any(x in lower for x in ("addeventlistener", "oninput", "onchange")):
-        errors.append("page has no control event wiring")
+    if "addeventlistener" not in lower:
+        errors.append("page has no addEventListener control wiring")
     if re.search(r"\b(?:fetch|XMLHttpRequest|WebSocket)\s*\(", html):
         errors.append("page contains a runtime network request")
     if re.search(r"@import\s+|url\(\s*['\"]?https?://", html, re.I):
@@ -289,6 +289,9 @@ def _html_errors(html: Any) -> list[str]:
     except Exception:
         errors.append("HTML parsing failed")
     for tag, attrs in parser.tags:
+        for key in attrs:
+            if key.startswith("on"):
+                errors.append(f"inline event handler: {key}")
         url = attrs.get("src", "") if tag in {"script", "img", "iframe", "source", "video", "audio", "embed"} else attrs.get("href", "") if tag == "link" else ""
         if url.lower().startswith(("https://", "http://", "//")):
             errors.append(f"remote asset in {tag}")
@@ -352,11 +355,13 @@ def _worker(code: str, probes: list[tuple[str, dict, str | None, dict | None]], 
             source = """(() => {
               const reads=[];
               const data=INPUTS;
+              const before=JSON.stringify(data);
               const tracked=new Proxy(data,{get(target,key){
                 if(typeof key==='string' && Object.prototype.hasOwnProperty.call(target,key)) reads.push(key);
                 return target[key];
               }});
-              return JSON.stringify({value:compute(tracked),reads:[...new Set(reads)]});
+              const value=compute(tracked);
+              return JSON.stringify({value,reads:[...new Set(reads)],mutated:JSON.stringify(data)!==before});
             })()""".replace("INPUTS", json.dumps(inputs, ensure_ascii=True, allow_nan=False))
             raw = ctx.eval(source)
             if not isinstance(raw, str):
@@ -465,6 +470,8 @@ def run_checks(spec: dict, html: str) -> dict:
             probe_errors.append(f"{name}: compute did not return an object")
             continue
         values = record["value"]
+        if record.get("mutated") is True:
+            probe_errors.append(f"{name}: compute mutated its inputs")
         for output_id in output_ids:
             if output_id not in values or _shape(values[output_id]) is None:
                 probe_errors.append(f"{name}: {output_id} missing or nonfinite")

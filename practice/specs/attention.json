@@ -51,7 +51,8 @@
   ],
   "limitation": "This fixed two-query, two-key example omits masking, batching, positional information, learned projections, multiple heads, and training. The matrices are directly editable teaching inputs, not parameters learned from data.",
   "grounding": [
-    {"paper": "Attention Is All You Need", "locator": "Vaswani et al. (2017), Section 3.2.1, Scaled Dot-Product Attention; arXiv HTML version 1706.03762v7", "support": "excerpt", "claim": "The section defines attention as a softmax of query-key dot products scaled by the square root of the key dimension, multiplied by V."}
+    {"paper": "Attention Is All You Need", "locator": "Vaswani et al. (2017), Section 3.2.1, Scaled Dot-Product Attention; arXiv HTML version 1706.03762v7", "support": "excerpt", "claim": "The section defines attention as a softmax of query-key dot products scaled by the square root of the key dimension, multiplied by V."},
+    {"paper": "Attention Is All You Need", "locator": "Practice fixture design, not a claim from the paper", "support": "simplification", "claim": "This playground uses editable 2x2 teaching matrices instead of learned projections, masking, and multiple heads."}
   ],
   "tests": [
     {
