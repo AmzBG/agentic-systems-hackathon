@@ -30,7 +30,8 @@ Metadata JSON (all keys required unless marked optional; all strings nonblank pl
   "version": 1,
   "plan": "1-3 sentence public teaching plan for this page (not your reasoning)",
   "title": str, "audience": str (the learner described in the brief),
-  "starting_point": {{"idea": str, "why": str (why it matters),
+  "starting_point": {{"idea": str (what the principal quantities represent), "why": str (why the defining operation
+                     matters),
                      "explanation": str (the mechanism as a compact symbolic pipeline in this page's own symbols:
                                          2-5 short steps separated by "; " (line breaks are not shown) that go from
                                          the inputs through each intermediate output to the result in calculation
@@ -73,13 +74,19 @@ Visual: {{"id": ID, "kind": "bar"|"line"|"heatmap"|"values", "title": str, "outp
   labels name a bar's entries, or both the rows and the columns of a heatmap; omit labels on a heatmap whose rows and
   columns mean different things (the page then numbers them) and say what each axis indexes in x_label and y_label.
 Presets and test inputs override defaults; every value must satisfy its control's kind, bounds and shape.
-Explorations: the first isolates the operation, normalization or parameter that defines the focused mechanism (for
+Brief first: deliver every control, dimension, range, default, comparison, exploration and check the brief asks for,
+exactly as asked; never silently change, narrow or drop one. If a request exceeds a limit stated here, implement the
+closest supported version and state the difference and its reason in the limitation.
+Explorations: when the brief names particular explorations or comparisons, the two explorations are exactly those, in
+the brief's order. Otherwise the first isolates the operation, normalization or parameter that defines the focused mechanism (for
 example a rescaling, normalization, rate, prior weight, threshold, regularization weight or sign). Its preset changes
 only that control, so the change in the intermediate it acts on, and through it in the result, is attributable to that
 one operation; choose defaults at which the change visibly moves both. If no control expresses that operation, add one
 when the formula allows it (a switch that removes a step the paper uses is a comparison, so ground it as a
 simplification); otherwise vary the input that drives it most directly. The second shows a special, limiting or
 extreme case.
+Where it clarifies the arithmetic, add an intermediate output holding the constituent contributions of one calculation
+(for example the weighted terms before a sum), next to the result they combine into, within the output limits.
 Invariants: range needs both min and max (min <= max, each value); sum (flat vector) and row_sum (each matrix row) need expected
 (check per-row normalization of a matrix with row_sum on that matrix, never with a sum of row totals); nondecreasing applies to a flat vector.
 Test comparison: |actual - expected| <= atol + rtol*|expected|. Tests must be hand-checkable identities of the

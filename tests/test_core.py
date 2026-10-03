@@ -240,7 +240,9 @@ class ContractTests(unittest.TestCase):
                        "once at least one observation exists", "never says a quantity the mechanism normalizes",
                        "without generalising one row to all", "say which factors still remain",
                        "including any it resets", "never with a sum of row totals",
-                       "when that narrows a range the brief asks for, say so and why in the limitation"):
+                       "when that narrows a range the brief asks for, say so and why in the limitation",
+                       "never silently change, narrow or drop one", "the two explorations are exactly those, in the brief's order",
+                       "constituent contributions of one calculation", "what the principal quantities represent"):
             self.assertIn(phrase, system)
         repair = prompts.build_repair_messages({"focus": "f"}, toy_spec(), ["x: y"], ["grounding"])
         self.assertEqual(repair[0]["content"], prompts.SYSTEM_PROMPT)  # repairs keep the same rules
