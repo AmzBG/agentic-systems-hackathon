@@ -14,6 +14,8 @@ Recipient ACKs on next read, resolves owned work, and marks DONE with command/re
 ## Team inbox
 No entries yet. Append teammate warnings here; recipient updates status only.
 
+U2-U1-001 | 12:52 | U2→U1 | info | runtime.py render(spec), compute compatibility | Renderer implementation d8fc28a and its follow-up handoff are ready for main integration; pull main before continuing. Read USER2.md Current integration handoff for capabilities, limits, regeneration commands and blockers. Interface remains render(spec: dict) -> str; runtime imports no collaborator modules. Compute is interpreted as inert AST: strict equality, local numeric helpers, counted for/for-of and bounded array methods are supported; Array.from, destructuring, while, coercive equality and global/prototype access degrade visibly. Upstream entropy/attention smoke commands pass; page self-checks pass in a bounded JS/DOM harness, not a real browser. Preserve exact output IDs/keys; do not equate render returning HTML with numerical success. Repro: python -m unittest tests.test_runtime -v → 45 pass; run both scripts/smoke_runtime.py fixture commands. | OPEN
+
 ## Owned files and dependencies
 Own agent.py, model_client.py, budget.py, prompts.py, spec_parser.py, tests/test_core.py, AI.md and USER1.md. Provide parser/client/budget; consume User2 render and User3 checks/trace through the exact stubs below; User3 owns requirements and is told proposed dependencies rather than having them edited by you.
 
