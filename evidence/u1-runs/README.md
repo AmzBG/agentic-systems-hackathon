@@ -1,39 +1,46 @@
-# User 1 generated runs — handoff for User 3 (U3-U1-003/004/005/006)
+# User 1 generated runs
 
-Model: `deepseek/deepseek-v4.1-flash` for every run. Real API calls; usage is API-reported. Each directory holds the
-unchanged generated `index.html`, the sanitized `trace.jsonl` and `spec.json` extracted verbatim from the page's
-`runtime-data` script (the page ships compute as the interpreter AST, so compute source text is not recoverable).
-**Original (pre-repair) specs are not recoverable**: the core does not persist intermediate candidates; the trace keeps
-the first failing check details and the requested repair keys, listed below. Handwritten fixtures are not included.
+Model `deepseek/deepseek-v4.1-flash` via OpenRouter for every run; real API calls with API-reported usage. Command:
+`python agent.py --input CASE --output DIR --model deepseek/deepseek-v4.1-flash` plus the condition flags below, fresh
+output directory per run, Python 3.11 venv with pinned `requirements.txt`. Each retained directory holds the unchanged
+generated `index.html`, the sanitized `trace.jsonl` and `spec.json` taken verbatim from the page's `runtime-data` script
+(compute ships as the interpreter AST, so compute source text is not recoverable; pre-repair specs are not persisted).
+The `oracle` column is a development check (page AST run in `templates/interpreter.js` versus Python-computed values),
+not a certification.
 
-Command: `python agent.py --input CASE --output DIR --model deepseek/deepseek-v4.1-flash` + condition flags, fresh
-directory per run, Python 3.11 venv with pinned requirements (QuickJS present). Stage 1 at `fbb880d` (16 runs, 14:14),
-stage 2 at `fc2844f` (13 runs, 14:26). Both predate `4531fcf` (prompt input-cap wording), `6a3fd57` (input-cap repair
-targeting), `6b1a36e` (throughput made the default for this model) and `c3679e0` (tests). The `oracle` column is a User 1
-development check (page AST run in `templates/interpreter.js` vs Python-computed attention/decay/entropy values), not a
-certification; `n/a` = no oracle for that case.
+## Final evidence (frozen User 1 core `93f7521`)
 
-## Final-SHA Attention run (User 1 freeze candidate `f0ce993`)
+`final-93f7521/attention/`: Attention with every flag at its default (single flow, `--reasoning auto` = low,
+`--provider-sort auto` = throughput), produced from tree `8fd5c6b` (differs from `93f7521` only in documentation and
+evidence files). Exit 0, 1 request, 0 repairs, finish `stop`; 7,070 prompt + 14,884 completion (11,502 reasoning,
+within completion) = 21,954 tokens; 53.4 s; all six checks pass, not degraded; User 1 oracle pass with scaling on and
+off. Full provenance in `run.json`. Known wording issue: one control help text says Q changes row sums.
 
-`final-f0ce993/attention/`: the one Attention recheck on the frozen User 1 core, produced at
-`f0ce993038a13960df064c8f3d8b2bf4209b2299` from a clean `git archive` export, Python 3.11.9 venv with pinned
-requirements, fresh output directory, exact command `python agent.py --input examples/attention/case.json --output DIR
---model deepseek/deepseek-v4.1-flash` (all other flags at defaults: single flow, `--reasoning auto` → low,
-`--provider-sort auto` → throughput, so the request carried `reasoning: {effort: low}` and
-`provider: {require_parameters: true, sort: throughput}`). Served model `deepseek/deepseek-v4.1-flash` via Together.
-Result: exit 0, 1 request, 0 repairs, finish `stop`; 6,884 prompt + 15,312 completion (11,867 reasoning, within
-completion) = 22,196 verified tokens; call 47.6 s, agent 49.6 s, wall ≈51 s; all six checks pass, including
-`numerical_execution` and `page_interpreter`, **nondegraded**; `scripts/validate_output.py` ok; User 1's independent
-oracle (`oracle_attention_f0ce993.py`, result `oracle.json`) passes 7 trials × 6 outputs. Generated test names are
-single-setting ("equal scores", "dominant score without scaling", "dominant score with scaling"); the test-name guard
-renamed nothing. `run.json` holds the full provenance.
+`final-f0ce993/attention/`: the same command on the earlier freeze `f0ce993` (exit 0, 1 request, 0 repairs, 22,196
+tokens, not degraded, oracle 7 trials x 6 outputs pass); retained because User 3's review `evidence/reviews/attention.md`
+independently rechecked it.
 
-`superseded-5f3cddc/attention/`: an earlier run of the same command by another User 1 session at `5f3cddc` (before
-the test-name prompt `aa88f39` and guard `f0ce993`). It exited 0 after one accepted targeted repair (a rounded
-model-written softmax expectation) and kept a false test name, "scaling_halves_the_dot_product" (d_k = 2 gives
-1/√2). Kept for transparency; it is not final-SHA evidence.
+`stage2/T-attention-4/`: retained because `tests/test_evidence_scripts.py`, User 3's Attention review and the browser QA
+in `evidence/browser_qa_20261003/` use it.
 
-## Current-code runs
+## Routing, flow and reasoning comparison (`fbb880d` stage 1, `fc2844f` stage 2)
+
+Cases: Attention, entropy, exponential decay (stage 1); Attention, Bayes, least squares, logistic (stage 2). A cut-off
+is a call that ended with `finish_reason: length`. These runs decided the defaults: single flow, low reasoning,
+throughput routing for this model.
+
+| Condition | Runs | Exit 0 | Runs with a cut-off | Mean requests | Mean tokens | Max completion | Mean wall s |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| single, default routing | 9 | 8/9 | 2 | 1.3 | 20,711 | 24,523 | 95.8 |
+| single, throughput routing | 11 | 11/11 | 0 | 1.3 | 17,781 | 14,332 | 47.2 |
+| planned, default routing | 4 | 3/4 | 2 | 2.5 | 34,590 | 30,000 | 100.0 |
+| single, throughput, reasoning budget8k (rejected) | 3 | 3/3 | 1 | 1.7 | 29,136 | 23,962 | 78.7 |
+| single, throughput, reasoning minimal (rejected) | 2 | 2/2 | 0 | 1.5 | 19,308 | 12,915 | 48.3 |
+
+Per-run data follows. Only `stage2/T-attention-4` is retained as files; the other run directories, the superseded
+`5f3cddc` Attention run and eleven older unverified runs (13:20 baseline, `*_live`, early reasoning probes, most with
+numerical checks skipped) were pruned from the submission and remain in Git history at commit `9d0717a`
+(`git show 9d0717a:evidence/u1-runs/README.md`).
 
 | Run | Condition | Reasoning | Commit | Exit | Validator | Degraded | Oracle | Requests | Prompt | Completion | Reasoning tokens | Wall s | Finish reasons | Served providers |
 |---|---|---|---|---:|---|---|---|---:|---:|---:|---:|---:|---|---|
@@ -79,23 +86,3 @@ model-written softmax expectation) and kept a false test name, "scaling_halves_t
 - **stage2/B-attention-3**: first failures ['numerical_execution: test_4: expected scores failed (measured=[[0.7071067811865475, 2.1213203435596424], [1.414213562373095, 2.82842712474619]] expected=[[0.7071067811865476, 1.4142135623730951], [2.121320343559643, 2.8284271247461903]] atol']; revisions [('targeted', ['compute_js', 'tests'], True)]; final tests ['equal keys give weights of one half and a scaled score of 1/sqrt(2)', 'dominant key with scaling off leaves raw scores 1 and 3', 'same dominant key with scaling on lowers the largest weight', 'scaling divides every score by the square root of the key dimension']; final invariants ['every attention weight row sums to one [row_sum ..]', 'the two row sums together equal two [sum ..]', 'largest attention weight stays between one half and one [range 0.5..1]', 'output entries stay finite [finite ..]']
 - **stage2/M-attention-1**: first failures ['explorations[1].preset.v: every entry must be within [min, max]']; revisions [('targeted', ['explorations'], True)]; final tests ['zero scores give uniform weights and average value rows', 'identical value rows pass through unchanged']; final invariants ['attention weight rows sum to one [row_sum ..]', 'attention weights stay in the unit interval [range 0..1]', 'output values stay finite [finite ..]']
 - **stage2/S-bayes-1**: first failures ['the previous response was cut off at the completion-token limit before END_COMPUTE; reason briefly and write compact JSON without indentation', 'wire: missing END_SPEC']; revisions [('full', ['version', 'plan', 'title', 'audience', 'starting_point', 'symbols', 'controls', 'outputs', 'visuals', 'explorations', 'limitation', 'grounding', 'tests', 'invariants', 'compute_js'], True)]; final tests ['no data leaves the prior unchanged', 'flat prior with three successes and one failure', 'weak prior preset gives posterior mean three quarters', 'strong prior preset gives posterior mean three fifths']; final invariants ['posterior mean is a probability [range 0..1]', 'prior mean is a probability [range 0..1]', 'shift stays inside the unit interval [range -1..1]', 'means readout stays finite [finite ..]']
-
-## Older runs (not current-code evidence)
-
-| Run | How | Producing SHA | Reasoning | Exit | Degraded | Last checks |
-|---|---|---|---|---:|---|---|
-| legacy/baseline-1320-attention | run_all single, ~13:13-13:20 | unknown (between `7eaaeee` and `b569145`; not stamped) | not recorded | 1 | False | [] |
-| legacy/baseline-1320-bayes-updating | run_all single, ~13:13-13:20 | unknown (between `7eaaeee` and `b569145`; not stamped) | not recorded | 0 | True | [('spec_schema', 'pass'), ('offline_html', 'pass'), ('compute_safety', 'pass'), ('numerical_execution', 'skip')] |
-| legacy/baseline-1320-entropy | run_all single, ~13:13-13:20 | unknown (between `7eaaeee` and `b569145`; not stamped) | not recorded | 0 | True | [('spec_schema', 'pass'), ('offline_html', 'pass'), ('compute_safety', 'pass'), ('numerical_execution', 'skip')] |
-| legacy/baseline-1320-exponential-decay | run_all single, ~13:13-13:20 | unknown (between `7eaaeee` and `b569145`; not stamped) | not recorded | 0 | True | [('spec_schema', 'pass'), ('offline_html', 'pass'), ('compute_safety', 'pass'), ('numerical_execution', 'skip')] |
-| legacy/baseline-1320-least-squares-loss | run_all single, ~13:13-13:20 | unknown (between `7eaaeee` and `b569145`; not stamped) | not recorded | 0 | True | [('spec_schema', 'pass'), ('offline_html', 'pass'), ('compute_safety', 'pass'), ('numerical_execution', 'skip')] |
-| legacy/baseline-1320-logistic-probability | run_all single, ~13:13-13:20 | unknown (between `7eaaeee` and `b569145`; not stamped) | not recorded | 0 | True | [('spec_schema', 'pass'), ('offline_html', 'pass'), ('compute_safety', 'pass'), ('numerical_execution', 'skip')] |
-| legacy/attention_live | agent.py, single | unknown, before `5f98617` (no reasoning field in call details) | not recorded | 0 | True | [('spec_schema', 'pass'), ('offline_html', 'pass'), ('compute_safety', 'pass'), ('numerical_execution', 'skip')] |
-| legacy/entropy_live | agent.py, single | unknown, before `5f98617` (no reasoning field in call details) | not recorded | 0 | True | [('spec_schema', 'pass'), ('offline_html', 'pass'), ('compute_safety', 'pass'), ('numerical_execution', 'skip')] |
-| legacy/u1-1315-r_low | entropy, --reasoning low, after `5f98617` | see note | as named | 0 | False | [('spec_schema', 'pass'), ('offline_html', 'pass'), ('compute_safety', 'pass'), ('numerical_execution', 'pass'), ('two_meaningful_controls', 'pass')] |
-| legacy/u1-1315-r_off | entropy, --reasoning off, after `5f98617` | see note | as named | 1 | False | [('spec_schema', 'pass'), ('offline_html', 'pass'), ('compute_safety', 'pass'), ('numerical_execution', 'fail'), ('two_meaningful_controls', 'pass')] |
-| legacy/u1-1315-slice1 | entropy, no reasoning field, `65121e4` | see note | as named | 1 | False | [] |
-
-The 13:20 baseline and `*_live` runs skipped numerical execution (QuickJS absent), so they are unverified even where
-they exit 0. Missing: no Bayes/least-squares/logistic run exists at a commit after `fc2844f`; User 3's `release_84c31ac`
-covers those four mechanisms at `84c31ac`.
