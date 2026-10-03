@@ -8,7 +8,10 @@ generated `index.html`, the sanitized `trace.jsonl` and `spec.json` taken verbat
 The `oracle` column is a development check (page AST run in `templates/interpreter.js` versus Python-computed values),
 not a certification.
 
-## Final evidence (frozen User 1 core `93f7521`)
+## Final evidence (User 1 core `93f7521`)
+
+The core freeze later moved to `2fe1fd2` (prompt-only teaching-quality rules, offline tests only), so the runs
+below are earlier-SHA evidence; no live run exists at `2fe1fd2`.
 
 `final-93f7521/attention/`: Attention with every flag at its default (single flow, `--reasoning auto` = low,
 `--provider-sort auto` = throughput), produced from tree `8fd5c6b` (differs from `93f7521` only in documentation and
