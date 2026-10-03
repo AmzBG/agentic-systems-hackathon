@@ -909,9 +909,10 @@ class EvidenceDrivenTests(unittest.TestCase):
             (odd, "off", {"enabled": False}, required, []),
             (odd, "model", None, None, []),
             (odd, "auto", None, None, []),  # unrecognised model: generic path, no model-specific fields
-            (flash, "auto", {"effort": "low"}, required, []),  # recognised: explicit low, enforced
-            (flash, "high", {"effort": "high"}, required, []),
-            (flash, "auto", {"effort": "low"}, {**required, "sort": "throughput"}, ["--provider-sort", "throughput"]),
+            (flash, "auto", {"effort": "low"}, {**required, "sort": "throughput"}, []),  # recognised: profile
+            (flash, "high", {"effort": "high"}, {**required, "sort": "throughput"}, []),
+            (flash, "auto", {"effort": "low"}, required, ["--provider-sort", "none"]),
+            (odd, "low", {"effort": "low"}, {**required, "sort": "latency"}, ["--provider-sort", "latency"]),
         )
         for model, mode, expected, provider, extra in cases:
             opener = FakeOpener(api_reply(wire()))

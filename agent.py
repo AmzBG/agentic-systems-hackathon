@@ -37,19 +37,31 @@ MAX_FIELD_CHARS = 16_000  # per brief field; longer text keeps its focus-relevan
 # Worst case with unverified usage (16k + 7k) stays under the 24k soft cap.
 # OpenRouter unified reasoning settings; "model" sends no reasoning field at all.
 REASONING_MODES = {"model": None, "low": {"effort": "low"}, "off": {"enabled": False},
-                   "high": {"effort": "high"},  # experimental only
-                   "minimal": {"effort": "minimal"}, "budget8k": {"max_tokens": 8000}}  # experimental only
+                   "high": {"effort": "high"}}  # high: experimental only
 DEFAULT_REASONING = "auto"
 # Model-specific defaults apply only to recognised models; any other model gets the generic path.
-MODEL_PROFILES = {"deepseek/deepseek-v4.1-flash": {"reasoning": "low"}}
+# Evidence (U1 stage 1+2, 3 Oct): throughput routing 11/11 runs succeeded with 0 cut-offs vs 8/9 and 2 cut-offs
+# on default routing; same served model; mean wall time lower on 5 of 6 cases.
+MODEL_PROFILES = {"deepseek/deepseek-v4.1-flash": {"reasoning": "low", "provider_sort": "throughput"}}
+
+
+def model_profile(model: str) -> dict:
+    return MODEL_PROFILES.get(model.split(":", 1)[0].strip().lower(), {})
 
 
 def resolve_reasoning(model: str, mode: str) -> dict | None:
     """Explicit modes win; 'auto' uses the model profile, else sends no reasoning field."""
     if mode != "auto":
         return REASONING_MODES[mode]
-    profile = MODEL_PROFILES.get(model.split(":", 1)[0].strip().lower())
+    profile = model_profile(model)
     return REASONING_MODES[profile["reasoning"]] if profile else None
+
+
+def resolve_sort(model: str, choice: str) -> str | None:
+    """'auto' uses the model profile (generic models: OpenRouter default routing); 'none' disables sorting."""
+    if choice == "auto":
+        return model_profile(model).get("provider_sort")
+    return None if choice == "none" else choice
 
 
 def provider_preferences(reasoning: dict | None, sort: str | None) -> dict | None:
@@ -751,9 +763,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--input", required=True, help="case JSON file")
     parser.add_argument("--output", required=True, help="output directory")
     parser.add_argument("--model", required=True, help="OpenRouter model ID used for every call")
-    parser.add_argument("--flow", choices=("single", "planned"), default="single")
-    parser.add_argument("--provider-sort", choices=("throughput", "latency"), default=None,
-                        help="development only: OpenRouter provider routing order")
+    parser.add_argument("--flow", choices=("single", "planned"), default="single",
+                        help="planned adds a planning call; kept only for development comparisons (rejected on evidence)")
+    parser.add_argument("--provider-sort", choices=("auto", "throughput", "latency", "none"), default="auto",
+                        help="OpenRouter provider routing order; auto uses the model profile")
     parser.add_argument("--reasoning", choices=sorted(REASONING_MODES) + ["auto"], default=DEFAULT_REASONING,
                         help="OpenRouter reasoning control for every call")
     return parser
@@ -782,7 +795,8 @@ def run(argv: list[str] | None = None, *, environ: dict | None = None, client_fa
         args, budget=budget, environ=environ,
         client_factory=client_factory or (lambda model, key, b: OpenRouterClient(
             model, key, b, reasoning=resolve_reasoning(model, args.reasoning),
-            provider=provider_preferences(resolve_reasoning(model, args.reasoning), args.provider_sort))),
+            provider=provider_preferences(resolve_reasoning(model, args.reasoning),
+                                          resolve_sort(model, args.provider_sort)))),
         fetcher=fetcher or fetch_source,
         render=_resolve("runtime", "render") if render is _DEFAULT else render,
         run_checks=_resolve("checks", "run_checks") if run_checks is _DEFAULT else run_checks,
