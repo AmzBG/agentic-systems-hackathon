@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "plan": "Compute QK-transpose scores, optionally scale by the key dimension, normalize each query row with softmax, then use those weights to mix V.",
+  "title": "How scaled dot-product attention mixes values",
+  "audience": "A second-year engineering undergraduate who knows vectors, matrices, and basic probability but has not studied Transformers.",
+  "starting_point": {
+    "idea": "Each query compares with every key; the resulting weights decide how much of each value vector contributes to that query's output.",
+    "why": "Following the scores, row-wise probabilities, and weighted values makes the attention calculation inspectable one operation at a time.",
+    "explanation": "For matrices Q, K, and V, compute S = QK^T / sqrt(d_k) when scaling is enabled, apply softmax separately to each row of S, and multiply those weights by V. Rows of the weight matrix sum to one."
+  },
+  "symbols": [
+    {"symbol": "Q", "meaning": "Rows are query vectors", "units": "feature units"},
+    {"symbol": "K", "meaning": "Rows are key vectors compared with each query", "units": "feature units"},
+    {"symbol": "V", "meaning": "Rows are value vectors mixed by the attention weights", "units": "value units"},
+    {"symbol": "d_k", "meaning": "Number of components in each key vector", "units": "features"},
+    {"symbol": "S", "meaning": "Query-key dot-product score matrix, optionally scaled", "units": "score units"},
+    {"symbol": "A", "meaning": "Row-wise softmax attention weights", "units": "unitless"},
+    {"symbol": "AV", "meaning": "Weighted value vectors, one output row per query", "units": "value units"}
+  ],
+  "controls": [
+    {"id": "queries", "label": "Query matrix Q", "help": "Each row is one query. The two columns are its two features.", "units": "feature units", "kind": "matrix", "default": [[1, 0], [0, 1]], "min": -10, "max": 10, "step": 0.1, "shape": [2, 2]},
+    {"id": "keys", "label": "Key matrix K", "help": "Each row is a key compared with each query.", "units": "feature units", "kind": "matrix", "default": [[1, 0], [0, 1]], "min": -10, "max": 10, "step": 0.1, "shape": [2, 2]},
+    {"id": "values", "label": "Value matrix V", "help": "Each row is a value vector that attention can mix.", "units": "value units", "kind": "matrix", "default": [[1, 0], [0, 1]], "min": -10, "max": 10, "step": 0.1, "shape": [2, 2]},
+    {"id": "scale", "label": "Scale scores by 1/sqrt(d_k)", "help": "Turn scaling off to compare the same dot products before and after dividing by sqrt(2).", "units": "on/off", "kind": "toggle", "default": true}
+  ],
+  "outputs": [
+    {"id": "score_matrix", "label": "Query-key scores S", "units": "score units", "role": "intermediate"},
+    {"id": "attention_weights", "label": "Row-wise attention weights A", "units": "unitless", "role": "intermediate"},
+    {"id": "attended_values", "label": "Weighted values A times V", "units": "value units", "role": "result"}
+  ],
+  "visuals": [
+    {"id": "score_heatmap", "kind": "heatmap", "title": "Scores: query rows by key columns", "output": "score_matrix", "x_label": "Key", "y_label": "Query"},
+    {"id": "weight_heatmap", "kind": "heatmap", "title": "Softmax attention weights", "output": "attention_weights", "x_label": "Key", "y_label": "Query"},
+    {"id": "value_heatmap", "kind": "heatmap", "title": "Weighted value output", "output": "attended_values", "x_label": "Value feature", "y_label": "Query"}
+  ],
+  "explorations": [
+    {
+      "title": "Make all scores equal",
+      "instruction": "Apply the preset. Compare the score and weight matrices, then inspect the mixed values.",
+      "observe": "Every score is zero, so each query assigns one half of its weight to each key and receives the average of the two value rows.",
+      "why": "Softmax maps equal scores to equal probabilities; the output is therefore the uniform weighted average.",
+      "preset": {"queries": [[0, 0], [0, 0]], "keys": [[1, 0], [0, 1]], "values": [[2, 0], [0, 4]], "scale": true}
+    },
+    {
+      "title": "Make one key dominate",
+      "instruction": "Apply the preset. Compare the two score columns and see how strongly each query favors the first value.",
+      "observe": "Each query scores the first key 4/sqrt(2) and the second key zero, so most of its output comes from the first value row.",
+      "why": "A larger score receives a larger share after softmax; scaling reduces the score gap before normalization.",
+      "preset": {"queries": [[1, 0], [1, 0]], "keys": [[4, 0], [0, 0]], "values": [[1, 0], [0, 1]], "scale": true}
+    }
+  ],
+  "limitation": "This fixed two-query, two-key example omits masking, batching, positional information, learned projections, multiple heads, and training. The matrices are directly editable teaching inputs, not parameters learned from data.",
+  "grounding": [
+    {"paper": "Attention Is All You Need", "locator": "Vaswani et al. (2017), Section 3.2.1, Scaled Dot-Product Attention; arXiv HTML version 1706.03762v7", "support": "excerpt", "claim": "The section defines attention as a softmax of query-key dot products scaled by the square root of the key dimension, multiplied by V."},
+    {"paper": "Attention Is All You Need", "locator": "Practice fixture design, not a claim from the paper", "support": "simplification", "claim": "This playground uses editable 2x2 teaching matrices instead of learned projections, masking, and multiple heads."}
+  ],
+  "tests": [
+    {
+      "name": "identity matrices with scaling produce the stated attention and weighted values",
+      "inputs": {"queries": [[1, 0], [0, 1]], "keys": [[1, 0], [0, 1]], "values": [[1, 0], [0, 1]], "scale": true},
+      "expected": {"score_matrix": [[0.7071067811865475, 0], [0, 0.7071067811865475]], "attention_weights": [[0.6697615493266569, 0.3302384506733431], [0.3302384506733431, 0.6697615493266569]], "attended_values": [[0.6697615493266569, 0.3302384506733431], [0.3302384506733431, 0.6697615493266569]]},
+      "atol": 1e-9,
+      "rtol": 1e-9
+    },
+    {
+      "name": "disabling scaling changes softmax concentration but keeps the weighted value calculation",
+      "inputs": {"queries": [[1, 0], [0, 1]], "keys": [[1, 0], [0, 1]], "values": [[1, 0], [0, 1]], "scale": false},
+      "expected": {"score_matrix": [[1, 0], [0, 1]], "attention_weights": [[0.7310585786300049, 0.2689414213699951], [0.2689414213699951, 0.7310585786300049]], "attended_values": [[0.7310585786300049, 0.2689414213699951], [0.2689414213699951, 0.7310585786300049]]},
+      "atol": 1e-9,
+      "rtol": 1e-9
+    },
+    {
+      "name": "equal scores yield uniform weights and average the values",
+      "inputs": {"queries": [[0, 0], [0, 0]], "keys": [[1, 0], [0, 1]], "values": [[2, 0], [0, 4]], "scale": true},
+      "expected": {"score_matrix": [[0, 0], [0, 0]], "attention_weights": [[0.5, 0.5], [0.5, 0.5]], "attended_values": [[1, 2], [1, 2]]},
+      "atol": 1e-9,
+      "rtol": 1e-9
+    },
+    {
+      "name": "dominant first key controls the weighted value",
+      "inputs": {"queries": [[1, 0], [1, 0]], "keys": [[4, 0], [0, 0]], "values": [[1, 0], [0, 1]], "scale": true},
+      "expected": {"score_matrix": [[2.82842712474619, 0], [2.82842712474619, 0]], "attention_weights": [[0.9441927807928303, 0.0558072192071697], [0.9441927807928303, 0.0558072192071697]], "attended_values": [[0.9441927807928303, 0.0558072192071697], [0.9441927807928303, 0.0558072192071697]]},
+      "atol": 1e-9,
+      "rtol": 1e-9
+    }
+  ],
+  "invariants": [
+    {"name": "each query distributes one unit of attention across keys", "output": "attention_weights", "kind": "row_sum", "expected": 1, "atol": 1e-9, "rtol": 1e-9},
+    {"name": "attention weights are probabilities", "output": "attention_weights", "kind": "range", "min": 0, "max": 1, "atol": 1e-9, "rtol": 1e-9}
+  ],
+  "compute_js": "function compute(inputs) { const Q = inputs.queries; const K = inputs.keys; const V = inputs.values; const factor = inputs.scale ? 1 / Math.sqrt(2) : 1; const scores = [[(Q[0][0] * K[0][0] + Q[0][1] * K[0][1]) * factor, (Q[0][0] * K[1][0] + Q[0][1] * K[1][1]) * factor], [(Q[1][0] * K[0][0] + Q[1][1] * K[0][1]) * factor, (Q[1][0] * K[1][0] + Q[1][1] * K[1][1]) * factor]]; function softmax2(row) { const high = Math.max(row[0], row[1]); const a = Math.exp(row[0] - high); const b = Math.exp(row[1] - high); const total = a + b; return [a / total, b / total]; } const weights = [softmax2(scores[0]), softmax2(scores[1])]; const output = weights.map(row => [row[0] * V[0][0] + row[1] * V[1][0], row[0] * V[0][1] + row[1] * V[1][1]]); return { score_matrix: scores, attention_weights: weights, attended_values: output }; }"
+}

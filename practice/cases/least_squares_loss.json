@@ -1,0 +1,7 @@
+{
+  "source_url": "https://digital.library.adelaide.edu.au/items/16927e8d-a86a-4b70-84df-3725cad2425a/full",
+  "focus": "Show a two-point line model y_hat = intercept + slope times x, its residuals observed minus predicted, each squared residual, and total sum of squared errors. Let learners edit observations and line coefficients; label the calculation as loss evaluation, not an optimizer.",
+  "audience": "A second-year engineering undergraduate familiar with coordinates, linear equations, and squaring numbers.",
+  "excerpt": "Paraphrase, not a quotation: this practice case computes residuals y_i - y_hat_i and their squared-error sum. Fisher's linked paper concerns regression goodness of fit; the displayed definition is the case's stated teaching calculation, not a verified transcription from the article.",
+  "section": "Fisher (1922), Goodness of Fit of Regression Formulae and the Distribution of Regression Coefficients, Journal of the Royal Statistical Society 85, pp. 597–612. The repository record and attached PDF are identified, but full text was not readable through the audit browser."
+}

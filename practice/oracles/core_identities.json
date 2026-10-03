@@ -1,0 +1,25 @@
+{
+  "description": "Hand-calculated reference identities independent of any generated page tests.",
+  "cases": {
+    "bayes_updating": {
+      "identity": "Beta(2,2) prior plus 3 successes and 1 failure gives Beta(5,3), posterior mean 5/8.",
+      "inputs": {"alpha": 2, "beta": 2, "successes": 3, "failures": 1},
+      "expected": {"posterior_alpha": 5, "posterior_beta": 3, "posterior_mean": 0.625}
+    },
+    "least_squares_loss": {
+      "identity": "For points (0,1),(1,3) and line y_hat=1+2x, residuals are [0,0] and SSE is 0; with intercept shifted to 0, residuals are [1,1] and SSE is 2.",
+      "inputs": {"x": [0, 1], "y": [1, 3], "intercept": 0, "slope": 2},
+      "expected": {"predictions": [0, 2], "residuals": [1, 1], "sse": 2}
+    },
+    "logistic_probability": {
+      "identity": "At z=0, odds are 1 and logistic probability is 1/2.",
+      "inputs": {"z": 0},
+      "expected": {"odds": 1, "probability": 0.5}
+    },
+    "exponential_decay": {
+      "identity": "After one half-life t=ln(2)/lambda, the remaining amount is N0/2; with N0=80 and lambda=ln(2), N(1)=40.",
+      "inputs": {"initial": 80, "lambda": 0.6931471805599453, "time": 1},
+      "expected": {"remaining_fraction": 0.5, "amount": 40}
+    }
+  }
+}

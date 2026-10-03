@@ -36,6 +36,9 @@ tmp/
 # Generated assessment output
 /out/
 /runs/
+/evidence/*/runs/
+/evidence/*/runs.jsonl
+/evidence/*/summary.json
 
 # Logs
 *.log

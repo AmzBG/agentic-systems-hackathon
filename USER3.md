@@ -1,5 +1,25 @@
 # USER3.md — checks and evidence
 
+## Live User 3 work plan (3 October 2026)
+
+The committed starter is on `main`; User 3 works on `user3-evidence` and owns only the paths listed below. The assessment model is `deepseek/deepseek-v4.1-flash`. The local ignored `.env` already has a key; no key value belongs in chat, traces, or Git. The team is User 1 `Jadjnm`, User 2 `AmzBG`, and User 3 `Jiany-S`. Repository access is confirmed for User 1 and User 3; User 2 owns the repository. The team plans to make the repository public before submission; final verification must check unauthenticated access.
+
+Current dependency order:
+
+1. Publish the `run_checks` and `write_trace` contracts, entropy fixture, and offline smoke script. User 2 can render `practice/specs/entropy.json` without waiting for model calls. User 1 can integrate against the interfaces immediately.
+2. Make checks real: validate schema references and HTML locality, then run generated `compute` under a bounded JavaScript engine. Report `skip`/`degraded` if execution cannot be safely enforced. Keep scientific identities independent of model supplied tests.
+3. Add attention and four other focused cases, with verified source locators and small independent numerical oracles. Review actual browser controls and cite concrete defects to their file owner.
+4. Run paired evidence with DeepSeek V4.1 Flash first. A second model comparison is useful only if it exposes a distinct failure mode; it must not displace assessment-model testing or consume the development key casually.
+5. Finish README names, architecture, exact pins, credits, example input/output pair, clean-clone proof, and repository access check. User 1 integrates named commits and freezes the final SHA.
+
+Differentiator to propose to User 2 after the baseline works: a compact **before/after result readout** beside the visual. It compares the current calculation with the default or selected exploration preset using the same local `compute` function, so learners see the effect of each control immediately without extra model tokens. This is optional polish; scientific correctness, source claims, and working controls take priority.
+
+Sync rule: User 3 sends User 1 and User 2 only a failing command, one minimal case, expected behavior, and the owner path. No edits to their files. The old committed `paper_playground/*` HTML-generation pipeline differs from the frozen compact-spec architecture; User 1 must decide whether to replace or disconnect it, while User 3 keeps requirements compatible until that decision lands.
+
+Current handoff: `from checks import run_checks` and `from trace import write_trace` are available on `user3-evidence`. `practice/specs/entropy.json` is the first offline renderer target. `python scripts/smoke_runtime.py --spec practice/specs/entropy.json --output out/entropy` is ready for User 2 once `runtime.py` lands. The checker now executes bounded numerical probes, compares declarative tests and invariants, and requires two controls to be read and change a result or visual. `python -m unittest tests.test_checks tests.test_trace -v` verifies these contracts. `scripts/validate_output.py` validates the final artifact and trace; `scripts/audit_repo.py` is expected to fail until a real example output is generated. No live OpenRouter call has been made from this branch.
+
+The second offline renderer target is `practice/specs/attention.json`. Six practice inputs are available: the two public examples plus four similar-scope mechanisms under `practice/cases/`; `practice/oracles/core_identities.json` holds independent small calculations. Use `evidence/REVIEW_TEMPLATE.md` for each browser review. The dependency set has been downloaded as wheels only for Python 3.11 on Windows and Linux x86-64; `python scripts/verify_install.py` also proves a fresh Windows install and a QuickJS execution timeout.
+
 ## Mission
 Prove the generator works on fresh inputs with honest numerical, structural and browser evidence. Own the reproducible fixtures, pinned installation, trace writer, README and final clean-clone submission so the other two can focus on implementation.
 

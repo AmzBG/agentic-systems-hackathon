@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "plan": "Use editable weights to reveal how uncertainty changes when outcomes become more or less balanced.",
+  "title": "How much uncertainty is in a distribution?",
+  "audience": "Second-year engineering undergraduate familiar with logarithms and probability.",
+  "starting_point": {
+    "idea": "Discrete entropy measures the average surprise of an outcome.",
+    "why": "It gives a numerical way to compare uncertain and predictable sources.",
+    "explanation": "Normalize nonnegative weights into probabilities, then add each outcome's contribution. Zero-probability outcomes contribute zero. This is a small teaching example, not a reproduction of Shannon's communication experiments."
+  },
+  "symbols": [
+    {"symbol": "p_i", "meaning": "Probability of outcome i", "units": "unitless"},
+    {"symbol": "-p_i log2(p_i)", "meaning": "Contribution of outcome i to entropy", "units": "bits"},
+    {"symbol": "H", "meaning": "Sum of all outcome contributions", "units": "bits"}
+  ],
+  "controls": [
+    {"id": "count", "label": "Number of outcomes", "help": "Use the first 1 to 4 weights.", "units": "outcomes", "kind": "number", "default": 4, "min": 1, "max": 4, "step": 1},
+    {"id": "weights", "label": "Outcome weights", "help": "Nonnegative weights are normalized into probabilities. All-zero weights use equal probabilities.", "units": "relative weight", "kind": "vector", "default": [1, 1, 1, 1], "min": 0, "max": 1, "step": 0.05, "shape": [4]}
+  ],
+  "outputs": [
+    {"id": "probabilities", "label": "Normalized probabilities", "units": "unitless", "role": "intermediate"},
+    {"id": "contributions", "label": "Entropy contribution by outcome", "units": "bits", "role": "intermediate"},
+    {"id": "entropy_bits", "label": "Total entropy", "units": "bits", "role": "result"}
+  ],
+  "visuals": [
+    {"id": "probability_bars", "kind": "bar", "title": "Probability by outcome", "output": "probabilities", "x_label": "Outcome", "y_label": "Probability"},
+    {"id": "contribution_bars", "kind": "bar", "title": "Contribution to entropy", "output": "contributions", "x_label": "Outcome", "y_label": "Bits"}
+  ],
+  "explorations": [
+    {"title": "Make one outcome certain", "instruction": "Apply this preset, then inspect the bars and H.", "observe": "One probability is one and total entropy is zero bits.", "why": "A guaranteed outcome carries no surprise.", "preset": {"count": 4, "weights": [1, 0, 0, 0]}},
+    {"title": "Make four outcomes equally likely", "instruction": "Apply this preset, then compare the four contributions and H.", "observe": "Each outcome contributes half a bit; total entropy is two bits.", "why": "Four equally likely outcomes require two binary choices to identify one.", "preset": {"count": 4, "weights": [1, 1, 1, 1]}}
+  ],
+  "limitation": "The weights are teaching controls, not frequencies measured from Shannon's paper. When all active weights are zero, this toy model chooses a uniform distribution so the calculation remains defined.",
+  "grounding": [
+    {"paper": "C. E. Shannon, A Mathematical Theory of Communication", "locator": "Section 6, equation for H", "support": "excerpt", "claim": "Entropy is the sum of negative probability times base-two log probability."},
+    {"paper": "Teaching example", "locator": "This page's normalization rule", "support": "simplification", "claim": "Editable weights are normalized to make a valid probability distribution."}
+  ],
+  "tests": [
+    {"name": "certain outcome gives zero bits", "inputs": {"count": 4, "weights": [1, 0, 0, 0]}, "expected": {"probabilities": [1, 0, 0, 0], "contributions": [0, 0, 0, 0], "entropy_bits": 0}, "atol": 1e-9, "rtol": 1e-9},
+    {"name": "four equal outcomes give two bits", "inputs": {"count": 4, "weights": [1, 1, 1, 1]}, "expected": {"probabilities": [0.25, 0.25, 0.25, 0.25], "contributions": [0.5, 0.5, 0.5, 0.5], "entropy_bits": 2}, "atol": 1e-9, "rtol": 1e-9},
+    {"name": "all-zero weights follow documented fallback", "inputs": {"count": 2, "weights": [0, 0, 0, 0]}, "expected": {"probabilities": [0.5, 0.5], "contributions": [0.5, 0.5], "entropy_bits": 1}, "atol": 1e-9, "rtol": 1e-9}
+  ],
+  "invariants": [
+    {"name": "probabilities sum to one", "output": "probabilities", "kind": "sum", "expected": 1, "atol": 1e-9, "rtol": 1e-9},
+    {"name": "probabilities stay bounded", "output": "probabilities", "kind": "range", "min": 0, "max": 1, "atol": 1e-9, "rtol": 1e-9},
+    {"name": "entropy is nonnegative", "output": "entropy_bits", "kind": "range", "min": 0, "max": 2, "atol": 1e-9, "rtol": 1e-9}
+  ],
+  "compute_js": "function compute(inputs) { const count = Math.max(1, Math.min(4, Math.round(inputs.count))); const active = inputs.weights.slice(0, count); const total = active.reduce((sum, value) => sum + value, 0); const probabilities = total === 0 ? active.map(() => 1 / count) : active.map(value => value / total); const contributions = probabilities.map(p => p === 0 ? 0 : -p * Math.log2(p)); const entropy_bits = contributions.reduce((sum, value) => sum + value, 0); return { probabilities, contributions, entropy_bits }; }"
+}
+

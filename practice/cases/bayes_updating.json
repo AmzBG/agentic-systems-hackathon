@@ -1,0 +1,7 @@
+{
+  "source_url": "https://bayes.wustl.edu/Manual/an.essay.pdf",
+  "focus": "Teach a Beta-Binomial update for the unknown success probability: let learners set prior alpha and beta plus observed successes and failures, then show the posterior parameters and posterior mean. Compare prior and posterior and explain that this is a conjugate-model teaching example.",
+  "audience": "A second-year engineering undergraduate familiar with fractions, averages, and elementary probability.",
+  "excerpt": "Paraphrase, not a quotation: the case uses the modern Beta-Binomial identity that observations update alpha and beta by their success and failure counts. Bayes's essay motivates inference about an unknown event probability from observed successes and failures; it does not use this modern parameterization.",
+  "section": "Section II, Proposition 10 and Rule 1; inference from p observed successes and q failures. The linked primary PDF was accessible in this audit."
+}
