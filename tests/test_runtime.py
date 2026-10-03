@@ -727,8 +727,14 @@ class ComparisonAndPositionTests(unittest.TestCase):
 
     def test_display_tolerance_suppresses_roundoff(self):
         result = page_result(all_kinds_spec(), "change('input-field-0-0','1.00000000001');",
-            "text('output-scaled_field')")
+            "document.getElementById('outputs').children.find(n=>n.id==='output-scaled_field').textContent")
         self.assertNotIn("Changed", result)
+
+    def test_changed_shape_exposes_removed_and_added_values(self):
+        result = page_result(entropy_spec(), "const current=()=>document.getElementById('outputs').children.find(n=>n.id==='output-probabilities').textContent;change('input-count-scalar','2');const shorter=current();change('input-count-scalar','4');", "{shorter,longer:current()}")
+        self.assertIn("Shape changed · inspect previous values", result["shorter"])
+        self.assertIn("[0.25, 0.25, 0.25, 0.25]", result["shorter"])
+        self.assertIn("Added · previous: not present", result["longer"])
 
     def test_failed_computation_does_not_replace_comparison_and_recovery_uses_last_success(self):
         spec = entropy_spec()

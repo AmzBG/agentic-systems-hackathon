@@ -103,7 +103,10 @@
       create('h4',o.label+' — '+o.role+' ('+unit(o.units)+')',box);
       create('p',o.role==='result'?'Final result':'Step '+(++step)+' · Intermediate',box).className='readout-label';
       if(!Array.isArray(result[o.id]))scalarReadout(result[o.id],previous&&previous[o.id],o.units,box);
-      else numericTable(result[o.id],o.label+' · Current ('+unit(o.units)+')',box,undefined,{},previous&&previous[o.id],o.units);
+      else {
+        const visual=spec.visuals.find(v=>v.output===o.id);
+        numericTable(result[o.id],o.label+' · Current ('+unit(o.units)+')',box,visual&&visual.labels,{x:visual&&visual.x_label,y:visual&&visual.y_label,value:o.label+' ('+unit(o.units)+')'},previous&&previous[o.id],o.units);
+      }
     }
     return containers;
   }
@@ -144,6 +147,9 @@
     return 'rgb('+neutral.map((n,i)=>Math.round(n+(end[i]-n)*strength)).join(',')+')';
   }
   function numericTable(value,title,parent,labels,axes={},before=null,units='') {
+    if(before!==null&&before!==undefined&&JSON.stringify(shape(value).dims)!==JSON.stringify(shape(before).dims)){
+      const prior=create('details',undefined,parent);create('summary','Shape changed · inspect previous values ('+unit(units)+')',prior);create('pre',displayValue(before),prior);
+    }
     const div=create('div',undefined,parent);div.className='scroll';div.tabIndex=0;div.setAttribute('role','region');div.setAttribute('aria-label',title);const table=create('table',undefined,div);create('caption',title,table);
     const rows=Array.isArray(value)?(Array.isArray(value[0])?value:value.map(x=>[x])):[[value]];
     if(rows.some(r=>r.some(Array.isArray))){create('pre',displayValue(value),parent);return;}
@@ -152,7 +158,7 @@
     const head=create('tr',undefined,create('thead',undefined,table));create('th',rowAxis,head).scope='col';
     for(let i=0;i<rows[0].length;i++){const label=axes.columns?axes.columns[i]:matrix?(axes.x||'Column')+' '+((labels&&labels[i])||(i+1)):(axes.value||'Value');const th=create('th',label,head);th.scope='col';}
     const priorRows=Array.isArray(before)?(Array.isArray(before[0])?before:before.map(x=>[x])):[[before]];
-    const body=create('tbody',undefined,table);rows.forEach((r,i)=>{const tr=create('tr',undefined,body);const th=create('th',(labels&&labels[i])||rowAxis+' '+(i+1),tr);th.scope='row';r.forEach((x,j)=>{const old=priorRows[i]&&priorRows[i][j],different=changed(x,old);const cell=create('td',String(x),tr);cell.className='numeric-value'+(different?' changed-cell':'');if(different){cell.setAttribute('data-changed','true');create('span','Changed · previous: '+String(old)+' '+unit(units),cell).className='cell-previous';}});});
+    const body=create('tbody',undefined,table);rows.forEach((r,i)=>{const tr=create('tr',undefined,body);const th=create('th',(labels&&labels[i])||rowAxis+' '+(i+1),tr);th.scope='row';r.forEach((x,j)=>{const old=priorRows[i]&&priorRows[i][j],different=before!==null&&before!==undefined&&(!finite(old)||changed(x,old));const cell=create('td',String(x),tr);cell.className='numeric-value'+(different?' changed-cell':'');if(different){cell.setAttribute('data-changed','true');create('span',finite(old)?'Changed · previous: '+String(old)+' '+unit(units):'Added · previous: not present',cell).className='cell-previous';}});});
   }
   function renderVisual(v,result,inputs,b,parent) {
     const output=spec.outputs.find(o=>o.id===v.output),value=result[v.output],s=shape(value);
@@ -166,7 +172,7 @@
       const svg=chart(v,parent),flat=leavesOf(value),scale=heatmapScale(v.output,flat),[lo,hi]=scale.domain,rows=value.length,cols=value[0].length;
       for(let r=0;r<rows;r++){const label=(v.labels&&v.labels[r])||String(r+1);const tick=svgNode('text',{x:80,y:55+r*220/rows,'text-anchor':'end'},svg,shortLabel(label));svgNode('title',{},tick,label);for(let c=0;c<cols;c++){
         const t=Math.max(0,Math.min(1,(value[r][c]-lo)/(hi-lo))),x=90+c*510/cols,y=32+r*220/rows;
-        const old=previous&&previous[v.output]&&previous[v.output][r]&&previous[v.output][r][c],different=changed(value[r][c],old);
+        const old=previous&&previous[v.output]&&previous[v.output][r]&&previous[v.output][r][c],different=previous&&(!finite(old)||changed(value[r][c],old));
         const cell=svgNode('rect',{x,y,width:510/cols-2,height:220/rows-2,fill:heatmapColor(t,scale.diverging),stroke:different?'#785514':'none','stroke-width':different?3:0},svg);svgNode('title',{},cell,'Row '+(r+1)+', column '+(c+1)+': '+format(value[r][c])+' '+unit(output.units));
         if(cols<=4)svgNode('text',{x:x+255/cols,y:y+110/rows+5,'text-anchor':'middle'},svg,tickNumber(value[r][c]));}}
       for(let c=0;c<cols;c++){const label=(v.labels&&v.labels[c])||String(c+1);const tick=svgNode('text',{x:90+(c+.5)*510/cols,y:276,'text-anchor':'middle'},svg,shortLabel(label));svgNode('title',{},tick,label);}
