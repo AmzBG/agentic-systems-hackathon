@@ -16,6 +16,8 @@ Differentiator to propose to User 2 after the baseline works: a compact **before
 
 Sync rule: User 3 sends User 1 and User 2 only a failing command, one minimal case, expected behavior, and the owner path. No edits to their files. The old committed `paper_playground/*` HTML-generation pipeline differs from the frozen compact-spec architecture; User 1 must decide whether to replace or disconnect it, while User 3 keeps requirements compatible until that decision lands.
 
+Current handoff: `from checks import run_checks` and `from trace import write_trace` are available on `user3-evidence`. `practice/specs/entropy.json` is the first offline renderer target. `python scripts/smoke_runtime.py --spec practice/specs/entropy.json --output out/entropy` is ready for User 2 once `runtime.py` lands. The checker now executes bounded numerical probes, compares declarative tests and invariants, and requires two controls to be read and change a result or visual. `python -m unittest tests.test_checks tests.test_trace -v` verifies these contracts. `scripts/validate_output.py` validates the final artifact and trace; `scripts/audit_repo.py` is expected to fail until a real example output is generated. No live OpenRouter call has been made from this branch.
+
 ## Mission
 Prove the generator works on fresh inputs with honest numerical, structural and browser evidence. Own the reproducible fixtures, pinned installation, trace writer, README and final clean-clone submission so the other two can focus on implementation.
 

@@ -1,0 +1,7 @@
+{
+  "source_url": "https://www.tandfonline.com/doi/abs/10.1080/14786440309462960",
+  "focus": "Illustrate first-order radioactive decay with N(t)=N0 exp(-lambda t). Let learners set initial amount, nonnegative decay constant, and time; show remaining fraction and amount, and compare the half-life time ln(2)/lambda. State that the deterministic curve describes expected bulk behavior, not an individual random decay event.",
+  "audience": "A second-year engineering undergraduate familiar with exponentials, logarithms, and simple rates of change.",
+  "excerpt": "Paraphrase, not a quotation: the practice case uses the standard first-order decay model dN/dt = -lambda N and its exponential solution. This equation is the teaching calculation; the linked 1903 paper is the historical source context, not a verified transcription of this modern notation.",
+  "section": "Rutherford and Soddy (1903), Radioactive Change, Philosophical Magazine 5(29), pp. 576–591. Publisher record is identifiable, but its full text returned an access error in this audit; this locator is therefore bibliographic, not text-verified."
+}
