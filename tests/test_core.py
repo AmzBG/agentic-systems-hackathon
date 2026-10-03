@@ -283,6 +283,7 @@ class ParserTests(unittest.TestCase):
         self.assertRejects(broken(lambda s: s["visuals"][1]["sweep"].update(max=9)), "within the control")
         self.assertRejects(broken(lambda s: s["visuals"][1]["sweep"].update(points=60)), "points")
         self.assertRejects(broken(lambda s: s["invariants"][0].update(kind="sum")), "needs expected")
+        self.assertRejects(broken(lambda s: s["invariants"][0].update(kind="range", min=0)), "both min and max")
         self.assertRejects(broken(lambda s: s.update(grounding=[])), "at least 1")
         self.assertRejects(broken(lambda s: s["tests"][0]["expected"].update(total=[[1], [1, 2]])), "rectangular")
         self.assertRejects(broken(lambda s: s["outputs"][0].update(role="result")), "intermediate")
