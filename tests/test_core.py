@@ -876,6 +876,7 @@ class EvidenceDrivenTests(unittest.TestCase):
                 self.assertEqual(request.full_url, "https://openrouter.ai/api/v1/chat/completions")
                 call = [e for e in h.events if e["action"] == "request"][0]
                 self.assertEqual(call["details"]["model_id"], model)
+                self.assertEqual(call["details"]["reasoning_setting"], expected)  # survives trace redaction
 
     def test_failed_fetch_with_excerpt_in_unknown_field_is_grounded_data(self):
         excerpt = "Equation 3: y equals g times x plus b, where g is the gain."

@@ -136,7 +136,7 @@ class OpenRouterClient:
         started = self._clock()
         self.last_call = {"request_number": request_number, "model_id": self.model_id,
                           "max_tokens": max_tokens, "timeout_seconds": round(timeout, 1),
-                          "reasoning": self.reasoning, "provider_preferences": self.provider}
+                          "reasoning_setting": self.reasoning, "provider_preferences": self.provider}
         try:
             payload_out = {"model": self.model_id, "messages": messages, "max_tokens": max_tokens}
             if self.reasoning is not None:
